@@ -9,6 +9,7 @@
 	     ((gnu packages xorg) #:select (xrdb xinit))
 	     ((gnu packages xdisorg) #:select(redshift))
 	     ((gnu packages suckless) #:select (slstatus))
+	     ((gnu packages python) #:select (python))
 	     ((guix gexp) #:select (gexp))
 	     ((guix build-system copy) #:select (copy-build-system))
 	     ((guix build-system trivial) #:select (trivial-build-system))
@@ -276,7 +277,7 @@ Xcursor.size: 32
 	 "xinput set-prop \"PIXA3854:00 093A:0274 Touchpad\""
          "     \"libinput Disable While Typing Enabled\""
 	 "     0 & "
-	 "python3 " (local-file "battery_script.py") " & "
+	 python "/bin/python3 " (local-file "battery_script.py") " & "
 	 slstatus-patched "/bin/slstatus & "
 	 xrdb "/bin/xrdb -merge " Xresources " & "
 	 redshift "/bin/redshift  -l 45.421532:-75.697189 -b 1:0.7 -t 6500K:3000K & "
