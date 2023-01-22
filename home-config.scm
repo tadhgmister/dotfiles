@@ -7,6 +7,7 @@
 ;; TODO: clean up imports
 (use-modules (gnu home)
 	     ((gnu packages xorg) #:select (xrdb xinit))
+	     ((gnu packages xdisorg) #:select(redshift))
 	     ((gnu packages suckless) #:select (slstatus))
 	     ((guix gexp) #:select (gexp))
 	     ((guix build-system copy) #:select (copy-build-system))
@@ -15,12 +16,13 @@
 	     ((guix packages) #:select (package origin base32 package-version package-source))
 	     ((guix download) #:select (url-fetch))
 	     ((guix git-download) #:select(git-fetch git-reference git-file-name))
-	     ((gnu packages suckless) #:select (dwm))
+	     ((gnu packages suckless) #:select (dwm slock))
 	     (gnu home services)
 	     ((gnu home services guix) #:select (home-channels-service-type))
 	     ((guix channels) #:select (channel make-channel-introduction openpgp-fingerprint %default-channels))
 	     ((gnu services syncthing) #:select (syncthing-service-type syncthing-configuration))
              (gnu packages)
+	     ((guix packages) #:select (modify-inputs package-inputs))
              (gnu services)
              (guix gexp)
              (gnu home services shells)
@@ -197,12 +199,16 @@ a simple interface.")
    "#!/bin/sh\n"
    "echo $1 > /sys/class/backlight/intel_backlight/brightness"
    ))
+(define sims3-package (single-script-package "sims3"
+   "#!/bin/sh\n"
+   "wine ~/.wine/drive_c/Program\\ Files/Electronic\\ Arts/The\\ Sims\\ 3/Game/Bin/TS3W.exe\n"
+   ))
 (define headphones-package (single-script-package "headphones"
    "#!/bin/sh\n"
    "if [ $# -eq 0 ]; then\n"
+   "  guix shell pavucontrol -- pavucontrol & \n"
    "  guix shell bluez -- bluetoothctl power on\n"
-   "  guix shell bluez -- bluetoothctl connect A0:4A:0A:AB:EE:11\n"
-   "  guix shell pavucontrol -- pavucontrol\n"
+   "  guix shell bluez -- bluetoothctl connect 10:AC:DD:E6:97:45\n"
    "fi\n"
    "if [ $# -eq 1 ]; then\n"
    "  guix shell bluez -- bluetoothctl power off\n"
@@ -223,7 +229,8 @@ a simple interface.")
 	    (inherit (package-source slstatus))
 	    (patches (list (local-file "./slstatus_personal.diff")))
 	))    
- ))
+   ))
+
 (define dwm-patched
   (package
    (inherit dwm)
@@ -272,6 +279,7 @@ Xcursor.size: 32
 	 "python3 " (local-file "battery_script.py") " & "
 	 slstatus-patched "/bin/slstatus & "
 	 xrdb "/bin/xrdb -merge " Xresources " & "
+	 redshift "/bin/redshift  -l 45.421532:-75.697189 -b 1:0.7 -t 6500K:3000K & "
 	 ;; TODO: as with xinput, find the correct way to do this
 	 "setxkbmap -option caps:none && "
 	 "exec " dwm-patched "/bin/dwm"))
@@ -296,9 +304,11 @@ fi")))
         .
         "libinput-minimal=https://gitlab.freedesktop.org/libinput/libinput.git"))))
 (define libinput-pack (transform1 (specification->package "xf86-input-libinput")))
+
 (define xorg-packages (list 
 		       "dmenu" ;; is like quicklook (from mac) for dwm
 		       "xorg-server" ;; the server
+		       "xclip" ;; needed for festival command
 		       ;;"xf86-input-libinput" ;; input drivers
 		       "xf86-video-fbdev" ;; TODO is this needed?
 		       "setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
@@ -309,12 +319,15 @@ fi")))
 			       "vim" ;; mostly so guix edit and if I need to make a quick fix in the tty
 			       "emacs"
 			       "festival" ;; for speech synthesis:
+			       "xclip" ;; used by dwm command to use festival
+			       ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
 			       "git"
 			       "icedove" ;; TODO: figure out how to make this stop breaking every update
 			       ;;"pidgin"
 			       ))
 (define entertainment-packages (list
 				"mpv"
+				"dino" ; for communication
 				))
 
 
@@ -328,6 +341,7 @@ fi")))
 		  playtimer-package
 		  mclauncher-package
 		  ciarancostume-package
+		  sims3-package
 		  (specifications->packages
 		   (append
 		    xorg-packages

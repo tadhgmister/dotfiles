@@ -11,33 +11,51 @@
 ;; used in this configuration.
 (use-modules
  (gnu)
+ 
  ((nongnu packages linux) #:select(linux linux-firmware))
  ((nongnu system linux-initrd) #:select(microcode-initrd))
- ((guix packages) #:select (origin base32))
+ ((guix packages) #:select (origin base32 modify-inputs package-source package-inputs package))
  ((guix download) #:select (url-fetch))
  ((guix gexp) #:select(file-append))
  ((gnu packages freedesktop) #:select(fprintd))
+ ((gnu packages suckless) #:select(slock))
  ((gnu packages games) #:select (steam-devices-udev-rules))
  ((gnu packages certs) #:select (nss-certs))
- ((gnu packages cups) #:select (cups))
  ((gnu packages linux) #:select (brightnessctl))
  ((gnu packages wm) #:select (swaylock))
- ((gnu services cups))
- ((gnu packages cups))
+ ((gnu packages cups) #:select (cups cups-filters epson-inkjet-printer-escpr hplip-minimal))
+ ((gnu services cups) #:select (cups-service-type cups-configuration))
  ((gnu services desktop) #:select (bluetooth-service-type gnome-desktop-service-type %desktop-services elogind-service-type elogind-configuration))
+ ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms))
  ((gnu services nix) #:select (nix-service-type))
  ((gnu services syncthing) #:select (syncthing-service-type syncthing-configuration))
  ((gnu services xorg) #:select (xorg-server-service-type gdm-service-type screen-locker-service screen-locker-service-type xorg-configuration set-xorg-configuration))
  ((gnu services authentication) #:select (fprintd-service-type))
  ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration))
- ((gnu services pm) #:select (tlp-service-type thermald-service-type))
+ ((gnu services pm) #:select (tlp-service-type tlp-configuration thermald-service-type))
 )
 
 ;; (define ledtrigger-udev (udev-rule "90-ledtrigger.rules"
 ;; "ACTION==\"add\", SUBSYSTEM==\"leds\", RUN+=\"/run/current-system/profile/bin/chgrp input /sys/class/leds/%k/trigger\"
 ;; ACTION==\"add\", SUBSYSTEM==\"leds\", RUN+=\"/run/current-system/profile/bin/chmod g+w /sys/class/leds/%k/trigger\""))
 				   
-
+;; Note that the wifi connection to CU-Wireless was done with the nm-applet (and guix shell stalonetray) to configure wPA-Enterprise
+;; idk where else to put this, wifi info isn't something I expect to ever save to the guix config but want to remember how to do it.
+;; also eduroam has an install script for ottawa U, haven't tried it yet since I don't have ottawa U credentials at time of writing
+(define slock-patched
+  (let ((pam-patch (origin
+   (method url-fetch)
+   (uri "https://tools.suckless.org/slock/patches/pam_auth/slock-pam_auth-20190207-35633d4.diff")
+   (file-name "slock-pam.diff")
+   (sha256 (base32 "0dlhif9vlci9w3cs2wlb73j7s9w3nzxwf5h170ybcywwj7y9gjsc"))
+   )))
+  (package
+   (inherit slock)
+   (source (origin (inherit (package-source slock))
+		   (patches (list pam-patch))))
+   (inputs (modify-inputs (package-inputs slock)
+              (append  (specification->package "linux-pam"))))
+   )))
 (define username "tadhg")
 (define (nonguix-subs config) (guix-configuration
                (inherit config)
@@ -80,7 +98,7 @@
                 %base-user-accounts))
   (bootloader (bootloader-configuration
                 (bootloader grub-efi-bootloader)
-                (targets (list "/boot/efi"))
+                (targets (list "/boot"))
                 (keyboard-layout keyboard-layout)))
   (mapped-devices (list (mapped-device
                           (source (uuid
@@ -92,7 +110,7 @@
   ;; file system identifiers there ("UUIDs") can be obtained
   ;; by running 'blkid' in a terminal.
   (file-systems (cons* (file-system
-                         (mount-point "/boot/efi")
+                         (mount-point "/boot")
                          (device (uuid "5190-E840" 'fat32))
                          (type "vfat"))
                        (file-system
@@ -105,9 +123,12 @@
                            '(("compress" . "lzo"))))
                          (dependencies mapped-devices)) 
                          %base-file-systems))
-  (packages (cons* (specification->package "nss-certs")
-                 (specification->package "alacritty")
-                  %base-packages))
+  (packages (append
+	     (list
+	      (specification->package "nss-certs")
+	      (specification->package "alacritty")
+	      slock-patched)
+             %base-packages))
 
   ;; Below is the list of system services.  To search for available
   ;; services, run 'guix system search KEYWORD' in a terminal.
@@ -120,16 +141,21 @@
 	      (extensions
 	       (list cups-filters epson-inkjet-printer-escpr hplip-minimal))))
     (service nix-service-type)
+    (service qemu-binfmt-service-type
+         (qemu-binfmt-configuration
+           (platforms (lookup-qemu-platforms "arm" "aarch64"))))
     (service bluetooth-service-type)
     (service fprintd-service-type)
-    (service tlp-service-type)
+    (service tlp-service-type
+	     (tlp-configuration
+	      (wifi-pwr-on-bat? #f)))
     (service thermald-service-type)
     (service transmission-daemon-service-type
              (transmission-daemon-configuration
               (download-dir "/torrents")))
     (udev-rules-service 'brightnessctl brightnessctl)
+    (screen-locker-service slock-patched)
     ;;(udev-rules-service 'ledtrigger ledtrigger-udev)
-    (screen-locker-service swaylock)
     (modify-services
         %desktop-services
 	(guix-service-type config => (nonguix-subs config))
@@ -137,9 +163,9 @@
 	 config =>
 	 (elogind-configuration
           (inherit config)
-          (handle-lid-switch 'suspend)))
-      (delete gdm-service-type)
-      (delete screen-locker-service-type))))
+          (handle-lid-switch 'ignore)))
+	(delete gdm-service-type)
+	(delete screen-locker-service))))
   ;; allow using .local with mdns resolution, used for printer in particular
   (name-service-switch %mdns-host-lookup-nss)
   (pam-services (map (lambda (pam)
