@@ -131,7 +131,7 @@ index f191af8..4d459fc 100644
  };
  
 diff --git a/dwm.c b/dwm.c
-index 33b3431..081fa1b 100644
+index 33b3431..da725c7 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -1080,11 +1080,23 @@ keypress(XEvent *e)
@@ -160,12 +160,42 @@ index 33b3431..081fa1b 100644
  	if (!sendevent(selmon->sel, wmatom[WMDelete])) {
  		XGrabServer(dpy);
  		XSetErrorHandler(xerrordummy);
-@@ -1685,6 +1697,8 @@ seturgent(Client *c, int urg)
+@@ -1680,6 +1692,10 @@ seturgent(Client *c, int urg)
+ 	XWMHints *wmh;
+ 
+ 	c->isurgent = urg;
++	if (urg){
++	  Arg a = {0}; //dummy so we have an argument
++	  holdbar(&a);
++	}
+ 	if (!(wmh = XGetWMHints(dpy, c->win)))
+ 		return;
  	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
- 	XSetWMHints(dpy, c->win, wmh);
- 	XFree(wmh);
-+	Arg a = {0}; //dummy so we have an argument
-+	holdbar(&a);
+@@ -2122,19 +2138,25 @@ void
+ updatewmhints(Client *c)
+ {
+ 	XWMHints *wmh;
+-
++	int has_urgent = 0;
+ 	if ((wmh = XGetWMHints(dpy, c->win))) {
+ 		if (c == selmon->sel && wmh->flags & XUrgencyHint) {
+ 			wmh->flags &= ~XUrgencyHint;
+ 			XSetWMHints(dpy, c->win, wmh);
+-		} else
++		} else {
+ 			c->isurgent = (wmh->flags & XUrgencyHint) ? 1 : 0;
++			has_urgent = has_urgent | c->isurgent;
++		}
+ 		if (wmh->flags & InputHint)
+ 			c->neverfocus = !wmh->input;
+ 		else
+ 			c->neverfocus = 0;
+ 		XFree(wmh);
+ 	}
++	if(has_urgent){
++	  Arg a = {0};
++	  holdbar(&a);
++	}
  }
  
  void
