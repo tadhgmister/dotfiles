@@ -73,7 +73,14 @@
 
 (operating-system
   (kernel linux)
-  (kernel-arguments (cons* "i915.enable_psr=0" %default-kernel-arguments))
+  (kernel-arguments (cons*
+		     ;; https://wiki.archlinux.org/title/Intel_graphics#Screen_flickering
+		     "i915.enable_psr=0" ;; fixes screen lag / not updating
+		     ;; https://wiki.archlinux.org/title/Framework_Laptop#Changing_the_brightness_of_the_monitor_does_not_work
+		     "modprobe.blacklist=hid_sensor_hub" ;; makes brightness keys get through to X
+		     ;; https://wiki.archlinux.org/title/Framework_Laptop#Intel_Wi-Fi_6E_AX210_reset/_low_throughput_/_%22Microcode_SW_error%22
+		     "iwlwifi.disable_11ax=Y" ;; should fix wifi repeatedly dying on me issue
+		     %default-kernel-arguments))
   (initrd microcode-initrd)
   (firmware (list linux-firmware))
   (locale "en_CA.utf8")

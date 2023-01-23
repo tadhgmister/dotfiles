@@ -157,7 +157,10 @@ a simple interface.")
 ;;       (close outp)
 ;;     )))
 (define* (single-script-package name #:rest text)
-  "TODO: DOCUMENT"
+  "this takes gexp strings to form a plain text script (should start with #!/bin/sh)
+   and compiles the gexp parts into a whole script and resolves to a package that puts
+   that file in a /bin folder and is marked executable, this way it can be added to the profile
+   to get the script executable."
   (package (name name)
 	   (version "1.0")
 	   (synopsis name)
@@ -264,7 +267,7 @@ Xft.dpi: 192
 Xft.hinting: 1
 Xft.autohint: 0
 Xft.antialias: 1
-Xcursor.size: 32
+Xcursor.size: 64
 "))
        (xinitrc (mixed-text-file "xinitrc"
          ;; TODO: use the proper method to set these in a config file instead of doing it at initrc
@@ -279,10 +282,10 @@ Xcursor.size: 32
 	 "     0 & "
 	 python "/bin/python3 " (local-file "battery_script.py") " & "
 	 slstatus-patched "/bin/slstatus & "
-	 xrdb "/bin/xrdb -merge " Xresources " & "
 	 redshift "/bin/redshift  -l 45.421532:-75.697189 -b 1:0.7 -t 6500K:3000K & "
 	 ;; TODO: as with xinput, find the correct way to do this
 	 "setxkbmap -option caps:none && "
+	 xrdb "/bin/xrdb -merge " Xresources " && "
 	 "exec " dwm-patched "/bin/dwm"))
        (DIR "~/.guix-home/profile")
        (XORG (string-append DIR "/bin/Xorg"))
@@ -296,6 +299,7 @@ Xcursor.size: 32
 if [ \"$(tty)\" = \"/dev/tty1\" ]; then
   " xinit "/bin/xinit " xinitrc " -- " XORG " :0 vt1 -dpi 192 -keeptty -configdir " CONFIGDIR " -modulepath " MODULEPATH "
 fi")))
+
 (define transform1
   (options->transformation
     '((with-commit
@@ -309,8 +313,7 @@ fi")))
 (define xorg-packages (list 
 		       "dmenu" ;; is like quicklook (from mac) for dwm
 		       "xorg-server" ;; the server
-		       "xclip" ;; needed for festival command
-		       ;;"xf86-input-libinput" ;; input drivers
+		       ;;"xf86-input-libinput" ;; input drivers using patched one instead with my fix for the framework trackpad
 		       "xf86-video-fbdev" ;; TODO is this needed?
 		       "setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
 		       "xinput" ;; TODO: remove this once config is used to configure mouse instead of doing it in xinitrc
@@ -414,6 +417,19 @@ fi")))
 "[user]
 	email = tadhgmister@gmail.com
 	name = Tadhg McDonald-Jensen
+"))
+      (".bashrc" ,(plain-file "bashrc"
+"# Adjust the prompt depending on whether we're in 'guix environment'.
+# also use \\a to signal bel so when a command finishs it signals x in the same way as chat apps do
+if [ -n \"$GUIX_ENVIRONMENT\" ]
+then
+    PS1='\\a\\w [env]\\$ '
+else
+    PS1='\\a\\w\\$ '
+fi
+alias ls='ls -p --color=auto'
+alias ll='ls -l'
+alias grep='grep --color=auto'
 "))
       
                                         )))))
