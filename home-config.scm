@@ -181,7 +181,37 @@ a simple interface.")
 (define mclauncher-package (single-script-package "multimc"
 	"#!/bin/sh\n"
 	multimc "/bin/DevLauncher -d ~/Documents/minecraft "
-	"-o -a lordtadhg -l trol -n lordtadhg"))				  
+	"-o -a lordtadhg -l trol -n lordtadhg"))
+
+
+(define guix-manager-package
+  (let* ((STAGE "git -C ~/src/dotfiles add -u")
+	 (CPDWM "git -C ~/src/dwm/ diff > ~/src/dotfiles/dwm_personal.diff")
+	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
+	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
+	 (COMMIT "git -C ~/src/dotfiles/ commit")
+	 (OSBU "guix system build ~/src/dotfiles/os.scm")
+	 (PULL "guix pull")
+	 (ICEDOVE "icedove -ProfileManager")
+	 )
+    (single-script-package "guixman"
+  "#!/bin/sh\n"
+  "case $1 in\n"
+  "  \"home\" )\n"
+  "    " CPDWM "; " HOME " && " STAGE ";;\n"
+  "  \"os\" )\n"
+  "    " OS " && " STAGE ";;\n"
+  "  \"commit\" )\n"
+  "    " COMMIT ";;\n"
+  "  \"full\" )\n"
+  "    " CPDWM "; " COMMIT "; " PULL "&&"OSBU "&&" HOME "&&" ICEDOVE ";;\n"
+  "  *)\n"
+  "   echo invalid command, see following;\n"
+  "   cat $(which $0);;\n"
+  "esac\n"
+  )))
+
+
 (define worktimer-package (single-script-package "worktimer"
     "#!/bin/sh\n"
     "echo 1 > /sys/class/leds/input2\\:\\:capslock/brightness\n"
@@ -323,6 +353,7 @@ fi")))
 			       "vim" ;; mostly so guix edit and if I need to make a quick fix in the tty
 			       "emacs"
 			       "festival" ;; for speech synthesis:
+			       "alsa-utils" ;; needed for volume controls used by dwm
 			       "xclip" ;; used by dwm command to use festival
 			       ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
 			       "git"
@@ -339,6 +370,7 @@ fi")))
   ;; Below is the list of packages that will show up in your
   ;; Home profile, under ~/.guix-home/profile.
  (packages (cons* libinput-pack
+		  guix-manager-package
 		  brctl-package
 		  headphones-package
 		  worktimer-package
