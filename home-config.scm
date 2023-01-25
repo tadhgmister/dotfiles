@@ -183,7 +183,21 @@ a simple interface.")
 	multimc "/bin/DevLauncher -d ~/Documents/minecraft "
 	"-o -a lordtadhg -l trol -n lordtadhg"))
 
+(define guix-man-pull-command (single-script-package "guixmanpullcmd"
+"#!/bin/sh
+ICEDOVEPATH=$(realpath $(which icedove))
+guix pull
+guix home reconfigure ~/src/dotfiles/home-config.scm
+if [ \"$ICEDOVEPATH\" != \"$(realpath $(which icedove))\" ]; then
+   killall .icedove-real && icedove -ProfileManager > /dev/null 2>/dev/null &
+   disown -h %1
+fi
+guix system build ~/src/dotfiles/os.scm
 
+echo
+echo !!! REMEMBER !!!
+echo you still need to do 'guixman os' to reconfigure the system	
+"))	 
 (define guix-manager-package
   (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
 	 (STAGEOS "git -C ~/src/dotfiles/ add os.scm")
@@ -205,8 +219,8 @@ a simple interface.")
   "    " OS " && " STAGEOS ";;\n"
   "\n  \"commit\" )\n"
   "    " COMMIT " && " GITPUSH ";;\n"
-  "\n  \"full\" )\n"
-  "    " CPDWM "; " STAGEOS "; " STAGEHOME "; " COMMIT "; " GITPUSH "; " PULL "&&" HOME "&&" ICEDOVE "& " OSBU ";;\n"
+  "\n  \"pull\" )\n"
+  "    " guix-man-pull-command "/bin/guixmanpullcmd;;\n"
   "  *)\n"
   "   echo invalid command, see following;\n"
   "   cat $(which $0);;\n"
