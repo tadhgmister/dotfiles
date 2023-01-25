@@ -185,11 +185,13 @@ a simple interface.")
 
 
 (define guix-manager-package
-  (let* ((STAGE "git -C ~/src/dotfiles add -u")
+  (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
+	 (STAGEOS "git -C ~/src/dotfiles/ add os.scm")
 	 (CPDWM "git -C ~/src/dwm/ diff > ~/src/dotfiles/dwm_personal.diff")
 	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
 	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
+	 (GITPUSH "git -C ~/src/dotfiles/ push")
 	 (OSBU "guix system build ~/src/dotfiles/os.scm")
 	 (PULL "guix pull")
 	 (ICEDOVE "icedove -ProfileManager")
@@ -197,14 +199,14 @@ a simple interface.")
     (single-script-package "guixman"
   "#!/bin/sh\n"
   "case $1 in\n"
-  "  \"home\" )\n"
-  "    " CPDWM "; " HOME " && " STAGE ";;\n"
-  "  \"os\" )\n"
-  "    " OS " && " STAGE ";;\n"
-  "  \"commit\" )\n"
-  "    " COMMIT ";;\n"
-  "  \"full\" )\n"
-  "    " CPDWM "; " COMMIT "; " PULL "&&"OSBU "&&" HOME "&&" ICEDOVE ";;\n"
+  "\n  \"home\" )\n"
+  "    " CPDWM "; " HOME " && " STAGEHOME ";;\n"
+  "\n  \"os\" )\n"
+  "    " OS " && " STAGEOS ";;\n"
+  "\n  \"commit\" )\n"
+  "    " COMMIT " && " GITPUSH ";;\n"
+  "\n  \"full\" )\n"
+  "    " CPDWM "; " STAGEOS "; " STAGEHOME "; " COMMIT "; " GITPUSH "; " PULL "&&" HOME "&&" ICEDOVE "& " OSBU ";;\n"
   "  *)\n"
   "   echo invalid command, see following;\n"
   "   cat $(which $0);;\n"
