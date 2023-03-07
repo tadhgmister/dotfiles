@@ -313,6 +313,7 @@ Xft.dpi: 192
 Xft.hinting: 1
 Xft.autohint: 0
 Xft.antialias: 1
+Xcursor.theme: default
 Xcursor.size: 64
 "))
        (xinitrc (mixed-text-file "xinitrc"

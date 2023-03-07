@@ -26,9 +26,11 @@
  ((gnu packages cups) #:select (cups cups-filters epson-inkjet-printer-escpr hplip-minimal))
  ((gnu services cups) #:select (cups-service-type cups-configuration))
  ((gnu services desktop) #:select (bluetooth-service-type gnome-desktop-service-type %desktop-services elogind-service-type elogind-configuration))
- ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms))
+ ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms libvirt-service-type))
  ((gnu services nix) #:select (nix-service-type))
  ((gnu services syncthing) #:select (syncthing-service-type syncthing-configuration))
+ ((gnu services sound) #:select (pulseaudio-service-type pulseaudio-configuration))
+ ((gnu services audio) #:select (mpd-service-type mpd-configuration))
  ((gnu services xorg) #:select (xorg-server-service-type gdm-service-type screen-locker-service screen-locker-service-type xorg-configuration set-xorg-configuration))
  ((gnu services authentication) #:select (fprintd-service-type))
  ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration))
@@ -101,6 +103,7 @@
 					  "input" ;; to control caps lock light
 					  "lp" ;; for printing / scanning I THINK
 					  "transmission" ;; for transmission (torrent)
+					  "kvm" ;; kvm is a kernel thing for performance with virtualization, probably helps with optimization but wouldn't be strictly necessary, morgan recommended adding myself to this group to save myself hassle when figuring out VM stuff.
 					  )))
                 %base-user-accounts))
   (bootloader (bootloader-configuration
@@ -134,6 +137,8 @@
 	     (list
 	      (specification->package "nss-certs")
 	      (specification->package "alacritty")
+	      (specification->package "qemu")
+	      (specification->package "libvirt")
 	      slock-patched)
              %base-packages))
 
@@ -141,6 +146,15 @@
   ;; services, run 'guix system search KEYWORD' in a terminal.
   (services
    (cons*
+    
+    (service mpd-service-type
+             (mpd-configuration
+              (user username)
+              (music-dir "~/Music")
+              (playlist-dir "~/.config/mpd/playlists")
+              (db-file "~/.config/mpd/database")
+              (state-file "~/.config/mpd/state")
+              (sticker-file "~/.config/mpd/sticker.sql")))
     (service xorg-server-service-type)
     (service cups-service-type
 	     (cups-configuration
@@ -148,6 +162,7 @@
 	      (extensions
 	       (list cups-filters epson-inkjet-printer-escpr hplip-minimal))))
     (service nix-service-type)
+    (service libvirt-service-type)
     (service qemu-binfmt-service-type
          (qemu-binfmt-configuration
            (platforms (lookup-qemu-platforms "arm" "aarch64"))))
@@ -166,6 +181,13 @@
     (modify-services
         %desktop-services
 	(guix-service-type config => (nonguix-subs config))
+	(pulseaudio-service-type config => (pulseaudio-configuration
+					    (inherit config)
+ (extra-script-files
+  (list (plain-file "audigy.pa"
+                    (string-append "\
+load-module module-alsa-sink device=hw:0,3
+load-module module-combine-sinks sink_name=combined\n"))))))
 	(elogind-service-type
 	 config =>
 	 (elogind-configuration
