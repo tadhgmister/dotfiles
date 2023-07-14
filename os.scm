@@ -150,8 +150,8 @@
     (service mpd-service-type
              (mpd-configuration
               (user username)
-              (music-dir "~/Music")
-              (playlist-dir "~/.config/mpd/playlists")
+              (music-directory "~/Music")
+              (playlist-directory "~/.config/mpd/playlists")
               (db-file "~/.config/mpd/database")
               (state-file "~/.config/mpd/state")
               (sticker-file "~/.config/mpd/sticker.sql")))
@@ -175,8 +175,10 @@
     (service transmission-daemon-service-type
              (transmission-daemon-configuration
               (download-dir "/torrents")))
+    (service syncthing-service-type
+         (syncthing-configuration (user "tadhg")))
     (udev-rules-service 'brightnessctl brightnessctl)
-    (screen-locker-service slock-patched)
+    ;;(screen-locker-service slock-patched)
     ;;(udev-rules-service 'ledtrigger ledtrigger-udev)
     (modify-services
         %desktop-services
@@ -196,7 +198,7 @@ load-module module-combine-sinks sink_name=combined\n"))))))
           ;;(handle-lid-switch 'ignore)
 	  ))
 	(delete gdm-service-type)
-	(delete screen-locker-service))))
+	)))
   ;; allow using .local with mdns resolution, used for printer in particular
   (name-service-switch %mdns-host-lookup-nss)
   (pam-services (map (lambda (pam)
