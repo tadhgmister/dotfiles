@@ -17,7 +17,7 @@
 	     ((guix packages) #:select (package origin base32 package-version package-source))
 	     ((guix download) #:select (url-fetch))
 	     ((guix git-download) #:select(git-fetch git-reference git-file-name))
-	     ((gnu packages suckless) #:select (dwm slock))
+	     ((gnu packages suckless) #:select (dwm slock dmenu))
 	     (gnu home services)
 	     ((gnu home services guix) #:select (home-channels-service-type))
 	     ((guix channels) #:select (channel make-channel-introduction openpgp-fingerprint %default-channels))
@@ -240,10 +240,20 @@ echo you still need to do 'guixman os' to reconfigure the system
    (sha256 (base32 "0fcvg881ibr0ys734zynsl3q6g6rsi1piig0vxb9yimsxz9hxha9"))
    ))
 (define playtimer-package (single-script-package "playtimer"
-    "#1/bin/sh\n"
+    "#!/bin/sh\n"
     "worktimer $1\n"
     "echo timer is done, stop what you are doing. Look away from the screen. Set another timer | festival --tts\n"
     ;;"mpv --loop=3 " alarm-noise-file "\n"
+    ))
+(define list_of_bangs (local-file "./list_of_bangs.txt"))
+(define dmenu-custom-command (single-script-package "dmenuwithbangs"
+    "#!/bin/sh\n"
+    "thing_to_run=`" dmenu "/bin/dmenu_path | cat " list_of_bangs " - | dmenu \"$@\"`\n"
+    "if [ \"${thing_to_run:0:1}\" = \"!\" ]; then\n"
+    "    brave \"? $thing_to_run\" &\n"
+    "else\n"
+    "    echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &\n"
+    "fi\n"
     ))
 (define brctl-package (single-script-package "brctl"
    "#!/bin/sh\n"
@@ -392,6 +402,7 @@ fi")))
 		  headphones-package
 		  worktimer-package
 		  playtimer-package
+		  dmenu-custom-command
 		  mclauncher-package
 		  ciarancostume-package
 		  sims3-package

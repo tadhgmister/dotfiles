@@ -192,7 +192,9 @@ load-module module-combine-sinks sink_name=combined\n"))))))
 	 config =>
 	 (elogind-configuration
           (inherit config)
-          (handle-lid-switch 'ignore)))
+	  ;;(idle-action 'suspend)
+          ;;(handle-lid-switch 'ignore)
+	  ))
 	(delete gdm-service-type)
 	(delete screen-locker-service))))
   ;; allow using .local with mdns resolution, used for printer in particular

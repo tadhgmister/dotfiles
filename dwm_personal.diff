@@ -1,5 +1,5 @@
 diff --git a/config.def.h b/config.def.h
-index f191af8..79e11bc 100644
+index f191af8..b2d5060 100644
 --- a/config.def.h
 +++ b/config.def.h
 @@ -1,12 +1,12 @@
@@ -46,9 +46,10 @@ index f191af8..79e11bc 100644
  #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
  
  /* commands */
- static const char *dmenucmd[] = { "dmenu_run", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
+-static const char *dmenucmd[] = { "dmenu_run", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
 -static const char *termcmd[]  = { "st", NULL };
 -
++static const char *dmenucmd[] = { "dmenuwithbangs", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
 +static const char *termcmd[]  = { "alacritty", NULL };
 +static const char *brctlcmd[] = { "brctl", "10000", NULL };
  static const Key keys[] = {
