@@ -25,9 +25,11 @@
  ((gnu packages wm) #:select (swaylock))
  ((gnu packages cups) #:select (cups cups-filters epson-inkjet-printer-escpr hplip-minimal))
  ((gnu services cups) #:select (cups-service-type cups-configuration))
+ ((gnu services nfs) #:select (nfs-service-type nfs-configuration))
  ((gnu services desktop) #:select (bluetooth-service-type gnome-desktop-service-type %desktop-services elogind-service-type elogind-configuration))
  ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms libvirt-service-type))
  ((gnu services nix) #:select (nix-service-type))
+ ((gnu services networking) #:select (ipfs-service-type ipfs-configuration))
  ((gnu services syncthing) #:select (syncthing-service-type syncthing-configuration))
  ((gnu services sound) #:select (pulseaudio-service-type pulseaudio-configuration))
  ((gnu services audio) #:select (mpd-service-type mpd-configuration))
@@ -147,6 +149,7 @@
   (services
    (cons*
     
+    (udev-rules-service 'steam-devices steam-devices-udev-rules)
     (service mpd-service-type
              (mpd-configuration
               (user username)
@@ -162,6 +165,7 @@
 	      (extensions
 	       (list cups-filters epson-inkjet-printer-escpr hplip-minimal))))
     (service nix-service-type)
+    (service ipfs-service-type)
     (service libvirt-service-type)
     (service qemu-binfmt-service-type
          (qemu-binfmt-configuration
@@ -176,7 +180,7 @@
              (transmission-daemon-configuration
               (download-dir "/torrents")))
     (service syncthing-service-type
-         (syncthing-configuration (user "tadhg")))
+             (syncthing-configuration (user "tadhg")))
     (udev-rules-service 'brightnessctl brightnessctl)
     ;;(screen-locker-service slock-patched)
     ;;(udev-rules-service 'ledtrigger ledtrigger-udev)
