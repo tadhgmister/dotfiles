@@ -36,7 +36,7 @@
  ((guix build-system cmake) #:select (cmake-build-system))
  ((guix licenses) :prefix license:)
  ((nonguix licenses) :prefix non-license:)
- ((gnu packages java) #:select(icedtea))
+ ((gnu packages java) #:select(icedtea openjdk17))
  ((gnu packages compression) #:select (zlib))
  ((gnu packages pulseaudio) #:select (pulseaudio))
  ((gnu packages qt) #:select(qtbase-5 qtwayland))
@@ -96,7 +96,8 @@
                #t)))
         )))
     (inputs
-     `(("jdk" ,icedtea "jdk")
+     ;;`(("jdk" ,icedtea "jdk")
+     `(("jdk" ,openjdk17 "jdk")
        ("zlib" ,zlib)
        ("qtbase" ,qtbase-5)
        ("qtwayland" ,qtwayland)
@@ -181,7 +182,8 @@ a simple interface.")
 (define mclauncher-package (single-script-package "multimc"
 	"#!/bin/sh\n"
 	multimc "/bin/DevLauncher -d ~/Documents/minecraft "
-	"-o -a lordtadhg -l trol -n lordtadhg"))
+	;;"-o -a lordtadhg -l trol -n lordtadhg"
+	))
 
 (define guix-man-pull-command (single-script-package "guixmanpullcmd"
 "#!/bin/sh
@@ -339,7 +341,7 @@ Xcursor.size: 64
 	 "     0 & "
 	 python "/bin/python3 " (local-file "battery_script.py") " & "
 	 slstatus-patched "/bin/slstatus & "
-	 redshift "/bin/redshift  -l 45.421532:-75.697189 -b 1:0.7 -t 6500K:3000K & "
+	 redshift "/bin/redshift  -l 45.421532:-75.697189 -b 1:0.9 -t 6500K:3000K & "
 	 ;; TODO: as with xinput, find the correct way to do this
 	 "setxkbmap -option caps:none && "
 	 xrdb "/bin/xrdb -merge " Xresources " && "
@@ -366,6 +368,16 @@ fi")))
         .
         "libinput-minimal=https://gitlab.freedesktop.org/libinput/libinput.git"))))
 (define libinput-pack (transform1 (specification->package "xf86-input-libinput")))
+(define transform2
+  (options->transformation
+   `((with-commit
+      .
+      "dino=c5cb4a7406c8ed5f18d0580c5edcc3b600ded78d")
+     (with-git-url
+      .
+      "dino=https://github.com/dino/dino.git")
+     )))
+(define dino-with-dwm-notifications (transform2 (specification->package "dino")))
 
 (define xorg-packages (list 
 		       "dmenu" ;; is like quicklook (from mac) for dwm
@@ -389,7 +401,7 @@ fi")))
 			       ))
 (define entertainment-packages (list
 				"mpv"
-				"dino" ; for communication
+				;;"dino" ; removed and used transformed version for v0.3 so it has dwm notifications
 				))
 
 
@@ -397,6 +409,7 @@ fi")))
   ;; Below is the list of packages that will show up in your
   ;; Home profile, under ~/.guix-home/profile.
  (packages (cons* libinput-pack
+		  dino-with-dwm-notifications
 		  guix-manager-package
 		  brctl-package
 		  headphones-package

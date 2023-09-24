@@ -94,6 +94,12 @@
 
   ;; The list of user accounts ('root' is implicit).
   (users (cons* (user-account
+		 (name "test")
+		 (comment "test user")
+		 (group "users")
+		 (home-directory "/home/test")
+		 )
+	  (user-account
                   (name username)
                   (comment "Tadhg McDonald-Jensen")
                   (group "users")
