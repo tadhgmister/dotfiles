@@ -1,8 +1,5 @@
 ;; This "home-environment" file can be passed to 'guix home reconfigure'
-;; to reproduce the content of your profile.  This is "symbolic": it only
-;; specifies package names.  To reproduce the exact same profile, you also
-;; need to capture the channels being used, as returned by "guix describe".
-;; See the "Replicating Guix" section in the manual.
+;; to reproduce the content of your profile.
 
 ;; TODO: clean up imports
 (use-modules (gnu home)
@@ -30,7 +27,7 @@
 	     (gnu home services xdg))
 
 
-
+;; TODO: move the minecraft stuff to a separate module.
 ;; imports just for minecraft, need to move to seperate module
 (use-modules
  ((guix build-system cmake) #:select (cmake-build-system))
@@ -127,36 +124,9 @@ a simple interface.")
                    ;; Batch icon set:
                    (non-license:nonfree "file://COPYING.md")))))
 
+;;;;;;; END OF MINECRAFT STUFF
 
-;; TODO: probably remove this, and then move single-script-package to somewhere other than middle of home config
-;; (define* (mixed-text-file-executable name #:key guile #:rest text)
-;;   "Return an object representing store file NAME containing TEXT.  TEXT is a
-;; sequence of strings and file-like objects, as in:
-
-;;   (mixed-text-file \"profile\"
-;;                    \"export PATH=\" coreutils \"/bin:\" grep \"/bin\")
-
-;; This is the declarative counterpart of 'text-file*'."
-;;   (define build
-;;     (let ((text (if guile (drop text 2) text)))
-;;       (gexp (call-with-output-file (ungexp output "out")
-;;               (lambda (port)
-;;                 (set-port-encoding! port "UTF-8")
-;;                 (display (string-append (ungexp-splicing text)) port)
-;; 		(chmod port #o555))))))
-;;   (computed-file name build #:guile guile))
-
-;; (define brightness-script (mixed-text-file-executable "brctl"
-;;    "#!/bin/sh\n"
-;;    "echo $1 > /sys/class/backlight/intel_backlight/brightness"
-;;    ))
-
-;;;;; DevLauncher -d ~/Documents/minecraft -o -a lordtadhg -l trol -n lordtadhg
-;; (define brightness-script (program-file "brctl"
-;;    '(let ((outp (open-file "/sys/class/backlight/intel_backlight/brightness" "w")))
-;;       (display (list-ref (command-line) 1) outp)
-;;       (close outp)
-;;     )))
+;; TODO: move single-script-package to separate module
 (define* (single-script-package name #:rest text)
   "this takes gexp strings to form a plain text script (should start with #!/bin/sh)
    and compiles the gexp parts into a whole script and resolves to a package that puts
@@ -236,6 +206,7 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
     "echo 1 > /sys/class/leds/input2\\:\\:capslock/brightness\n"
     "sleep $1\n"
     "echo 0 > /sys/class/leds/input2\\:\\:capslock/brightness\n"))
+;; TODO: probably remove alarm noise as we are using festival for alarm now instead.
 (define alarm-noise-file (origin
    (method url-fetch)
    (uri "http://freesoundeffect.net/sites/default/files/kitchen-timer-616-sound-effect-92324830.mp3")
@@ -249,9 +220,10 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
     ;;"mpv --loop=3 " alarm-noise-file "\n"
     ))
 (define list_of_bangs (local-file "./list_of_bangs.txt"))
+;; TODO possibly change this to use dmenu package direcetly instead of relying on it being installed.
 (define dmenu-custom-command (single-script-package "dmenuwithbangs"
     "#!/bin/sh\n"
-    "thing_to_run=`" dmenu "/bin/dmenu_path | cat " list_of_bangs " - | dmenu \"$@\"`\n"
+    "thing_to_run=`dmenu_path | cat " list_of_bangs " - | dmenu \"$@\"`\n"
     "if [ \"${thing_to_run:0:1}\" = \"!\" ]; then\n"
     "    brave \"? $thing_to_run\" &\n"
     "else\n"
@@ -262,10 +234,13 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
    "#!/bin/sh\n"
    "echo $1 > /sys/class/backlight/intel_backlight/brightness"
    ))
+;; TODO: figure out how wine is installed and whether there is any configs given to wine to make this work
 (define sims3-package (single-script-package "sims3"
    "#!/bin/sh\n"
    "wine ~/.wine/drive_c/Program\\ Files/Electronic\\ Arts/The\\ Sims\\ 3/Game/Bin/TS3W.exe\n"
    ))
+;; TODO: probably install pavucontrol and bluetoothctl instead of using guix shell in this script
+;; means connecting headphones after a pull requires internet connection
 (define headphones-package (single-script-package "headphones"
    "#!/bin/sh\n"
    "if [ $# -eq 0 ]; then\n"
@@ -279,7 +254,7 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
  ))
 (define ciarancostume-package (single-script-package "ciarancostume"
    "#!/bin/sh\n"
-   "cd ~/Documents/\n"
+f   "cd ~/Documents/\n"
    "  guix shell bluez -- bluetoothctl power on\n"
    "  guix shell bluez -- bluetoothctl connect 75:D2:98:42:EA:A4\n"
    "python3 ciaransoundthing.py &\n"
@@ -314,7 +289,9 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
 		       (origin (method url-fetch)
 			(uri "https://dwm.suckless.org/patches/hide_vacant_tags/dwm-hide_vacant_tags-6.3.diff")
 			(sha256 (base32 "0c8cf5lm95bbxcirf9hhzkwmc5a690albnxcrg363av32rf2yaa1")))
-		       ;; TODO: is there a better way to store this?
+		       ;; and finally apply the local dwm patch which is updated by the guixman command
+		       ;; the command relies on having the dwm source code with git set to the result of the above patches to work correctly
+		       ;; and there is not really a good way to store that as I want the diff to be saved as the cononical edits but need a place to make those edits to generate the diff.
 		       (local-file "./dwm_personal.diff")
 		       ))))))
 
@@ -363,7 +340,7 @@ fi")))
 (define transform1
   (options->transformation
     '((with-commit
-        .
+f        .
         "libinput-minimal=e8732802b7a3a45194be242a02ead13027c7fd73")
       (with-git-url
         .
@@ -397,8 +374,7 @@ fi")))
 			       "xclip" ;; used by dwm command to use festival
 			       ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
 			       "git"
-			       "icedove" ;; TODO: figure out how to make this stop breaking every update
-			       ;;"pidgin"
+			       "icedove"
 			       ))
 (define entertainment-packages (list
 				"mpv"
@@ -418,7 +394,7 @@ fi")))
 		  playtimer-package
 		  dmenu-custom-command
 		  mclauncher-package
-		  ciarancostume-package
+		  ;;ciarancostume-package
 		  sims3-package
 		  (specifications->packages
 		   (append
