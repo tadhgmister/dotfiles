@@ -198,7 +198,8 @@ guix system build ~/src/dotfiles/os.scm
 
 echo
 echo !!! REMEMBER !!!
-echo you still need to do 'guixman os' to reconfigure the system	
+echo you still need to do 'guixman os' to reconfigure the system
+echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-channel --update; nix-env -iA nixpkgs.brave	
 "))	 
 (define guix-manager-package
   (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
@@ -457,7 +458,9 @@ fi")))
       %default-channels))
     (simple-service 'environment-variables home-environment-variables-service-type
 		    `(("EDITOR" . "vim")
-		      ("XCURSOR_SIZE" . "64")))
+		      ("XCURSOR_SIZE" . "64")
+		      ("CC" . "gcc")
+		      ("CFLAGS" . "-Wall")))
 
     (service home-xdg-mime-applications-service-type
     (home-xdg-mime-applications-configuration

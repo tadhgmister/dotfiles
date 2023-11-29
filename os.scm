@@ -27,6 +27,7 @@
  ((gnu services cups) #:select (cups-service-type cups-configuration))
  ((gnu services nfs) #:select (nfs-service-type nfs-configuration))
  ((gnu services desktop) #:select (bluetooth-service-type gnome-desktop-service-type %desktop-services elogind-service-type elogind-configuration))
+ ((gnu services docker) #:select(docker-service-type))
  ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms libvirt-service-type))
  ((gnu services nix) #:select (nix-service-type))
  ((gnu services networking) #:select (ipfs-service-type ipfs-configuration))
@@ -111,6 +112,7 @@
 					  "input" ;; to control caps lock light
 					  "lp" ;; for printing / scanning I THINK
 					  "transmission" ;; for transmission (torrent)
+					  "docker" ;; to use docker commands without sudo
 					  "kvm" ;; kvm is a kernel thing for performance with virtualization, probably helps with optimization but wouldn't be strictly necessary, morgan recommended adding myself to this group to save myself hassle when figuring out VM stuff.
 					  )))
                 %base-user-accounts))
@@ -155,8 +157,8 @@
   (services
    (cons*
     
-    (udev-rules-service 'steam-devices steam-devices-udev-rules)
-    (service mpd-service-type
+    (udev-rules-service 'steam-devices steam-devices-udev-rules) ;; needed for steam controller to work good.
+    (service mpd-service-type ;; TODO: figure out how to actually use this I just stole the config from morgan.
              (mpd-configuration
               (user username)
               (music-directory "~/Music")
@@ -164,28 +166,29 @@
               (db-file "~/.config/mpd/database")
               (state-file "~/.config/mpd/state")
               (sticker-file "~/.config/mpd/sticker.sql")))
-    (service xorg-server-service-type)
-    (service cups-service-type
+    (service xorg-server-service-type) ;; needed for display (kind of important)
+    (service cups-service-type ;; for printing
 	     (cups-configuration
-	      (web-interface? #t)
+	      (web-interface? #t) ;; http://localhost:631
 	      (extensions
 	       (list cups-filters epson-inkjet-printer-escpr hplip-minimal))))
-    (service nix-service-type)
-    (service ipfs-service-type)
-    (service libvirt-service-type)
-    (service qemu-binfmt-service-type
+    (service nix-service-type) ;; used for brave and possibly other packages I can't get on guix.
+    (service ipfs-service-type) ;; enables ipfs on port 8082
+    (service libvirt-service-type) ;; TODO: figure out what this is for.
+    (service docker-service-type) ;; for docker, used once as a TA to show a student how to use it for a lab.
+    (service qemu-binfmt-service-type ;; enables cross compiling for turris or android box
          (qemu-binfmt-configuration
            (platforms (lookup-qemu-platforms "arm" "aarch64"))))
-    (service bluetooth-service-type)
-    (service fprintd-service-type)
-    (service tlp-service-type
+    (service bluetooth-service-type) ;; allows bluetooth
+    (service fprintd-service-type) ;; enable fingerprint for sudo
+    (service tlp-service-type ;; enables power optimizations
 	     (tlp-configuration
-	      (wifi-pwr-on-bat? #f)))
-    (service thermald-service-type)
-    (service transmission-daemon-service-type
-             (transmission-daemon-configuration
+	      (wifi-pwr-on-bat? #f))) ;; tried this to fix wifi issue, don't think it fixed
+    (service thermald-service-type) ;; helps with power, I think it does fan control.
+    (service transmission-daemon-service-type ;; http://localhost:9091
+             (transmission-daemon-configuration ;; guix shell transmission -- transmission-remote ...
               (download-dir "/torrents")))
-    (service syncthing-service-type
+    (service syncthing-service-type ;; http://localhost:8384
              (syncthing-configuration (user "tadhg")))
     (udev-rules-service 'brightnessctl brightnessctl)
     ;;(screen-locker-service slock-patched)
