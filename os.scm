@@ -27,7 +27,7 @@
  ((gnu services cups) #:select (cups-service-type cups-configuration))
  ((gnu services nfs) #:select (nfs-service-type nfs-configuration))
  ((gnu services desktop) #:select (bluetooth-service-type gnome-desktop-service-type %desktop-services elogind-service-type elogind-configuration))
- ((gnu services docker) #:select(docker-service-type))
+ ;;((gnu services docker) #:select(docker-service-type))
  ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms libvirt-service-type))
  ((gnu services nix) #:select (nix-service-type))
  ((gnu services networking) #:select (ipfs-service-type ipfs-configuration))
@@ -112,7 +112,7 @@
 					  "input" ;; to control caps lock light
 					  "lp" ;; for printing / scanning I THINK
 					  "transmission" ;; for transmission (torrent)
-					  "docker" ;; to use docker commands without sudo
+					  ;;"docker" ;; to use docker commands without sudo
 					  "kvm" ;; kvm is a kernel thing for performance with virtualization, probably helps with optimization but wouldn't be strictly necessary, morgan recommended adding myself to this group to save myself hassle when figuring out VM stuff.
 					  )))
                 %base-user-accounts))
@@ -158,14 +158,14 @@
    (cons*
     
     (udev-rules-service 'steam-devices steam-devices-udev-rules) ;; needed for steam controller to work good.
-    (service mpd-service-type ;; TODO: figure out how to actually use this I just stole the config from morgan.
-             (mpd-configuration
-              (user username)
-              (music-directory "~/Music")
-              (playlist-directory "~/.config/mpd/playlists")
-              (db-file "~/.config/mpd/database")
-              (state-file "~/.config/mpd/state")
-              (sticker-file "~/.config/mpd/sticker.sql")))
+    ;;(service mpd-service-type ;; TODO: figure out how to actually use this I just stole the config from morgan.
+    ;;         (mpd-configuration
+    ;;          (user username)
+    ;;          (music-directory "~/Music")
+    ;;          (playlist-directory "~/.config/mpd/playlists")
+    ;;          (db-file "~/.config/mpd/database")
+    ;;          (state-file "~/.config/mpd/state")
+    ;;          (sticker-file "~/.config/mpd/sticker.sql")))
     (service xorg-server-service-type) ;; needed for display (kind of important)
     (service cups-service-type ;; for printing
 	     (cups-configuration
@@ -175,7 +175,7 @@
     (service nix-service-type) ;; used for brave and possibly other packages I can't get on guix.
     (service ipfs-service-type) ;; enables ipfs on port 8082
     (service libvirt-service-type) ;; TODO: figure out what this is for.
-    (service docker-service-type) ;; for docker, used once as a TA to show a student how to use it for a lab.
+    ;;(service docker-service-type) ;; for docker, used once as a TA to show a student how to use it for a lab.
     (service qemu-binfmt-service-type ;; enables cross compiling for turris or android box
          (qemu-binfmt-configuration
            (platforms (lookup-qemu-platforms "arm" "aarch64"))))

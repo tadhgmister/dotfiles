@@ -216,7 +216,11 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
 (define playtimer-package (single-script-package "playtimer"
     "#!/bin/sh\n"
     "worktimer $1\n"
-    "echo timer is done, stop what you are doing. Look away from the screen. Set another timer | festival --tts\n"
+    "if [ $# -gt 1 ]; then\n"
+    "    echo \"timer is done,\" ${@:2} | festival --tts\n"
+    "else\n"
+    "    echo timer is done, stop what you are doing. Look away from the screen. Set another timer | festival --tts\n"
+    "fi\n"
     ;;"mpv --loop=3 " alarm-noise-file "\n"
     ))
 (define list_of_bangs (local-file "./list_of_bangs.txt"))
@@ -254,7 +258,7 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
  ))
 (define ciarancostume-package (single-script-package "ciarancostume"
    "#!/bin/sh\n"
-f   "cd ~/Documents/\n"
+   "cd ~/Documents/\n"
    "  guix shell bluez -- bluetoothctl power on\n"
    "  guix shell bluez -- bluetoothctl connect 75:D2:98:42:EA:A4\n"
    "python3 ciaransoundthing.py &\n"
@@ -340,7 +344,7 @@ fi")))
 (define transform1
   (options->transformation
     '((with-commit
-f        .
+        .
         "libinput-minimal=e8732802b7a3a45194be242a02ead13027c7fd73")
       (with-git-url
         .
