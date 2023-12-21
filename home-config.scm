@@ -443,15 +443,28 @@ fi")))
 		      ("CFLAGS" . "-Wall")))
 
     (service home-xdg-mime-applications-service-type
-    (home-xdg-mime-applications-configuration
-     (default
-       '((text/html  . brave.desktop)))
+	     (home-xdg-mime-applications-configuration
+	      ;; this is the mimetype list supported by icecat
+	      ;; MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;x-scheme-handler/chrome;video/webm;application/x-xpinstall;
+	      (default '(
+			 (text/html  . brave.desktop)
+			 (text/xml   . brave.desktop)
+			 (application/xhtml+xml . brave.desktop)
+			 (application/xml . brave.desktop)
+			 (image/gif . brave.desktop)
+			 (image/png . brave.desktop)
+			 (image/jpeg . brave.desktop)
+			 (x-scheme-handler/http . brave.desktop)
+			 (x-scheme-handler/https . brave.desktop)
+			 (x-scheme-handler/chrome . brave.desktop)
+			 (application/pdf . brave.desktop)
+			  ))
      (desktop-entries (list
-       (xdg-desktop-entry
-        (file "mpv")
-        (name "mpv")
-        (type 'application)
-        (config '((exec . "mpv -- %U"))))
+       ;;(xdg-desktop-entry
+       ;; (file "mpv")
+       ;; (name "mpv")
+       ;; (type 'application)
+       ;; (config '((exec . "mpv -- %U"))))
        (xdg-desktop-entry
         (file "brave")
         (name "brave")
