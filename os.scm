@@ -196,13 +196,14 @@
     (modify-services
         %desktop-services
 	(guix-service-type config => (nonguix-subs config))
-	(pulseaudio-service-type config => (pulseaudio-configuration
-					    (inherit config)
- (extra-script-files
-  (list (plain-file "audigy.pa"
-                    (string-append "\
-load-module module-alsa-sink device=hw:0,3
-load-module module-combine-sinks sink_name=combined\n"))))))
+	;; (pulseaudio-service-type config => (pulseaudio-configuration
+;; 					    (inherit config)
+;; 					    (extra-script-files
+;; 					     (list (plain-file "audigy.pa"
+;; 							       (string-append "\
+;; load-module module-alsa-sink device=hw:0,3
+;; load-module module-combine-sinks sink_name=combined\n"))))))
+	
 	(elogind-service-type
 	 config =>
 	 (elogind-configuration
