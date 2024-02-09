@@ -224,7 +224,7 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
     ;;"mpv --loop=3 " alarm-noise-file "\n"
     ))
 (define list_of_bangs (local-file "./list_of_bangs.txt"))
-;; TODO possibly change this to use dmenu package direcetly instead of relying on it being installed.
+;; TODO possibly change this to use dmenu package directly instead of relying on it being installed.
 (define dmenu-custom-command (single-script-package "dmenuwithbangs"
     "#!/bin/sh\n"
     "thing_to_run=`dmenu_path | cat " list_of_bangs " - | dmenu \"$@\"`\n"
@@ -335,8 +335,7 @@ Xcursor.size: 64
        )
     (mixed-text-file "profile" ;; name of the file, not part of the script
 	  ;; source nix profile to make brave available
-"source /run/current-system/profile/etc/profile.d/nix.sh
-
+"
 if [ \"$(tty)\" = \"/dev/tty1\" ]; then
   " xinit "/bin/xinit " xinitrc " -- " XORG " :0 vt1 -dpi 192 -keeptty -configdir " CONFIGDIR " -modulepath " MODULEPATH "
 fi")))
@@ -369,21 +368,33 @@ fi")))
 		       "setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
 		       "xinput" ;; TODO: remove this once config is used to configure mouse instead of doing it in xinitrc
 		       ;; "xrdb" "xinit" ;; can get away with both of these uninstalled and referenced directly in the profile
+		       "alacritty" ;; terminal, not exactly needed just for xorg but ties in with keybindings in dwm so putting it here
+		       "xdg-utils" ;; not sure exactly what this provides, might just be command line tools or could be necssary for the xdg default applications stuff to work properly.
 		       ))
 (define productivity-packages (list
-			       "vim" ;; mostly so guix edit and if I need to make a quick fix in the tty
+			       ;;"vim" ;; leave vim installed os wide so if things go wrong it is still there to use in tty
 			       "emacs"
 			       "festival" ;; for speech synthesis:
 			       "alsa-utils" ;; needed for volume controls used by dwm
 			       "xclip" ;; used by dwm command to use festival
 			       ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
 			       "git"
-			       "icedove"
+			       "tup" ;; build system
+			       "icedove" ;; email
 			       ))
 (define entertainment-packages (list
 				"mpv"
+				"steam"
+				"wine"
+				"dolphin-emu"
 				;;"dino" ; removed and used transformed version for v0.3 so it has dwm notifications
 				))
+(define utility-packages (list
+			  "tree" ;; showing directory structures
+			  "pavucontrol" ;; audio control
+			  "simplescreenrecorder"
+			  ))
+			  
 
 
 (home-environment
@@ -404,16 +415,20 @@ fi")))
 		   (append
 		    xorg-packages
 		    productivity-packages
-		    entertainment-packages))))
+		    entertainment-packages
+		    utility-packages))))
 
   ;; Below is the list of Home services.  To search for available
   ;; services, run 'guix home search KEYWORD' in a terminal.
   (services
    (list
     (simple-service 'profile home-shell-profile-service-type
-		    (list profile-script))
+		    ;;TODO: this can be a list so nix can probably be set as a seperate entry instead of baking into the same script as the xinit.
+		    (list profile-script)) 
     (simple-service 'lower-brightness home-run-on-first-login-service-type
      `(system "echo 1 > /sys/class/backlight/intel_backlight/brightness"))
+    (simple-service 'nix-source home-run-on-first-login-service-type
+     `(system "source /run/current-system/profile/etc/profile.d/nix.sh"))
     
     (simple-service 'channels home-channels-service-type
      (cons*
@@ -438,7 +453,7 @@ fi")))
       %default-channels))
     (simple-service 'environment-variables home-environment-variables-service-type
 		    `(("EDITOR" . "vim")
-		      ("XCURSOR_SIZE" . "64")
+		      ;;("XCURSOR_SIZE" . "64") ;; TODO: don't think this has any affect, larger cursor would be really nice.
 		      ("CC" . "gcc")
 		      ("CFLAGS" . "-Wall")))
 
@@ -473,15 +488,6 @@ fi")))
       ))))
        
     (simple-service 'dotfiles home-files-service-type `(
-      ;;(".xinitrc" ,xinitrc)
-      ;; TODO: the folder this is referring to no longer exists, figure out if brave has figured out fonts now?
-      (".config/fontconfig/conf.d/10-guixfonts.conf" ,(plain-file "10-guixfonts.conf" 
-"<?xml version='1.0'?>
-<!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
-<fontconfig>
-  <dir>/run/current-system/profile/share/fonts/</dir>
-</fontconfig>
-"))
       (".gitconfig" ,(plain-file "gitconfig"
 "[user]
 	email = tadhgmister@gmail.com
@@ -497,7 +503,6 @@ else
     PS1='\\a\\w\\$ '
 fi
 alias ls='ls -p --color=auto'
-alias ll='ls -l'
 alias grep='grep --color=auto'
 "))
       

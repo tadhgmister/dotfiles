@@ -145,10 +145,15 @@
                          %base-file-systems))
   (packages (append
 	     (list
-	      (specification->package "nss-certs")
-	      (specification->package "alacritty")
-	      (specification->package "qemu")
-	      (specification->package "libvirt")
+	      (specification->package "nss-certs") ;;needed for either mdns (using host.local web addresses) or guix channel stuff, not sure.
+	      (specification->package "qemu") ;; for running VMs from command line, TODO: possibly move this to home config and make script from morgan in configs somewhere
+	      ;; note that I've previously used the package virt-manager but it sucked, however I'm not sure how else to make the qcow files.
+	      (specification->package "libvirt") ;; for virtualization, hypervisor support I believe.
+	      (specification->package "zip") ;; zip and unzip are needed enough I just want them always present.
+	      (specification->package "unzip")
+	      (specification->package "openssh")
+	      (specification->package "vim") ;; useful to be in os since if there is a problem with X this is good editor in tty
+	      (specification->package "glibc-locales") ;;TODO: what are these actually needed for?
 	      slock-patched)
              %base-packages))
 
