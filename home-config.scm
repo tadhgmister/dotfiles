@@ -169,7 +169,8 @@ guix system build ~/src/dotfiles/os.scm
 echo
 echo !!! REMEMBER !!!
 echo you still need to do 'guixman os' to reconfigure the system
-echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-channel --update; nix-env -iA nixpkgs.brave	
+echo also to update brave do 'guixman brave'
+nix-env -iA nixpkgs.brave	
 "))	 
 (define guix-manager-package
   (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
@@ -194,6 +195,9 @@ echo ALSO BRAVE MIGHT REQUIRE sudo herd restart nix-daemon FOLLOWED BY nix-chann
   "    " COMMIT " && " GITPUSH ";;\n"
   "\n  \"pull\" )\n"
   "    " guix-man-pull-command "/bin/guixmanpullcmd;;\n"
+  "\n  \"brave\" )\n"
+  ;; this is absolutely nothing to do with guix, but it makes more sense to put here than anywhere else, especially since I often want to do it at the same time as guixman pull
+  "    sudo herd restart nix-daemon && nix-channel --update && nix-env -iA nixpkgs.brave;;\n"
   "  *)\n"
   "   echo invalid command, see following;\n"
   "   cat $(which $0);;\n"
