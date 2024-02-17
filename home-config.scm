@@ -5,7 +5,7 @@
 (use-modules (gnu home)
 	     ((gnu packages xorg) #:select (xrdb xinit))
 	     ((gnu packages xdisorg) #:select(redshift))
-	     ((gnu packages suckless) #:select (slstatus))
+	     ((gnu packages suckless) #:select (slstatus dmenu))
 	     ((gnu packages python) #:select (python))
 	     ((guix gexp) #:select (gexp))
 	     ((guix build-system copy) #:select (copy-build-system))
@@ -210,13 +210,7 @@ nix-env -iA nixpkgs.brave
     "echo 1 > /sys/class/leds/input2\\:\\:capslock/brightness\n"
     "sleep $1\n"
     "echo 0 > /sys/class/leds/input2\\:\\:capslock/brightness\n"))
-;; TODO: probably remove alarm noise as we are using festival for alarm now instead.
-(define alarm-noise-file (origin
-   (method url-fetch)
-   (uri "http://freesoundeffect.net/sites/default/files/kitchen-timer-616-sound-effect-92324830.mp3")
-   (file-name "timer-ring.mp3")
-   (sha256 (base32 "0fcvg881ibr0ys734zynsl3q6g6rsi1piig0vxb9yimsxz9hxha9"))
-   ))
+
 (define playtimer-package (single-script-package "playtimer"
     "#!/bin/sh\n"
     "worktimer $1\n"
@@ -228,10 +222,9 @@ nix-env -iA nixpkgs.brave
     ;;"mpv --loop=3 " alarm-noise-file "\n"
     ))
 (define list_of_bangs (local-file "./list_of_bangs.txt"))
-;; TODO possibly change this to use dmenu package directly instead of relying on it being installed.
 (define dmenu-custom-command (single-script-package "dmenuwithbangs"
     "#!/bin/sh\n"
-    "thing_to_run=`dmenu_path | cat " list_of_bangs " - | dmenu \"$@\"`\n"
+    "thing_to_run=`" dmenu "/bin/dmenu_path | cat " list_of_bangs " - | " dmenu "/bin/dmenu \"$@\"`\n"
     "if [ \"${thing_to_run:0:1}\" = \"!\" ]; then\n"
     "    brave \"? $thing_to_run\" &\n"
     "else\n"
@@ -247,17 +240,17 @@ nix-env -iA nixpkgs.brave
    "#!/bin/sh\n"
    "wine ~/.wine/drive_c/Program\\ Files/Electronic\\ Arts/The\\ Sims\\ 3/Game/Bin/TS3W.exe\n"
    ))
-;; TODO: probably install pavucontrol and bluetoothctl instead of using guix shell in this script
-;; means connecting headphones after a pull requires internet connection
+;; note that this script relies on having pavucontrol and bluez packages installed, both are occasionally needed outside this script
+;; so having them installed makes the most sense.
 (define headphones-package (single-script-package "headphones"
    "#!/bin/sh\n"
    "if [ $# -eq 0 ]; then\n"
-   "  guix shell pavucontrol -- pavucontrol & \n"
-   "  guix shell bluez -- bluetoothctl power on\n"
-   "  guix shell bluez -- bluetoothctl connect 10:AC:DD:E6:97:45\n"
+   "  pavucontrol & \n"
+   "  bluetoothctl power on\n"
+   "  bluetoothctl connect 10:AC:DD:E6:97:45\n"
    "fi\n"
    "if [ $# -eq 1 ]; then\n"
-   "  guix shell bluez -- bluetoothctl power off\n"
+   "  bluetoothctl power off\n"
    "fi\n"
  ))
 (define ciarancostume-package (single-script-package "ciarancostume"
@@ -306,6 +299,8 @@ nix-env -iA nixpkgs.brave
 ;; TODO: probably clean up this definition slightly, is kind of unreadable as is.
 (define profile-script
   (let* (
+	 (LAT_LONG_FOR_REDSHIFT "45.421532:-75.697189")
+	 (REDSHIFT_OPTIONS (string-append "-l " LAT_LONG_FOR_REDSHIFT " -b 1:0.9 -t 6500K:3000K"))
        (Xresources (plain-file "Xresources" "
 Xft.dpi: 192
 Xft.hinting: 1
@@ -325,9 +320,12 @@ Xcursor.size: 64
 	 "xinput set-prop \"PIXA3854:00 093A:0274 Touchpad\""
          "     \"libinput Disable While Typing Enabled\""
 	 "     0 & "
+	 "dino &"
 	 python "/bin/python3 " (local-file "battery_script.py") " & "
 	 slstatus-patched "/bin/slstatus & "
-	 redshift "/bin/redshift  -l 45.421532:-75.697189 -b 1:0.9 -t 6500K:3000K & "
+	 redshift "/bin/redshift " REDSHIFT_OPTIONS " & "
+	 ;;;;; ABOVE this point are async scripts, stuff that the exact start time relative to dwm doesn't matter (use "&")
+	 ;;;;; BELOW this point are things that affect the behaviour of dwm and need "&&" to complete synchronously.
 	 ;; TODO: as with xinput, find the correct way to do this
 	 "setxkbmap -option caps:none && "
 	 xrdb "/bin/xrdb -merge " Xresources " && "
@@ -338,13 +336,13 @@ Xcursor.size: 64
        (MODULEPATH (string-append DIR "/lib/xorg/modules"))
        )
     (mixed-text-file "profile" ;; name of the file, not part of the script
-	  ;; source nix profile to make brave available
 "
 if [ \"$(tty)\" = \"/dev/tty1\" ]; then
   " xinit "/bin/xinit " xinitrc " -- " XORG " :0 vt1 -dpi 192 -keeptty -configdir " CONFIGDIR " -modulepath " MODULEPATH "
 fi")))
-
+;; TODO: see if my patch for framework trackpad is now in main stream libinput and remove this transform
 (define transform1
+  ;; this selects the version of libinput with my submitted patch to fix the framework trackpad 
   (options->transformation
     '((with-commit
         .
@@ -354,6 +352,7 @@ fi")))
         "libinput-minimal=https://gitlab.freedesktop.org/libinput/libinput.git"))))
 (define libinput-pack (transform1 (specification->package "xf86-input-libinput")))
 (define transform2
+  ;; this selects the latest version of dino that still supports the x alarm thingy that gets dwm to do notifications
   (options->transformation
    `((with-commit
       .
@@ -365,7 +364,7 @@ fi")))
 (define dino-with-dwm-notifications (transform2 (specification->package "dino")))
 
 (define xorg-packages (list 
-		       "dmenu" ;; is like quicklook (from mac) for dwm
+		       ;;"dmenu" ;; is like quicklook (from mac) for dwm
 		       "xorg-server" ;; the server
 		       ;;"xf86-input-libinput" ;; input drivers using patched one instead with my fix for the framework trackpad
 		       "xf86-video-fbdev" ;; TODO is this needed?
@@ -395,7 +394,8 @@ fi")))
 				))
 (define utility-packages (list
 			  "tree" ;; showing directory structures
-			  "pavucontrol" ;; audio control
+			  "pavucontrol" ;; audio control, used by headphone script
+			  "bluez" ;; bluetooth control, used by headphone script
 			  "simplescreenrecorder"
 			  ))
 			  
@@ -427,12 +427,12 @@ fi")))
   (services
    (list
     (simple-service 'profile home-shell-profile-service-type
-		    ;;TODO: this can be a list so nix can probably be set as a seperate entry instead of baking into the same script as the xinit.
-		    (list profile-script)) 
+		    (list
+		     ;; source nix profile to make brave (and any other applications maybe installed with nix) available
+		     (plain-file "nixprofile" "source /run/current-system/profile/etc/profile.d/nix.sh")
+		     profile-script)) 
     (simple-service 'lower-brightness home-run-on-first-login-service-type
      `(system "echo 1 > /sys/class/backlight/intel_backlight/brightness"))
-    (simple-service 'nix-source home-run-on-first-login-service-type
-     `(system "source /run/current-system/profile/etc/profile.d/nix.sh"))
     
     (simple-service 'channels home-channels-service-type
      (cons*
