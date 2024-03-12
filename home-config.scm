@@ -502,9 +502,9 @@ fi")))
 # also use \\a to signal bel so when a command finishs it signals x in the same way as chat apps do
 if [ -n \"$GUIX_ENVIRONMENT\" ]
 then
-    PS1='\\a\\w [env]\\$ '
+    PS1='\\a\\n\\w [env]\\$ '
 else
-    PS1='\\a\\w\\$ '
+    PS1='\\a\\n\\w\\$ '
 fi
 alias ls='ls -p --color=auto'
 alias grep='grep --color=auto'
