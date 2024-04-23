@@ -3,7 +3,7 @@
 
 ;; TODO: clean up imports
 (use-modules (gnu home)
-	     ((gnu packages xorg) #:select (xrdb xinit))
+	     ((gnu packages xorg) #:select (xrdb xrandr xinit))
 	     ((gnu packages xdisorg) #:select(redshift))
 	     ((gnu packages suckless) #:select (slstatus dmenu))
 	     ((gnu packages python) #:select (python))
@@ -40,7 +40,7 @@
  ((gnu packages xorg) #:select (xrandr libxcursor libxrandr libxext libx11 libxxf86vm))
  ((gnu packages gl) #:select (mesa))
  )
-;; key extracted from official multimc binary
+;; key extracted from official multimc binary (didn't work, is probably run through a cipher of some form in code before being used)
 ;;(define MSA-key "c158633f-4040-414a-b5fa-6d47a62424fd")
 ;; my personal key
 (define MSA-key "eeaba6f5-0911-4462-a61b-0e6a08911986")
@@ -260,7 +260,18 @@ nix-env -iA nixpkgs.brave
    "  guix shell bluez -- bluetoothctl connect 75:D2:98:42:EA:A4\n"
    "python3 ciaransoundthing.py &\n"
    "while [ 1 -le 3 ];do python3 -m ble_serial -d E1:CF:11:21:DF:BE; done\n"
-))
+   ))
+(define connect-tv-package (single-script-package "connecttotv"
+   "#!/bin/sh\n"
+   ;; set output profile to load the hdmi audio, this can also be done with pavucontrol					  
+   "pacmd set-card-profile 0 'output:hdmi-stereo+input:analog-stereo'\n"
+   ;; the profile annoyingly removes the builtin speaker as a viable output, so we can reload it
+   ;; (if I wanted the built in speaker to stay the default I should probably just figure out what to set the 'device' to to add the hdmi as a new sink)
+   "pacmd load-module module-alsa-sink device=hw:0,0\n"
+   ;; and then use xrandr to load the display above the built in one.
+   ;; TODO: when hdmi is in front left port it is DP-3, check that the '3' is determiend by the port and if I may change it set it correctly in the script.
+   xrandr "/bin/xrandr --output DP-3 --above eDP-1\n"
+   ))
 (define slstatus-patched
   (package
    (inherit slstatus)
@@ -310,6 +321,9 @@ Xcursor.theme: default
 Xcursor.size: 64
 "))
        (xinitrc (mixed-text-file "xinitrc"
+	 ;; one off operations to set configurations, done in parallel then waited on before starting other processes
+	 xrdb "/bin/xrdb -merge " Xresources " & "
+	 "setxkbmap -option caps:none & "
          ;; TODO: use the proper method to set these in a config file instead of doing it at initrc
 	 "xinput set-prop \"PIXA3854:00 093A:0274 Touchpad\""
          "     \"libinput Natural Scrolling Enabled\""
@@ -320,15 +334,14 @@ Xcursor.size: 64
 	 "xinput set-prop \"PIXA3854:00 093A:0274 Touchpad\""
          "     \"libinput Disable While Typing Enabled\""
 	 "     0 & "
-	 "dino &"
+	 ;;; wait for above operations before starting main applications
+	 "wait; "
+	 ;;; then start tasks in parallel
+	 "dino & "
 	 python "/bin/python3 " (local-file "battery_script.py") " & "
 	 slstatus-patched "/bin/slstatus & "
 	 redshift "/bin/redshift " REDSHIFT_OPTIONS " & "
-	 ;;;;; ABOVE this point are async scripts, stuff that the exact start time relative to dwm doesn't matter (use "&")
-	 ;;;;; BELOW this point are things that affect the behaviour of dwm and need "&&" to complete synchronously.
-	 ;; TODO: as with xinput, find the correct way to do this
-	 "setxkbmap -option caps:none && "
-	 xrdb "/bin/xrdb -merge " Xresources " && "
+	 ;;; finally, execute dwm to open window manager.
 	 "exec " dwm-patched "/bin/dwm"))
        (DIR "~/.guix-home/profile")
        (XORG (string-append DIR "/bin/Xorg"))
@@ -413,6 +426,7 @@ fi")))
 		  playtimer-package
 		  dmenu-custom-command
 		  mclauncher-package
+		  connect-tv-package
 		  ;;ciarancostume-package
 		  sims3-package
 		  (specifications->packages
@@ -477,6 +491,8 @@ fi")))
 			 (x-scheme-handler/https . brave.desktop)
 			 (x-scheme-handler/chrome . brave.desktop)
 			 (application/pdf . brave.desktop)
+
+			 (x-scheme-handler/mailto . icedove.desktop)
 			  ))
      (desktop-entries (list
        ;;(xdg-desktop-entry

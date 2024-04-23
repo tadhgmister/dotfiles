@@ -1,5 +1,42 @@
+diff --git a/Makefile b/Makefile
+index 2f93b87..fb1a637 100644
+--- a/Makefile
++++ b/Makefile
+@@ -27,7 +27,8 @@ COM =\
+ 	components/uptime\
+ 	components/user\
+ 	components/volume\
+-	components/wifi
++	components/wifi\
++	components/dozonaltime
+ 
+ all: slstatus
+ 
+diff --git a/components/dozonaltime.c b/components/dozonaltime.c
+new file mode 100644
+index 0000000..ccdfa04
+--- /dev/null
++++ b/components/dozonaltime.c
+@@ -0,0 +1,17 @@
++/* See LICENSE file for copyright and license details. */
++#include <stdio.h>
++#include <time.h>
++
++#include "../util.h"
++
++const char *
++dozonaltime(const char *fmt)
++{
++	time_t t = time(NULL);
++	struct tm *val = localtime(&t);
++        buf[0] = 0xE3;
++	buf[1] = 0x8D;
++	buf[2] = 0x98 + val->tm_sec%12;
++	buf[3] = 0x00;
++	return buf;
++}
 diff --git a/config.def.h b/config.def.h
-index 93a875a..c0234d8 100644
+index 93a875a..030c520 100644
 --- a/config.def.h
 +++ b/config.def.h
 @@ -66,4 +66,6 @@ static const char unknown_str[] = "n/a";
@@ -7,5 +44,17 @@ index 93a875a..c0234d8 100644
  	/* function format          argument */
  	{ datetime, "%s",           "%F %T" },
 +	{ battery_perc, " %s%%", "BAT1"},
-+	{ battery_remaining, " %s", "BAT1"},
++	{ battery_remaining, " %s", "BAT1"}
  };
+diff --git a/slstatus.h b/slstatus.h
+index b0f2564..9d6b697 100644
+--- a/slstatus.h
++++ b/slstatus.h
+@@ -82,3 +82,7 @@ const char *vol_perc(const char *card);
+ /* wifi */
+ const char *wifi_perc(const char *interface);
+ const char *wifi_essid(const char *interface);
++
++
++
++const char *dozonaltime(const char *ignored);
