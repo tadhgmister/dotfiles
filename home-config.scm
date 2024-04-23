@@ -177,7 +177,7 @@ nix-env -iA nixpkgs.brave
 (define guix-manager-package
   (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
 	 (STAGEOS "git -C ~/src/dotfiles/ add os.scm")
-	 (CPDWM "diff $(guix build -f ~/src/dotfiles/dwmsource.scm --no-substitutes) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
+	 (CPDWM "diff -up -N $(guix build -f ~/src/dotfiles/dwmsource.scm --no-substitutes) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
 	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
 	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
@@ -319,22 +319,24 @@ nix-env -iA nixpkgs.brave
                                  (commit version)))
 	     (file-name (git-file-name "dwm" version))
              (sha256 (base32 "025x6rbw61c8l3dsdlkb6wawp8236wy0314jlsxi1jyxnfbml4ds"))
+	     ;; remove default -p1, all files are in root folder and our personal diff is much easier to create when we use absolute paths referencing the guix store so just use filenames and no subdirectory info.
+	     (patch-flags '())
 	     (patches (list
 		       (origin (method url-fetch)
 			(uri "https://dwm.suckless.org/patches/pango/dwm-pango-20230520-e81f17d.diff")
 			(sha256 (base32 "0921063c631y770xnfn7dxdb6g3b579r0x3a369amcymf6qb755n")))
+		       ;(origin (method url-fetch)
+		       ; (uri "https://dwm.suckless.org/patches/hide_vacant_tags/dwm-hide_vacant_tags-6.4.diff")
+		       ; (sha256 (base32 "1avzp0mg7f77ifzg6h05f8z6fpx6wly8c018sxn2l7vw8avfj42p")))
 		       (origin (method url-fetch)
 	                (uri "https://dwm.suckless.org/patches/holdbar/dwm-holdbar-modkey-pertag-nobar-6.2.diff")
 	                (sha256 (base32 "0hymhhp2w3rx3006dxwblf7lh4yq3bi958r0qj1x4aszkvdzx1f6")))
 		       (origin (method url-fetch)
+		        (uri "https://dwm.suckless.org/patches/autostarttags/dwm-autostarttags-6.4.diff")
+		        (sha256 (base32 "0rc75hip9kayh62mwhrfp0jjrf1z1l0617mviy5qaqyvxi4g994z")))
+		       (origin (method url-fetch)
 	                (uri "https://dwm.suckless.org/patches/actualfullscreen/dwm-actualfullscreen-20211013-cb3f58a.diff")
 	                (sha256 (base32 "0882k8w6651c18ina0245b558f1bvqydcycw07lp711hpbg7f9gv")))
-		       ;(origin (method url-fetch)
-			;(uri "https://dwm.suckless.org/patches/hide_vacant_tags/dwm-hide_vacant_tags-6.3.diff")
-			;(sha256 (base32 "0c8cf5lm95bbxcirf9hhzkwmc5a690albnxcrg363av32rf2yaa1")))
-		       (origin (method url-fetch)
-			       (uri "https://dwm.suckless.org/patches/autostarttags/dwm-autostarttags-6.4.diff")
-			       (sha256 (base32 "0rc75hip9kayh62mwhrfp0jjrf1z1l0617mviy5qaqyvxi4g994z")))
 		       ;; and finally apply the local dwm patch which is updated by the guixman command
 		       ;; the command relies on having the dwm source code with git set to the result of the above patches to work correctly
 		       ;; and there is not really a good way to store that as I want the diff to be saved as the cononical edits but need a place to make those edits to generate the diff.
@@ -371,9 +373,8 @@ Xcursor.size: 64
 	 ;;; wait for above operations before starting main applications
 	 "wait; "
 	 ;;; then start tasks in parallel
-	 "dino & "
 	 python "/bin/python3 " (local-file "battery_script.py") " & "
-	 slstatus-patched "/bin/slstatus & "
+	 ;;slstatus-patched "/bin/slstatus & "
 	 redshift "/bin/redshift " REDSHIFT_OPTIONS " & "
 	 ;;; finally, execute dwm to open window manager.
 	 "exec " dwm-patched "/bin/dwm"))

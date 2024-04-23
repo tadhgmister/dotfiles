@@ -1,204 +1,769 @@
-diff /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
-2c2
-< 
----
-> #include <X11/XF86keysym.h>
-6c6
-< static const int showbar            = 1;        /* 0 means no bar */
----
-> static const int showbar            = 2;        /* 0 means no bar */
-8,9c8,9
-< static const char font[]            = "monospace 10";
-< static const char dmenufont[]       = "monospace:size=10";
----
-> static const char font[]            = "monospace 16";
-> static const char dmenufont[]       = "monospace:size=16";
-38c38
-< static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
----
-> static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
-48c48
-< #define MODKEY Mod1Mask
----
-> #define MODKEY Mod4Mask
-54c54
-< #define HOLDKEY 0xffe9 // 0 - disable; 0xffe9 - Mod1Mask; 0xffeb - Mod4Mask
----
-> #define HOLDKEY 0xffeb // 0 - disable; 0xffe9 - Mod1Mask; 0xffeb - Mod4Mask
-60,61d59
-< static const char *dmenucmd[] = { "dmenu_run", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
-< static const char *termcmd[]  = { "st", NULL };
-63,65c61,67
-< static const char *termcmd2[] = { "xterm", NULL };
-< static const char *browsercmd[] = {"librewolf", NULL};
-< static const char *keepassxccmd[] = {"keepassxc", NULL};
----
-> static const char *dmenucmd[] = { "dmenuwithbangs", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
-> static const char *termcmd[]  = { "alacritty", NULL };
-> static const char *brctlcmd[] = { "brctl", "10000", NULL };
-> 
-> static const char *chatclientcmd[] = { "dino", NULL };
-> static const char *browsercmd[] = {"brave", NULL};
-> static const char *emailclientcmd[] = {"icedove", NULL};
-69,72c71,74
-< 	{.cmd = browsercmd, .tags = 1 << 0 },
-< 	{.cmd = keepassxccmd, .tags = 1 << 4 },
-< 	{.cmd = emacscmd, .tags = 1 << 7 },
-< 	{.cmd = termcmd2, .tags = 1 << 8 },
----
-> 	{.cmd = chatclientcmd, .tags = 1 << 1 },
-> 	{.cmd = browsercmd, .tags = 1 << 2 },
-> 	{.cmd = emailclientcmd, .tags = 1 << 5 },
-> 	{.cmd = emacscmd, .tags = 1 << 3 },
-75a78
-> 
-78,84c81,102
-< 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
-< 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
-< 	{ MODKEY,                       XK_b,      togglebar,      {0} },
-< 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
-< 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-< 	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
-< 	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
----
-> 	{ MODKEY,                       XK_space,             spawn, {.v = dmenucmd } },
-> 	{ MODKEY|ShiftMask,             XK_space,             spawn, {.v = termcmd } },
-> 	{ 0,                      XF86XK_AudioPlay,           spawn, SHCMD("xclip -o | festival --tts") },
-> 	
-> 	{ 0,                      XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 5000") },
-> 	{ 0,                      XK_F8,                      spawn, SHCMD("brctl 5000") },
-> 	{ MODKEY,                 XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 10000") },
-> 	{ MODKEY,                 XK_F8,                      spawn, SHCMD("brctl 10000") },
-> 	{ 0,                      XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 1") },
-> 	{ 0,                      XK_F7,                      spawn, SHCMD("brctl 1") },
-> 	{ MODKEY,                 XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 0") },
-> 	{ MODKEY,                 XK_F7,                      spawn, SHCMD("brctl 0") },
-> 	{ 0,                      XF86XK_AudioMute,           spawn, SHCMD("amixer set Master mute") },
-> 	{ MODKEY,                 XF86XK_AudioMute,           spawn, SHCMD("amixer set Master unmute") },
-> 	{ 0,                      XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 5%-") },
-> 	{ 0,                      XF86XK_AudioRaiseVolume,    spawn, SHCMD("amixer set Master 5%+") },
-> 	
-> 	/*{ MODKEY,                       XK_b,      togglebar,      {0} },*/
-> 	{ MODKEY,                       XK_Tab,      focusstack,     {.i = +1 } },
-> 	{ MODKEY|ShiftMask,             XK_Tab,      focusstack,     {.i = -1 } },
-> 	/*{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },*/
-> 	/*{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },*/
-88,95c106,114
-< 	{ MODKEY,                       XK_Tab,    view,           {0} },
-< 	{ MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
-< 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
-< 	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
-< 	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
-< 	{ MODKEY,                       XK_space,  setlayout,      {0} },
-< 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
-< 	{ MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
----
->         /* { MODKEY,                       XK_Tab,    view,           {0} },*/
-> 	{ MODKEY,                       XK_BackSpace,      killclient,     {0} },
-> 	{ MODKEY|ShiftMask|ControlMask, XK_BackSpace,      quit,           {0} },
-> 	/*{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
-> 	/*{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },*/
-> 	/*{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },*/
-> 	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
-> 	/*{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },*/
-> 	{ MODKEY,                       XK_f,      togglefullscr,  {0} },
-111c130
-< 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
----
-> 	/*{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },*/
-116a136
-> /* note all are set to use MODKEY because the bar will only show up when the mod key is held */
-119,129c139,149
-< 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
-< 	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
-< 	{ ClkWinTitle,          0,              Button2,        zoom,           {0} },
-< 	{ ClkStatusText,        0,              Button2,        spawn,          {.v = termcmd } },
-< 	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
-< 	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
-< 	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
-< 	{ ClkTagBar,            0,              Button1,        view,           {0} },
-< 	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
-< 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
-< 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
----
-> 	{ ClkLtSymbol,          MODKEY,              Button1,        setlayout,      {0} },
-> 	{ ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[2]} },
-> 	{ ClkWinTitle,          MODKEY,              Button2,        zoom,           {0} },
-> 	{ ClkStatusText,        MODKEY,              Button2,        spawn,          {.v = termcmd } },
-> 	{ ClkClientWin,         MODKEY|ShiftMask,         Button1,        movemouse,      {0} },
-> 	{ ClkClientWin,         MODKEY|ShiftMask,         Button2,        togglefloating, {0} },
-> 	{ ClkClientWin,         MODKEY|ShiftMask,         Button3,        resizemouse,    {0} },
-> 	{ ClkTagBar,            MODKEY,              Button1,        view,           {0} },
-> 	{ ClkTagBar,            MODKEY,              Button3,        toggleview,     {0} },
-> 	{ ClkTagBar,            MODKEY|ShiftMask,         Button1,        tag,            {0} },
-> 	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
-diff /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
-509c509,515
-< 		do
----
-> 		unsigned int occ = 0;
-> 		for(c = m->clients; c; c=c->next)
-> 			occ |= c->tags == TAGMASK ? 0 : c->tags;
-> 		do {
-> 			/* Do not reserve space for vacant tags */
-> 			if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
-> 				continue;
-511c517
-< 		while (ev->x >= x && ++i < LENGTH(tags));
----
-> 		} while (ev->x >= x && ++i < LENGTH(tags));
-803c809
-< 		occ |= c->tags;
----
-> 		occ |= c->tags == TAGMASK ? 0 : c->tags;
-808a815,817
-> 		/* Do not draw vacant tags */
-> 		if(!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
-> 			continue;
-812,815d820
-< 		if (occ & 1 << i)
-< 			drw_rect(drw, x + boxs, boxs, boxw, boxw,
-< 				m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
-< 				urg & 1 << i);
-1089a1095,1102
-> int are_any_clients_running(){
->   for(Monitor* m = mons; m; m = m->next){
->     if(m->clients){
->       return 1;
->     }
->   }
->   return 0;
-> }
-1093,1094c1106,1111
-< 	if (!selmon->sel)
-< 		return;
----
->   if (!selmon->sel){
->     if(!are_any_clients_running()){
->       quit(arg);
->     }
->     return;
->   }
-1696a1714,1717
-> 	if (urg){
-> 	  Arg a = {0}; //dummy so we have an argument
-> 	  holdbar(&a);
-> 	}
-2166c2187
-< 
----
-> 	int has_urgent = 0;
-2171c2192
-< 		} else
----
-> 		} else {
-2172a2194,2195
-> 			has_urgent = has_urgent | c->isurgent;
-> 		}
-2177a2201,2204
-> 	}
-> 	if(has_urgent){
-> 	  Arg a = {0};
-> 	  holdbar(&a);
-Only in /home/tadhg/src/dwm: .git
-Only in /home/tadhg/src/dwm: patches
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
++++ /home/tadhg/src/dwm/config.def.h	2024-04-23 16:43:05.077859348 -0400
+@@ -1,12 +1,12 @@
+ /* See LICENSE file for copyright and license details. */
+-
++#include <X11/XF86keysym.h>
+ /* appearance */
+ static const unsigned int borderpx  = 1;        /* border pixel of windows */
+ static const unsigned int snap      = 32;       /* snap pixel */
+-static const int showbar            = 1;        /* 0 means no bar */
++static const int showbar            = 2;        /* 0 means no bar */
+ static const int topbar             = 1;        /* 0 means bottom bar */
+-static const char font[]            = "monospace 10";
+-static const char dmenufont[]       = "monospace:size=10";
++static const char font[]            = "monospace 16";
++static const char dmenufont[]       = "monospace:size=16";
+ static const char col_gray1[]       = "#222222";
+ static const char col_gray2[]       = "#444444";
+ static const char col_gray3[]       = "#bbbbbb";
+@@ -19,7 +19,7 @@ static const char *colors[][3]      = {
+ };
+ 
+ /* tagging */
+-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
++static const char *tags[] = { "\u3359", "\u335a", "3", "4", "5", "6", "7", "8", "9" };
+ 
+ static const Rule rules[] = {
+ 	/* xprop(1):
+@@ -35,7 +35,7 @@ static const Rule rules[] = {
+ static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
+ static const int nmaster     = 1;    /* number of clients in master area */
+ static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
+-static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
++static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
+ 
+ static const Layout layouts[] = {
+ 	/* symbol     arrange function */
+@@ -45,54 +45,80 @@ static const Layout layouts[] = {
+ };
+ 
+ /* key definitions */
+-#define MODKEY Mod1Mask
++#define MODKEY Mod4Mask
+ #define TAGKEYS(KEY,TAG) \
+ 	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
+ 	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
+ 	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
+ 	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
+-#define HOLDKEY 0xffe9 // 0 - disable; 0xffe9 - Mod1Mask; 0xffeb - Mod4Mask
++#define HOLDKEY 0xffeb // 0 - disable; 0xffe9 - Mod1Mask; 0xffeb - Mod4Mask
+ 
+ /* helper for spawning shell commands in the pre dwm-5.0 fashion */
+ #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
+ 
+ /* commands */
+-static const char *dmenucmd[] = { "dmenu_run", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
+-static const char *termcmd[]  = { "st", NULL };
+ 
+-static const char *termcmd2[] = { "xterm", NULL };
+-static const char *browsercmd[] = {"librewolf", NULL};
+-static const char *keepassxccmd[] = {"keepassxc", NULL};
++static const char *dmenucmd[] = { "dmenuwithbangs", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
++static const char *termcmd[]  = { "alacritty", NULL };
++static const char *brctlcmd[] = { "brctl", "10000", NULL };
++
++static const char *chatclientcmd[] = { "dino", NULL };
++static const char *discordbrave[] = {"brave", "--app=https://discord.com/channels/@me",NULL};
++static const char *fbmessengerbrave[] = {"brave", "--app=https://www.messenger.com/", NULL};
++static const char *browsercmd[] = {"brave", NULL};
++static const char *emailclientcmd[] = {"icedove", NULL};
+ static const char *emacscmd[] = {"emacs", NULL};
+ 
++//#define STARTCMD(tag, ...) {.cmd = (const char*[]){ #__VA_ARGS__, NULL}, .tags = 1 << (tag - 1) }
+ Autostarttag autostarttaglist[] = {
+-	{.cmd = browsercmd, .tags = 1 << 0 },
+-	{.cmd = keepassxccmd, .tags = 1 << 4 },
+-	{.cmd = emacscmd, .tags = 1 << 7 },
+-	{.cmd = termcmd2, .tags = 1 << 8 },
++  { .tags=1<<( 1 -1), .cmd=chatclientcmd },
++  { .tags=1<<( 2 -1), .cmd=browsercmd },
++  { .tags=1<<( 3 -1), .cmd=emacscmd },
++  { .tags=1<<( 5 -1), .cmd=emailclientcmd },
++  { .tags=1<<( 1 -1), .cmd=fbmessengerbrave },
++  { .tags=1<<( 1 -1), .cmd=discordbrave },
++  
++  
+ 	{.cmd = NULL, .tags = 0 },
+ };
+ 
++
+ static const Key keys[] = {
+ 	/* modifier                     key        function        argument */
+-	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
+-	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
+-	{ MODKEY,                       XK_b,      togglebar,      {0} },
+-	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
+-	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
+-	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
+-	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
++	{ MODKEY,                       XK_space,             spawn, {.v = dmenucmd } },
++	{ MODKEY|ShiftMask,             XK_space,             spawn, {.v = termcmd } },
++	{ 0,                      XF86XK_AudioPlay,           spawn, SHCMD("xclip -o | festival --tts") },
++	
++	{ 0,                      XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 5000") },
++	{ 0,                      XK_F8,                      spawn, SHCMD("brctl 5000") },
++	{ MODKEY,                 XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 10000") },
++	{ MODKEY,                 XK_F8,                      spawn, SHCMD("brctl 10000") },
++	{ 0,                      XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 1") },
++	{ 0,                      XK_F7,                      spawn, SHCMD("brctl 1") },
++	{ MODKEY,                 XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 0") },
++	{ MODKEY,                 XK_F7,                      spawn, SHCMD("brctl 0") },
++	{ 0,                      XF86XK_AudioMute,           spawn, SHCMD("amixer set Master mute") },
++	{ MODKEY,                 XF86XK_AudioMute,           spawn, SHCMD("amixer set Master unmute") },
++	{ 0,                      XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 5%-") },
++	{ 0,                      XF86XK_AudioRaiseVolume,    spawn, SHCMD("amixer set Master 5%+") },
++	
++	/*{ MODKEY,                       XK_b,      togglebar,      {0} },*/
++	{ MODKEY,                       XK_Tab,      focusstack,     {.i = +1 } },
++	{ MODKEY|ShiftMask,             XK_Tab,      focusstack,     {.i = -1 } },
++	/*{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },*/
++	/*{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },*/
+ 	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
+ 	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
+ 	{ MODKEY,                       XK_Return, zoom,           {0} },
+-	{ MODKEY,                       XK_Tab,    view,           {0} },
+-	{ MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
+-	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
+-	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
+-	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
+-	{ MODKEY,                       XK_space,  setlayout,      {0} },
+-	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
+-	{ MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
++        /* { MODKEY,                       XK_Tab,    view,           {0} },*/
++	{ MODKEY,                       XK_BackSpace,      killclient,     {0} },
++	{ MODKEY|ShiftMask|ControlMask, XK_BackSpace,      quit,           {0} },
++	/*{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
++	/*{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },*/
++	/*{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },*/
++	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
++	/*{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },*/
++	{ MODKEY,                       XK_f,      togglefullscr,  {0} },
+ 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+ 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+ 	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
+@@ -108,24 +134,25 @@ static const Key keys[] = {
+ 	TAGKEYS(                        XK_7,                      6)
+ 	TAGKEYS(                        XK_8,                      7)
+ 	TAGKEYS(                        XK_9,                      8)
+-	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
++	/*{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },*/
+ 	{ 0,                            HOLDKEY,   holdbar,        {0} },
+ };
+ 
+ /* button definitions */
+ /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
++/* note all are set to use MODKEY because the bar will only show up when the mod key is held */
+ static const Button buttons[] = {
+ 	/* click                event mask      button          function        argument */
+-	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
+-	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
+-	{ ClkWinTitle,          0,              Button2,        zoom,           {0} },
+-	{ ClkStatusText,        0,              Button2,        spawn,          {.v = termcmd } },
+-	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
+-	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
+-	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
+-	{ ClkTagBar,            0,              Button1,        view,           {0} },
+-	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
+-	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
+-	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
++	{ ClkLtSymbol,          MODKEY,              Button1,        setlayout,      {0} },
++	{ ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[2]} },
++	{ ClkWinTitle,          MODKEY,              Button2,        zoom,           {0} },
++	{ ClkStatusText,        MODKEY,              Button2,        spawn,          {.v = termcmd } },
++	{ ClkClientWin,         MODKEY|ShiftMask,         Button1,        movemouse,      {0} },
++	{ ClkClientWin,         MODKEY|ShiftMask,         Button2,        togglefloating, {0} },
++	{ ClkClientWin,         MODKEY|ShiftMask,         Button3,        resizemouse,    {0} },
++	{ ClkTagBar,            MODKEY,              Button1,        view,           {0} },
++	{ ClkTagBar,            MODKEY,              Button3,        toggleview,     {0} },
++	{ ClkTagBar,            MODKEY|ShiftMask,         Button1,        tag,            {0} },
++	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
+ };
+ 
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.h /home/tadhg/src/dwm/config.h
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.h	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/config.h	2024-04-23 17:16:39.855555145 -0400
+@@ -0,0 +1,158 @@
++/* See LICENSE file for copyright and license details. */
++#include <X11/XF86keysym.h>
++/* appearance */
++static const unsigned int borderpx  = 1;        /* border pixel of windows */
++static const unsigned int snap      = 32;       /* snap pixel */
++static const int showbar            = 2;        /* 0 means no bar */
++static const int topbar             = 1;        /* 0 means bottom bar */
++static const char font[]            = "monospace 16";
++static const char dmenufont[]       = "monospace:size=16";
++static const char col_gray1[]       = "#222222";
++static const char col_gray2[]       = "#444444";
++static const char col_gray3[]       = "#bbbbbb";
++static const char col_gray4[]       = "#eeeeee";
++static const char col_cyan[]        = "#005577";
++static const char *colors[][3]      = {
++	/*               fg         bg         border   */
++	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
++	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
++};
++
++/* tagging */
++static const char *tags[] = { "\u3359", "\u335a", "3", "4", "5", "6", "7", "8", "9" };
++
++static const Rule rules[] = {
++	/* xprop(1):
++	 *	WM_CLASS(STRING) = instance, class
++	 *	WM_NAME(STRING) = title
++	 */
++	/* class      instance    title       tags mask     isfloating   monitor */
++	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
++	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
++};
++
++/* layout(s) */
++static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
++static const int nmaster     = 1;    /* number of clients in master area */
++static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
++static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
++
++static const Layout layouts[] = {
++	/* symbol     arrange function */
++	{ "[]=",      tile },    /* first entry is default */
++	{ "><>",      NULL },    /* no layout function means floating behavior */
++	{ "[M]",      monocle },
++};
++
++/* key definitions */
++#define MODKEY Mod4Mask
++#define TAGKEYS(KEY,TAG) \
++	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
++	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
++	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
++	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
++#define HOLDKEY 0xffeb // 0 - disable; 0xffe9 - Mod1Mask; 0xffeb - Mod4Mask
++
++/* helper for spawning shell commands in the pre dwm-5.0 fashion */
++#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
++
++/* commands */
++
++static const char *dmenucmd[] = { "dmenuwithbangs", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
++static const char *termcmd[]  = { "alacritty", NULL };
++static const char *brctlcmd[] = { "brctl", "10000", NULL };
++
++static const char *chatclientcmd[] = { "dino", NULL };
++static const char *discordbrave[] = {"brave", "--app=https://discord.com/channels/@me",NULL};
++static const char *fbmessengerbrave[] = {"brave", "--app=https://www.messenger.com/", NULL};
++static const char *browsercmd[] = {"brave", NULL};
++static const char *emailclientcmd[] = {"icedove", NULL};
++static const char *emacscmd[] = {"emacs", NULL};
++
++//#define STARTCMD(tag, ...) {.cmd = (const char*[]){ #__VA_ARGS__, NULL}, .tags = 1 << (tag - 1) }
++Autostarttag autostarttaglist[] = {
++  { .tags=1<<( 1 -1), .cmd=chatclientcmd },
++  { .tags=1<<( 2 -1), .cmd=browsercmd },
++  { .tags=1<<( 3 -1), .cmd=emacscmd },
++  { .tags=1<<( 5 -1), .cmd=emailclientcmd },
++  { .tags=1<<( 1 -1), .cmd=fbmessengerbrave },
++  { .tags=1<<( 1 -1), .cmd=discordbrave },
++  
++  
++	{.cmd = NULL, .tags = 0 },
++};
++
++
++static const Key keys[] = {
++	/* modifier                     key        function        argument */
++	{ MODKEY,                       XK_space,             spawn, {.v = dmenucmd } },
++	{ MODKEY|ShiftMask,             XK_space,             spawn, {.v = termcmd } },
++	{ 0,                      XF86XK_AudioPlay,           spawn, SHCMD("xclip -o | festival --tts") },
++	
++	{ 0,                      XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 5000") },
++	{ 0,                      XK_F8,                      spawn, SHCMD("brctl 5000") },
++	{ MODKEY,                 XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 10000") },
++	{ MODKEY,                 XK_F8,                      spawn, SHCMD("brctl 10000") },
++	{ 0,                      XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 1") },
++	{ 0,                      XK_F7,                      spawn, SHCMD("brctl 1") },
++	{ MODKEY,                 XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 0") },
++	{ MODKEY,                 XK_F7,                      spawn, SHCMD("brctl 0") },
++	{ 0,                      XF86XK_AudioMute,           spawn, SHCMD("amixer set Master mute") },
++	{ MODKEY,                 XF86XK_AudioMute,           spawn, SHCMD("amixer set Master unmute") },
++	{ 0,                      XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 5%-") },
++	{ 0,                      XF86XK_AudioRaiseVolume,    spawn, SHCMD("amixer set Master 5%+") },
++	
++	/*{ MODKEY,                       XK_b,      togglebar,      {0} },*/
++	{ MODKEY,                       XK_Tab,      focusstack,     {.i = +1 } },
++	{ MODKEY|ShiftMask,             XK_Tab,      focusstack,     {.i = -1 } },
++	/*{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },*/
++	/*{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },*/
++	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
++	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
++	{ MODKEY,                       XK_Return, zoom,           {0} },
++        /* { MODKEY,                       XK_Tab,    view,           {0} },*/
++	{ MODKEY,                       XK_BackSpace,      killclient,     {0} },
++	{ MODKEY|ShiftMask|ControlMask, XK_BackSpace,      quit,           {0} },
++	/*{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
++	/*{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },*/
++	/*{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },*/
++	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
++	/*{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },*/
++	{ MODKEY,                       XK_f,      togglefullscr,  {0} },
++	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
++	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
++	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
++	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
++	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
++	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
++	TAGKEYS(                        XK_1,                      0)
++	TAGKEYS(                        XK_2,                      1)
++	TAGKEYS(                        XK_3,                      2)
++	TAGKEYS(                        XK_4,                      3)
++	TAGKEYS(                        XK_5,                      4)
++	TAGKEYS(                        XK_6,                      5)
++	TAGKEYS(                        XK_7,                      6)
++	TAGKEYS(                        XK_8,                      7)
++	TAGKEYS(                        XK_9,                      8)
++	/*{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },*/
++	{ 0,                            HOLDKEY,   holdbar,        {0} },
++};
++
++/* button definitions */
++/* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
++/* note all are set to use MODKEY because the bar will only show up when the mod key is held */
++static const Button buttons[] = {
++	/* click                event mask      button          function        argument */
++	{ ClkLtSymbol,          MODKEY,              Button1,        setlayout,      {0} },
++	{ ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[2]} },
++	{ ClkWinTitle,          MODKEY,              Button2,        zoom,           {0} },
++	{ ClkStatusText,        MODKEY,              Button2,        spawn,          {.v = termcmd } },
++	{ ClkClientWin,         MODKEY|ShiftMask,         Button1,        movemouse,      {0} },
++	{ ClkClientWin,         MODKEY|ShiftMask,         Button2,        togglefloating, {0} },
++	{ ClkClientWin,         MODKEY|ShiftMask,         Button3,        resizemouse,    {0} },
++	{ ClkTagBar,            MODKEY,              Button1,        view,           {0} },
++	{ ClkTagBar,            MODKEY,              Button3,        toggleview,     {0} },
++	{ ClkTagBar,            MODKEY|ShiftMask,         Button1,        tag,            {0} },
++	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
++};
++
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
++++ /home/tadhg/src/dwm/config.mk	2024-04-23 14:56:32.801882541 -0400
+@@ -36,4 +36,4 @@ LDFLAGS  = ${LIBS}
+ #LDFLAGS = ${LIBS}
+ 
+ # compiler and linker
+-CC = cc
++CC = gcc
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
++++ /home/tadhg/src/dwm/dwm.c	2024-04-23 17:24:49.792015093 -0400
+@@ -27,6 +27,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <time.h>
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/wait.h>
+@@ -44,6 +45,7 @@
+ 
+ #include "drw.h"
+ #include "util.h"
++#include "status.h"
+ 
+ /* macros */
+ #define BUTTONMASK              (ButtonPressMask|ButtonReleaseMask)
+@@ -69,6 +71,9 @@ enum { WMProtocols, WMDelete, WMState, W
+ enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
+        ClkClientWin, ClkRootWin, ClkLast }; /* clicks */
+ 
++struct timespec current_time;
++struct timespec next_update;
++
+ typedef union {
+ 	int i;
+ 	unsigned int ui;
+@@ -506,9 +511,15 @@ buttonpress(XEvent *e)
+ 	}
+ 	if (ev->window == selmon->barwin) {
+ 		i = x = 0;
+-		do
++		unsigned int occ = 0;
++		for(c = m->clients; c; c=c->next)
++			occ |= c->tags == TAGMASK ? 0 : c->tags;
++		do {
++			/* Do not reserve space for vacant tags */
++			if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
++				continue;
+ 			x += TEXTW(tags[i]);
+-		while (ev->x >= x && ++i < LENGTH(tags));
++		} while (ev->x >= x && ++i < LENGTH(tags));
+ 		if (i < LENGTH(tags)) {
+ 			click = ClkTagBar;
+ 			arg.ui = 1 << i;
+@@ -800,19 +811,18 @@ drawbar(Monitor *m)
+ 	}
+ 
+ 	for (c = m->clients; c; c = c->next) {
+-		occ |= c->tags;
++		occ |= c->tags == TAGMASK ? 0 : c->tags;
+ 		if (c->isurgent)
+ 			urg |= c->tags;
+ 	}
+ 	x = 0;
+ 	for (i = 0; i < LENGTH(tags); i++) {
++		/* Do not draw vacant tags */
++		if(!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
++			continue;
+ 		w = TEXTW(tags[i]);
+ 		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
+ 		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i, False);
+-		if (occ & 1 << i)
+-			drw_rect(drw, x + boxs, boxs, boxw, boxw,
+-				m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
+-				urg & 1 << i);
+ 		x += w;
+ 	}
+ 	w = TEXTW(m->ltsymbol);
+@@ -1087,11 +1097,23 @@ keypress(XEvent *e)
+ 			keys[i].func(&(keys[i].arg));
+ }
+ 
++int are_any_clients_running(){
++  for(Monitor* m = mons; m; m = m->next){
++    if(m->clients){
++      return 1;
++    }
++  }
++  return 0;
++}
+ void
+ killclient(const Arg *arg)
+ {
+-	if (!selmon->sel)
+-		return;
++  if (!selmon->sel){
++    if(!are_any_clients_running()){
++      quit(arg);
++    }
++    return;
++  }
+ 	if (!sendevent(selmon->sel, wmatom[WMDelete])) {
+ 		XGrabServer(dpy);
+ 		XSetErrorHandler(xerrordummy);
+@@ -1457,14 +1479,54 @@ restack(Monitor *m)
+ 	XSync(dpy, False);
+ 	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+ }
++/// returns 1 if XNextEvent should be called, 0 if there is an error.
++int
++update_time(int x11_fd)
++{
++  struct timeval delta;
++  // if we are not showing the bar or there are pending events just go handle the next event
++  if(!selmon->showbar) return 1;
++  while(!XPending(dpy)){
++    clock_gettime(CLOCK_REALTIME, &current_time);
++    delta.tv_sec = next_update.tv_sec - current_time.tv_sec;
++    delta.tv_usec = (next_update.tv_nsec - current_time.tv_nsec)/1000 + 1;
++    if(delta.tv_usec < 0){
++      delta.tv_sec-=1;
++      delta.tv_usec+=1e6;
++    }
++    if(delta.tv_sec < 0){
++      updatestatus(); // if we've already passed the update time (like if handling an event took a while or we had the bar hidden)
++      continue;
++    }
++    // at this point we have a valid (positive) delta to wait on the select.
++    // Create a File Description Set containing x11_fd
++    fd_set in_fds;
++    FD_ZERO(&in_fds);
++    FD_SET(x11_fd, &in_fds);
++    
++    int num_ready_fds = select(x11_fd + 1, &in_fds, NULL, NULL, &delta);
++    if (num_ready_fds > 0){
++      return 1; // means there is data ready
++    } else if(num_ready_fds == 0){
++      clock_gettime(CLOCK_REALTIME, &current_time);
++      updatestatus(); // means timer expired, redraw clock and set a new timer
++      continue;
++    } else{
++      continue; // usually system interrupt or something non vital, go recheck XPending.
++      // if something has gone wrong with the select we will assume it will cause bigger issues for X and get caught there.
++    }
++  }
++  return 1;// if the loop broke it means XPending returned 1 while we were updating the clock
++}
+ 
+ void
+ run(void)
+ {
+ 	XEvent ev;
++	int x11_fd = ConnectionNumber(dpy);
+ 	/* main event loop */
+ 	XSync(dpy, False);
+-	while (running && !XNextEvent(dpy, &ev)){
++	while (running && update_time(x11_fd) && !XNextEvent(dpy, &ev)){
+ 		if (!(autostartcomplete || autostarttags))
+ 			autostarttagsspawner();
+ 		if (handler[ev.type])
+@@ -1664,6 +1726,7 @@ setup(void)
+ 		scheme[i] = drw_scm_create(drw, colors[i], 3);
+ 	/* init bars */
+ 	updatebars();
++        clock_gettime(CLOCK_REALTIME, &current_time);
+ 	updatestatus();
+ 	/* supporting window for NetWMCheck */
+ 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
+@@ -1694,6 +1757,10 @@ seturgent(Client *c, int urg)
+ 	XWMHints *wmh;
+ 
+ 	c->isurgent = urg;
++	if (urg){
++	  Arg a = {0}; //dummy so we have an argument
++	  holdbar(&a);
++	}
+ 	if (!(wmh = XGetWMHints(dpy, c->win)))
+ 		return;
+ 	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
+@@ -2133,8 +2200,8 @@ updatesizehints(Client *c)
+ void
+ updatestatus(void)
+ {
+-	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
+-		strcpy(stext, "dwm-"VERSION);
++        if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
++	  updatestatus_dozonal(stext, &current_time, &next_update);
+ 	drawbar(selmon);
+ }
+ 
+@@ -2163,19 +2230,25 @@ void
+ updatewmhints(Client *c)
+ {
+ 	XWMHints *wmh;
+-
++	int has_urgent = 0;
+ 	if ((wmh = XGetWMHints(dpy, c->win))) {
+ 		if (c == selmon->sel && wmh->flags & XUrgencyHint) {
+ 			wmh->flags &= ~XUrgencyHint;
+ 			XSetWMHints(dpy, c->win, wmh);
+-		} else
++		} else {
+ 			c->isurgent = (wmh->flags & XUrgencyHint) ? 1 : 0;
++			has_urgent = has_urgent | c->isurgent;
++		}
+ 		if (wmh->flags & InputHint)
+ 			c->neverfocus = !wmh->input;
+ 		else
+ 			c->neverfocus = 0;
+ 		XFree(wmh);
+ 	}
++	if(has_urgent){
++	  Arg a = {0};
++	  holdbar(&a);
++	}
+ }
+ 
+ void
+Common subdirectories: /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
++++ /home/tadhg/src/dwm/Makefile	2024-04-23 17:10:33.274202418 -0400
+@@ -3,7 +3,7 @@
+ 
+ include config.mk
+ 
+-SRC = drw.c dwm.c util.c
++SRC = drw.c dwm.c util.c status.c
+ OBJ = ${SRC:.c=.o}
+ 
+ all: options dwm
+Common subdirectories: /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/status.c	2024-04-23 18:16:07.237389308 -0400
+@@ -0,0 +1,125 @@
++#include <time.h>
++#include <string.h>
++#include <stdio.h>
++#include <stdarg.h>
++#include "status.h"
++#include "util.h"
++
++// stolen from slstatus/util.c
++int
++pscanf(const char *path, const char *fmt, ...)
++{
++	FILE *fp;
++	va_list ap;
++	int n;
++
++	if (!(fp = fopen(path, "r"))) {
++		perror(path);
++		return -1;
++	}
++	va_start(ap, fmt);
++	n = vfscanf(fp, fmt, ap);
++	va_end(ap);
++	fclose(fp);
++
++	return (n == EOF) ? -1 : n;
++}
++
++
++#define CHARGE_NOW "/sys/class/power_supply/BAT1/charge_now"
++#define CHARGE_FULL "/sys/class/power_supply/BAT1/charge_full"
++#define CURRENT_DRAW "/sys/class/power_supply/BAT1/current_now"
++#define BAT_STATUS "/sys/class/power_supply/BAT1/status"
++
++struct battery_info {
++  double perc; // number from 0 to 1 for percentage filled
++  double hours_left; // number of hours left, negative if discharging and positive if charging
++};
++#define NAN 0.0/0.0
++#define NAN_IF_NOT_ONE(X) if(X != 1){info.perc=NAN;info.hours_left=NAN;return info;}
++/** returns number of hours until complete,
++    negative when discharging positive when charging,
++    returns NAN on error */
++struct battery_info  get_battery_status(void){
++  static double full = 0.0;
++  double charge, current;
++  char state[13];
++  struct battery_info info;
++  NAN_IF_NOT_ONE(pscanf(BAT_STATUS, "%12s", state));
++  if(!strcmp(state, "Full")){
++    info.perc = 1.0;
++    info.hours_left = 0.0;
++    return info;
++  }
++  NAN_IF_NOT_ONE(pscanf(CURRENT_DRAW, "%lf", &current));
++  NAN_IF_NOT_ONE(pscanf(CHARGE_NOW, "%lf", &charge));
++  if(full == 0.0){
++    NAN_IF_NOT_ONE(pscanf(CHARGE_FULL, "%lf", &full));
++  }
++  info.perc = charge/full;
++  if (!strcmp(state, "Discharging")){
++    // discharging so negate charge to be negative
++    info.hours_left = -charge / current;
++  } else if (!strcmp(state, "Charging")){
++    // full - charge_now will give positive value of how much we still need to charge.
++    info.hours_left = (full - charge)/current;
++  } // else, unrecognized status
++  return info;
++}
++
++
++static const char *DOZ[] ={"\u3358", // 0
++			   "\u3359", // 1
++			   "\u335a", // 2
++			   "\u335b", // 3
++			   "\u335c", // 4
++			   "\u335d", // 5
++			   "\u335e", // 6
++			   "\u335f", // 7
++			   "\u3360", // 8
++			   "\u3361", // 9
++			   "\u3362", //10
++			   "\u3363", //11
++			   "\u3364"}; // overflow if we happen to hit leap second issues.
++static const char *SUITS[] = {
++  "\u2666", // diamond
++  "\u2665", // heart
++  "\u2663", // club
++  "\u2660"  // spade
++};
++void updatestatus_dozonal(char* stext, struct timespec *current_time, struct timespec *next_update){
++  struct tm *val = localtime(&current_time->tv_sec);
++  int digAB = val->tm_hour*6 + val->tm_min/10;
++  int secs_left = (val->tm_min%10)*60 + val->tm_sec; // note due to leap seconds tm_sec can go up to 61
++
++  int digC = secs_left/50;
++  // ((seconds left%50 to nsec) + nanoseconds) / (50s to nsec) = fraction of dig3. multiplying by 144 gives it in terms of dig5.
++  long digDE = (((long)((secs_left%50) * 1e9) + current_time->tv_nsec) * 144 / 50e9);
++  
++  int season = val->tm_yday/91;
++  if(season>3){season = 3;} // when yday is 364 or 365 we still want season to be the 4th one (0 indexed is 3)
++  int day_of_season = val->tm_yday - season*91;
++  char week = 'a'+(day_of_season/7); // will go to n0 for last day of year and n1 for leap year.
++  char day = '0'+val->tm_yday%7;
++
++  struct battery_info info = get_battery_status();
++
++  char charge_sign = info.hours_left == 0 ? '=' : info.hours_left > 0 ? '+' : '-';
++  int charge_digA = (int)(info.perc*12.0);
++  int charge_digB = (int)(info.perc*144.0)-charge_digA*12;
++  
++  sprintf(stext, "%c%s%s%%  %d%s%c%c.%s%s%s%s%s", charge_sign, DOZ[charge_digA], DOZ[charge_digB], val->tm_year+1900, SUITS[season], week, day, DOZ[digAB/12], DOZ[digAB%12], DOZ[digC], DOZ[digDE/12], DOZ[digDE%12]);
++
++  // and calculate the time that will next result in an update, next dig45
++  long ns_next = (digDE+1)*50e9/144 - (secs_left%50) * 1e9;
++  next_update->tv_sec = (ns_next < 1e9) ? current_time->tv_sec : current_time->tv_sec+1;
++  next_update->tv_nsec= (ns_next < 1e9) ? ns_next : ns_next-1e9;
++}
++
++void updatestatus_regular(char* stext, struct timespec *current_time, struct timespec *next_update){
++  struct tm *val = localtime(&current_time->tv_sec);
++
++  sprintf(stext, "%4d-%02d-%02d %2d:%02d:%02d", val->tm_year+1900, val->tm_mon+1, val->tm_mday, val->tm_hour, val->tm_min, val->tm_sec);
++  next_update->tv_sec = current_time->tv_sec + 1;
++  next_update->tv_nsec = 0;
++}
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c~ /home/tadhg/src/dwm/status.c~
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c~	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/status.c~	2024-04-23 17:09:04.822842185 -0400
+@@ -0,0 +1,40 @@
++static const char *DOZ[] ={"\u3358", // 0
++			   "\u3359", // 1
++			   "\u335a", // 2
++			   "\u335b", // 3
++			   "\u335c", // 4
++			   "\u335d", // 5
++			   "\u335e", // 6
++			   "\u335f", // 7
++			   "\u3360", // 8
++			   "\u3361", // 9
++			   "\u3362", //10
++			   "\u3363", //11
++			   "\u3364"}; // overflow if we happen to hit leap second issues.
++static const char *SUITS[] = {
++  "\u2666", // diamond
++  "\u2665", // heart
++  "\u2663", // club
++  "\u2660"  // spade
++};
++void updatestatus_dozonal(void){
++  struct tm *val = localtime(&current_time.tv_sec);
++  int digAB = val->tm_hour*6 + val->tm_min/10;
++  int secs_left = (val->tm_min%10)*60 + val->tm_sec; // note due to leap seconds tm_sec can go up to 61
++
++  int digC = secs_left/50;
++  // ((seconds left%50 to nsec) + nanoseconds) / (50s to nsec) = fraction of dig3. multiplying by 144 gives it in terms of dig5.
++  long digDE = (((long)((secs_left%50) * 1e9) + current_time.tv_nsec) * 144 / 50e9);
++  
++  int season = val->tm_yday/91;
++  if(season>3){season = 3;} // when yday is 364 or 365 we still want season to be the 4th one (0 indexed is 3)
++  int day_of_season = val->tm_yday - season*91;
++  char week = 'a'+(day_of_season/7); // will go to n0 for last day of year and n1 for leap year.
++  char day = '0'+val->tm_yday%7;
++  sprintf(stext, "%d%s%c%c.%s%s%s%s%s", val->tm_year+1900, SUITS[season], week, day, DOZ[digAB/12], DOZ[digAB%12], DOZ[digC], DOZ[digDE/12], DOZ[digDE%12]);
++
++  // and calculate the time that will next result in an update, next dig45
++  long ns_next = (digDE+1)*50e9/144 - (secs_left%50) * 1e9;
++  next_update.tv_sec = (ns_next < 1e9) ? current_time.tv_sec : current_time.tv_sec+1;
++  next_update.tv_nsec= (ns_next < 1e9) ? ns_next : ns_next-1e9;
++}
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/status.h	2024-04-23 17:22:37.540978117 -0400
+@@ -0,0 +1,5 @@
++
++void updatestatus_dozonal(char* stext, struct timespec *current_time, struct timespec *next_update);
++
++void updatestatus_regular(char* stext, struct timespec *current_time, struct timespec *next_update);
++
+diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.h~ /home/tadhg/src/dwm/status.h~
+--- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.h~	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/status.h~	2024-04-23 17:11:04.065979808 -0400
+@@ -0,0 +1,4 @@
++
++void updatestatus_dozonal(void);
++
++void updatestatus_regular(void);

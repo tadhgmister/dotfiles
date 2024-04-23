@@ -14,37 +14,63 @@ index 2f93b87..fb1a637 100644
  
 diff --git a/components/dozonaltime.c b/components/dozonaltime.c
 new file mode 100644
-index 0000000..ccdfa04
+index 0000000..b8fb22c
 --- /dev/null
 +++ b/components/dozonaltime.c
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,42 @@
 +/* See LICENSE file for copyright and license details. */
 +#include <stdio.h>
 +#include <time.h>
 +
 +#include "../util.h"
 +
++static const char *MAP[] = {"\u3358", // 0
++			   "\u3359", // 1
++			   "\u335a", // 2
++			   "\u335b", // 3
++			   "\u335c", // 4
++			   "\u335d", // 5
++			   "\u335e", // 6
++			   "\u335f", // 7
++			   "\u3360", // 8
++			   "\u3361", // 9
++			   "\u3362", //10
++			   "\u3363", //11
++			   "\u3364"}; // overflow if we happen to hit leap second issues.
++			   
++			   
++
 +const char *
 +dozonaltime(const char *fmt)
 +{
-+	time_t t = time(NULL);
-+	struct tm *val = localtime(&t);
-+        buf[0] = 0xE3;
-+	buf[1] = 0x8D;
-+	buf[2] = 0x98 + val->tm_sec%12;
-+	buf[3] = 0x00;
-+	return buf;
++  
++  struct timespec ts;
++  clock_gettime(CLOCK_REALTIME, &ts);
++  struct tm *val = localtime(&ts.tv_sec);
++  int dig1 = val->tm_hour/2;
++  int dig2 = (val->tm_hour&1) * 6 + val->tm_min/10;
++  int secs_left = (val->tm_min%10)*60 + val->tm_sec; // note due to leap seconds tm_sec can go up to 61
++
++  int dig3 = secs_left/50;
++  // ((seconds left%50 to nsec) + nanoseconds) * 12 / 50s
++  // ((secs_left%50 to nsec) + nsec
++  double dig4_with_fractional_part = ((double)((secs_left%50) * 1e9) + (double)(ts.tv_nsec)) *12.0/(double)(50e9);
++  int dig4 = (int)dig4_with_fractional_part;
++  int dig5 = (int)(12.0*(dig4_with_fractional_part - dig4));
++  sprintf(buf, "%s%s%s%s%s", MAP[dig1], MAP[dig2], MAP[dig3], MAP[dig4], MAP[dig5]);
++    return buf;
 +}
 diff --git a/config.def.h b/config.def.h
-index 93a875a..030c520 100644
+index 93a875a..f872d60 100644
 --- a/config.def.h
 +++ b/config.def.h
-@@ -66,4 +66,6 @@ static const char unknown_str[] = "n/a";
+@@ -66,4 +66,7 @@ static const char unknown_str[] = "n/a";
  static const struct arg args[] = {
  	/* function format          argument */
  	{ datetime, "%s",           "%F %T" },
 +	{ battery_perc, " %s%%", "BAT1"},
-+	{ battery_remaining, " %s", "BAT1"}
++	{ battery_remaining, " %s", "BAT1"},
++	{ dozonaltime, " %s", NULL }
  };
 diff --git a/slstatus.h b/slstatus.h
 index b0f2564..9d6b697 100644
