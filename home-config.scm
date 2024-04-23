@@ -6,7 +6,9 @@
 	     ((gnu packages xorg) #:select (xrdb xrandr xinit))
 	     ((gnu packages xdisorg) #:select(redshift))
 	     ((gnu packages suckless) #:select (slstatus dmenu))
+	     ((gnu packages gtk) #:select (pango))
 	     ((gnu packages python) #:select (python))
+	     ((gnu packages pkg-config) #:select (pkg-config))
 	     ((guix gexp) #:select (gexp))
 	     ((guix build-system copy) #:select (copy-build-system))
 	     ((guix build-system trivial) #:select (trivial-build-system))
@@ -20,7 +22,7 @@
 	     ((guix channels) #:select (channel make-channel-introduction openpgp-fingerprint %default-channels))
 	     ((gnu services syncthing) #:select (syncthing-service-type syncthing-configuration))
              (gnu packages)
-	     ((guix packages) #:select (modify-inputs package-inputs))
+	     ((guix packages) #:select (modify-inputs package-inputs package-native-inputs prepend))
              (gnu services)
              (guix gexp)
              (gnu home services shells)
@@ -175,7 +177,7 @@ nix-env -iA nixpkgs.brave
 (define guix-manager-package
   (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
 	 (STAGEOS "git -C ~/src/dotfiles/ add os.scm")
-	 (CPDWM "git -C ~/src/dwm/ diff > ~/src/dotfiles/dwm_personal.diff")
+	 (CPDWM "diff $(guix build -f ~/src/dotfiles/dwmsource.scm --no-substitutes) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
 	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
 	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
@@ -281,10 +283,36 @@ nix-env -iA nixpkgs.brave
 	))    
    ))
 
+(define pango-with-copied-pkgconfig
+  (package
+    (inherit pango)
+    (arguments
+     '(#:glib-or-gtk? #t             ; To wrap binaries and/or compile schemas
+       #:phases (modify-phases %standard-phases
+		  ;;; TODO: instead of copying this verbatim from the original, figure out how to get the list of phases frfom pango instead of standard-phases above.
+                  (add-after 'unpack 'disable-cantarell-tests
+                    (lambda _
+                      (substitute* "tests/meson.build"
+                        ;; XXX FIXME: These tests require "font-abattis-cantarell", but
+                        ;; adding it here would introduce a circular dependency.
+                        (("\\[ 'test-layout'.*") "")
+                        (("\\[ 'test-itemize'.*") "")
+                        (("\\[ 'test-font'.*") "")
+                        (("\\[ 'test-harfbuzz'.*") ""))))
+		  ;; pkg-config expects these to be under /share/pkgconfig instead of /lib/pkgconfig
+                  (add-after 'install 'link-ac-files
+                    (lambda* (#:key outputs #:allow-other-keys)
+                        (symlink "../lib/pkgconfig" (string-append (assoc-ref outputs "out") "/share/pkgconfig")))))))))
+
 (define dwm-patched
   (package
    (inherit dwm)
    (version "6.4")
+   ;; add pango dependency
+   (inputs (modify-inputs (package-inputs dwm)
+             (prepend pango-with-copied-pkgconfig)))
+   ;; pango patch adds pkg-config as a dependency to grab necessary compiler flags.
+   (native-inputs (modify-inputs (package-native-inputs dwm) (append pkg-config)))
    (source (origin
              (method git-fetch)
              (uri (git-reference (url "https://git.suckless.org/dwm")
@@ -293,14 +321,20 @@ nix-env -iA nixpkgs.brave
              (sha256 (base32 "025x6rbw61c8l3dsdlkb6wawp8236wy0314jlsxi1jyxnfbml4ds"))
 	     (patches (list
 		       (origin (method url-fetch)
+			(uri "https://dwm.suckless.org/patches/pango/dwm-pango-20230520-e81f17d.diff")
+			(sha256 (base32 "0921063c631y770xnfn7dxdb6g3b579r0x3a369amcymf6qb755n")))
+		       (origin (method url-fetch)
 	                (uri "https://dwm.suckless.org/patches/holdbar/dwm-holdbar-modkey-pertag-nobar-6.2.diff")
 	                (sha256 (base32 "0hymhhp2w3rx3006dxwblf7lh4yq3bi958r0qj1x4aszkvdzx1f6")))
 		       (origin (method url-fetch)
 	                (uri "https://dwm.suckless.org/patches/actualfullscreen/dwm-actualfullscreen-20211013-cb3f58a.diff")
 	                (sha256 (base32 "0882k8w6651c18ina0245b558f1bvqydcycw07lp711hpbg7f9gv")))
+		       ;(origin (method url-fetch)
+			;(uri "https://dwm.suckless.org/patches/hide_vacant_tags/dwm-hide_vacant_tags-6.3.diff")
+			;(sha256 (base32 "0c8cf5lm95bbxcirf9hhzkwmc5a690albnxcrg363av32rf2yaa1")))
 		       (origin (method url-fetch)
-			(uri "https://dwm.suckless.org/patches/hide_vacant_tags/dwm-hide_vacant_tags-6.3.diff")
-			(sha256 (base32 "0c8cf5lm95bbxcirf9hhzkwmc5a690albnxcrg363av32rf2yaa1")))
+			       (uri "https://dwm.suckless.org/patches/autostarttags/dwm-autostarttags-6.4.diff")
+			       (sha256 (base32 "0rc75hip9kayh62mwhrfp0jjrf1z1l0617mviy5qaqyvxi4g994z")))
 		       ;; and finally apply the local dwm patch which is updated by the guixman command
 		       ;; the command relies on having the dwm source code with git set to the result of the above patches to work correctly
 		       ;; and there is not really a good way to store that as I want the diff to be saved as the cononical edits but need a place to make those edits to generate the diff.
