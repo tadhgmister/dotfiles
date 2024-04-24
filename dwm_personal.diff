@@ -1,6 +1,6 @@
 diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2024-04-23 18:59:29.845182146 -0400
++++ /home/tadhg/src/dwm/config.def.h	2024-04-23 20:05:23.655596526 -0400
 @@ -1,12 +1,12 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -23,7 +23,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
  
  /* tagging */
 -static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-+static const char *tags[] = { "\u3359", "\u335a", "3", "4", "5", "6", "7", "8", "9" };
++static const char *tags[] = { "\u3358", "\u3359", "\u335a", "\u335b", "\u335c", "\u335d", "\u335e", "\u335f", "\u3360", "\u3361", "\u3362", "\u3363" };
  
  static const Rule rules[] = {
  	/* xprop(1):
@@ -36,7 +36,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
  
  static const Layout layouts[] = {
  	/* symbol     arrange function */
-@@ -45,54 +45,80 @@ static const Layout layouts[] = {
+@@ -45,87 +45,118 @@ static const Layout layouts[] = {
  };
  
  /* key definitions */
@@ -77,12 +77,12 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
 -	{.cmd = keepassxccmd, .tags = 1 << 4 },
 -	{.cmd = emacscmd, .tags = 1 << 7 },
 -	{.cmd = termcmd2, .tags = 1 << 8 },
-+  { .tags=1<<( 1 -1), .cmd=chatclientcmd },
-+  { .tags=1<<( 2 -1), .cmd=browsercmd },
-+  { .tags=1<<( 3 -1), .cmd=emacscmd },
-+  { .tags=1<<( 5 -1), .cmd=emailclientcmd },
-+  { .tags=1<<( 1 -1), .cmd=fbmessengerbrave },
-+  { .tags=1<<( 1 -1), .cmd=discordbrave },
++  { .tags=1<< 1, .cmd=chatclientcmd },
++  { .tags=1<< 2, .cmd=browsercmd },
++  { .tags=1<< 3, .cmd=emacscmd },
++  { .tags=1<< 5, .cmd=emailclientcmd },
++  { .tags=1<< 1, .cmd=fbmessengerbrave },
++  { .tags=1<< 1, .cmd=discordbrave },
 +  
 +  
  	{.cmd = NULL, .tags = 0 },
@@ -131,6 +131,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
 -	{ MODKEY,                       XK_space,  setlayout,      {0} },
 -	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
 -	{ MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
+-	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+-	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
 +        /* { MODKEY,                       XK_Tab,    view,           {0} },*/
 +	{ MODKEY,                       XK_BackSpace,      killclient,     {0} },
 +	{ MODKEY|ShiftMask|ControlMask, XK_BackSpace,      quit,           {0} },
@@ -140,14 +142,34 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
 +	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
 +	/*{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },*/
 +	{ MODKEY,                       XK_f,      togglefullscr,  {0} },
- 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
- 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
++	{ MODKEY,                       XK_plus,      view,           {.ui = ~0 } },
++	{ MODKEY|ShiftMask,             XK_plus,      tag,            {.ui = ~0 } },
  	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
-@@ -108,24 +134,26 @@ static const Key keys[] = {
- 	TAGKEYS(                        XK_7,                      6)
- 	TAGKEYS(                        XK_8,                      7)
- 	TAGKEYS(                        XK_9,                      8)
+ 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
+ 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
+ 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+-	TAGKEYS(                        XK_1,                      0)
+-	TAGKEYS(                        XK_2,                      1)
+-	TAGKEYS(                        XK_3,                      2)
+-	TAGKEYS(                        XK_4,                      3)
+-	TAGKEYS(                        XK_5,                      4)
+-	TAGKEYS(                        XK_6,                      5)
+-	TAGKEYS(                        XK_7,                      6)
+-	TAGKEYS(                        XK_8,                      7)
+-	TAGKEYS(                        XK_9,                      8)
 -	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
++	TAGKEYS(                        XK_grave,                   0)
++	TAGKEYS(                        XK_1,                       1)
++	TAGKEYS(                        XK_2,                       2)
++	TAGKEYS(                        XK_3,                       3)
++	TAGKEYS(                        XK_4,                       4)
++	TAGKEYS(                        XK_5,                       5)
++	TAGKEYS(                        XK_6,                       6)
++	TAGKEYS(                        XK_7,                       7)
++	TAGKEYS(                        XK_8,                       8)
++	TAGKEYS(                        XK_9,                       9)
++	TAGKEYS(                        XK_0,                      10)
++	TAGKEYS(                        XK_minus,                  11)
 +	/*{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },*/
  	{ 0,                            HOLDKEY,   holdbar,        {0} },
  };
