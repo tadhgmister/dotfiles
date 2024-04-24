@@ -215,7 +215,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
 +CC = gcc
 diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
 --- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2024-04-23 18:59:11.797309033 -0400
++++ /home/tadhg/src/dwm/dwm.c	2024-04-24 18:04:35.571894270 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -293,7 +293,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  		x += w;
  	}
  	w = TEXTW(m->ltsymbol);
-@@ -1087,11 +1099,23 @@ keypress(XEvent *e)
+@@ -1087,11 +1099,25 @@ keypress(XEvent *e)
  			keys[i].func(&(keys[i].arg));
  }
  
@@ -311,6 +311,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
 -	if (!selmon->sel)
 -		return;
 +  if (!selmon->sel){
++    // if there aren't any clients running on any monitor on any tag then the keybinding to close the current window instead closes dwm
++    // this workflow gives me more reason to go close all the windows which can complain that they have unsaved data.
 +    if(!are_any_clients_running()){
 +      quit(arg);
 +    }
@@ -319,11 +321,26 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  	if (!sendevent(selmon->sel, wmatom[WMDelete])) {
  		XGrabServer(dpy);
  		XSetErrorHandler(xerrordummy);
-@@ -1457,14 +1481,54 @@ restack(Monitor *m)
+@@ -1457,14 +1483,70 @@ restack(Monitor *m)
  	XSync(dpy, False);
  	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
  }
-+/// returns 1 if XNextEvent should be called, 0 if there is an error.
++/**
++  returns 1 when XNextEvent should be called, in theory it can return 0 to abort dwm but
++  the only case where we can detect something going wrong happens for expected system interrupts so
++  we just continue on that case.
++
++  If the selected monitor does not have the status bar showing this returns immidiately to wait on an event,
++  otherwise it loops until XPending or 'select' suggests there is an X event to handle.
++
++  So as long as the bar is showing and there aren't X events to handle it will get the current time,
++  measure the time delta until the next clock update, and wait that amount of time such that an X event can interrupt it.
++  This means the clock is updated as infrequently as possible while still functioning seemlessly.
++
++  In order to work properly this does rely on updatestatus() to update the variable next_update to be in the future,
++  if that wasn't the case it would continuously redraw the statusbar 
++  
++*/
 +int
 +update_time(int x11_fd)
 +{
@@ -343,7 +360,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
 +      continue;
 +    }
 +    // at this point we have a valid (positive) delta to wait on the select.
-+    // Create a File Description Set containing x11_fd
++    // Create a File Description Set containing x11_fd based on:
++    // https://stackoverflow.com/a/8592969/5827215
 +    fd_set in_fds;
 +    FD_ZERO(&in_fds);
 +    FD_SET(x11_fd, &in_fds);
@@ -375,7 +393,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  		if (!(autostartcomplete || autostarttags))
  			autostarttagsspawner();
  		if (handler[ev.type])
-@@ -1664,6 +1728,7 @@ setup(void)
+@@ -1664,6 +1746,7 @@ setup(void)
  		scheme[i] = drw_scm_create(drw, colors[i], 3);
  	/* init bars */
  	updatebars();
@@ -383,10 +401,13 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  	updatestatus();
  	/* supporting window for NetWMCheck */
  	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
-@@ -1694,6 +1759,10 @@ seturgent(Client *c, int urg)
+@@ -1694,6 +1777,13 @@ seturgent(Client *c, int urg)
  	XWMHints *wmh;
  
  	c->isurgent = urg;
++	// if we are setting an urgent flag get the bar to be visible as if we started pressing the windows key.
++	// this is the non intrusive notification.
++	// See also updatewmhints
 +	if (urg){
 +	  Arg a = {0}; //dummy so we have an argument
 +	  holdbar(&a);
@@ -394,7 +415,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  	if (!(wmh = XGetWMHints(dpy, c->win)))
  		return;
  	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
-@@ -1822,6 +1891,13 @@ togglebar(const Arg *arg)
+@@ -1822,6 +1912,13 @@ togglebar(const Arg *arg)
  }
  
  void
@@ -408,7 +429,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  togglefloating(const Arg *arg)
  {
  	if (!selmon->sel)
-@@ -2133,9 +2209,14 @@ updatesizehints(Client *c)
+@@ -2133,9 +2230,19 @@ updatesizehints(Client *c)
  void
  updatestatus(void)
  {
@@ -421,12 +442,17 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
 +	  } else {
 +	    updatestatus_regular(stext, &current_time, &next_update);
 +	  }
++  } else {
++    // if the status is set from the XA_WM_NAME variable then the code for updating the clock should probably be avoided entirely
++    // but it is easier to just set the time for the next update very far in the future.
++    // and rely on the un-setting of that variable to call this function (which it does) and therefore update the next_update time normally.
++    next_update.tv_sec = current_time.tv_sec + 10000;
 +  }
 +  drawbar(selmon);
  }
  
  void
-@@ -2163,19 +2244,25 @@ void
+@@ -2163,19 +2270,27 @@ void
  updatewmhints(Client *c)
  {
  	XWMHints *wmh;
@@ -448,6 +474,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  		XFree(wmh);
  	}
 +	if(has_urgent){
++	  // gives non intrusive notification when we have an urgent flag,
++	  // see also seturgent
 +	  Arg a = {0};
 +	  holdbar(&a);
 +	}
@@ -470,8 +498,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/Makefil
 Common subdirectories: /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
 diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
 --- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.c	2024-04-24 15:15:02.661906647 -0400
-@@ -0,0 +1,146 @@
++++ /home/tadhg/src/dwm/status.c	2024-04-24 18:17:33.082551869 -0400
+@@ -0,0 +1,164 @@
 +#include <time.h>
 +#include <string.h>
 +#include <stdio.h>
@@ -538,11 +566,16 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.
 +  } else if (!strcmp(state, "Charging")){
 +    // full - charge_now will give positive value of how much we still need to charge.
 +    info.hours_left = (full - charge)/current;
-+  } // else, unrecognized status
++  } else {
++    // if status isn't Charging, Discharging, or Full then I have no idea what is going on.
++    info.hours_left = NAN;
++    info.perc = NAN;
++  }
 +  return info;
 +}
 +
-+
++// dozonal characters specified by my own custom font
++// they are put in the range for "Ideographic Telegraph Symbol For Hour X" so theoretically some fonts that implement those won't be totally wrong.
 +static const char *DOZ[] ={"\u3358", // 0
 +			   "\u3359", // 1
 +			   "\u335a", // 2
@@ -555,13 +588,26 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.
 +			   "\u3361", // 9
 +			   "\u3362", //10
 +			   "\u3363", //11
-+			   "\u3364"}; // overflow if we happen to hit leap second issues. (although I'm not sure which digit would actually overflow)
++			   // 12 shouldn't be used in typical usage but full battery and leap seconds can hit this case.
++			   // although for leap seconds I think it would end up being the 3rd digit that overflows given
++			   // how the code below is structured.
++			   "\u3364"};
++
++// used for seasons in the date system, this ordering seems the most natural to me for the quarters of the year roughly
++// matching seasons but if I wanted to use this system to save files I'd want to figure out symbols that have strictly
++// increasing unicode values for sorting.
 +static const char *SUITS[] = {
 +  "\u2666", // diamond
 +  "\u2665", // heart
 +  "\u2663", // club
 +  "\u2660"  // spade
 +};
++/**
++   updates stext to show: (battery percentage, time until battery full/empty, date, time)
++   where the date uses my silly 4*13*7 + 1 system and the rest uses dozonal.
++   The battery "percentage" is really just twelves, the percentage symbol is kind of misleading but since the battery fraction
++   is the only thing that uses the percentage symbol it makes it clearer what it represents.
++ */
 +void updatestatus_dozonal(char* stext, struct timespec *current_time, struct timespec *next_update){
 +  struct tm *val = localtime(&current_time->tv_sec);
 +  int digAB = val->tm_hour*6 + val->tm_min/10;
@@ -599,157 +645,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.
 +  next_update->tv_sec = (ns_next < 1e9) ? current_time->tv_sec : current_time->tv_sec+1;
 +  next_update->tv_nsec= (ns_next < 1e9) ? ns_next : ns_next-1e9;
 +}
-+
-+void updatestatus_regular(char* stext, struct timespec *current_time, struct timespec *next_update){
-+  struct tm *val = localtime(&current_time->tv_sec);
-+  struct battery_info info = get_battery_status();
-+  int perc = (int)(info.perc*100.0);
-+  int hours = (int)(info.hours_left);
-+  int mins = (int)((info.hours_left - hours)*60);
-+
-+  if(info.hours_left != info.hours_left){
-+    perc = -1;
-+    hours = 888;
-+    mins = 0;
-+  } else if(mins < 0){
-+    mins = -mins; // allow hours to display with negative but get minutes to be positive always.
-+  }
-+  sprintf(stext, " %2d%% %+dh %dm, %4d-%02d-%02d %2d:%02d:%02d",perc,hours,mins, val->tm_year+1900, val->tm_mon+1, val->tm_mday, val->tm_hour, val->tm_min, val->tm_sec);
-+  next_update->tv_sec = current_time->tv_sec + 1;
-+  next_update->tv_nsec = 0;
-+}
-diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c~ /home/tadhg/src/dwm/status.c~
---- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c~	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.c~	2024-04-23 23:05:33.485120753 -0400
-@@ -0,0 +1,146 @@
-+#include <time.h>
-+#include <string.h>
-+#include <stdio.h>
-+#include <stdarg.h>
-+#include <math.h>
-+#include "status.h"
-+#include "util.h"
-+
-+// stolen from slstatus/util.c
-+int
-+pscanf(const char *path, const char *fmt, ...)
-+{
-+	FILE *fp;
-+	va_list ap;
-+	int n;
-+
-+	if (!(fp = fopen(path, "r"))) {
-+		perror(path);
-+		return -1;
-+	}
-+	va_start(ap, fmt);
-+	n = vfscanf(fp, fmt, ap);
-+	va_end(ap);
-+	fclose(fp);
-+
-+	return (n == EOF) ? -1 : n;
-+}
-+
-+
-+#define CHARGE_NOW "/sys/class/power_supply/BAT1/charge_now"
-+#define CHARGE_FULL "/sys/class/power_supply/BAT1/charge_full"
-+#define CURRENT_DRAW "/sys/class/power_supply/BAT1/current_now"
-+#define BAT_STATUS "/sys/class/power_supply/BAT1/status"
-+
-+struct battery_info {
-+  double perc; // number from 0 to 1 for percentage filled
-+  double hours_left; // number of hours left, negative if discharging and positive if charging
-+};
-+#define NAN 0.0/0.0
-+#define NAN_IF_NOT_ONE(X) if(X != 1){info.perc=NAN;info.hours_left=NAN;return info;}
-+/** returns number of hours until complete,
-+    negative when discharging positive when charging,
-+    returns NAN on error */
-+struct battery_info  get_battery_status(void){
-+  static double full = 0.0;
-+  double charge, current;
-+  char state[13];
-+  struct battery_info info;
-+  NAN_IF_NOT_ONE(pscanf(BAT_STATUS, "%12s", state));
-+  if(!strcmp(state, "Full")){
-+    info.perc = 1.0;
-+    info.hours_left = 0.0;
-+    return info;
-+  }
-+  NAN_IF_NOT_ONE(pscanf(CURRENT_DRAW, "%lf", &current));
-+  NAN_IF_NOT_ONE(pscanf(CHARGE_NOW, "%lf", &charge));
-+  if(full == 0.0){
-+    NAN_IF_NOT_ONE(pscanf(CHARGE_FULL, "%lf", &full));
-+  }
-+  info.perc = charge/full;
-+  if (!strcmp(state, "Discharging")){
-+    // discharging so negate charge to be negative
-+    info.hours_left = -charge / current;
-+  } else if (!strcmp(state, "Charging")){
-+    // full - charge_now will give positive value of how much we still need to charge.
-+    info.hours_left = (full - charge)/current;
-+  } // else, unrecognized status
-+  return info;
-+}
-+
-+
-+static const char *DOZ[] ={"\u3358", // 0
-+			   "\u3359", // 1
-+			   "\u335a", // 2
-+			   "\u335b", // 3
-+			   "\u335c", // 4
-+			   "\u335d", // 5
-+			   "\u335e", // 6
-+			   "\u335f", // 7
-+			   "\u3360", // 8
-+			   "\u3361", // 9
-+			   "\u3362", //10
-+			   "\u3363", //11
-+			   "\u3364"}; // overflow if we happen to hit leap second issues. (although I'm not sure which digit would actually overflow)
-+static const char *SUITS[] = {
-+  "\u2666", // diamond
-+  "\u2665", // heart
-+  "\u2663", // club
-+  "\u2660"  // spade
-+};
-+void updatestatus_dozonal(char* stext, struct timespec *current_time, struct timespec *next_update){
-+  struct tm *val = localtime(&current_time->tv_sec);
-+  int digAB = val->tm_hour*6 + val->tm_min/10;
-+  int secs_left = (val->tm_min%10)*60 + val->tm_sec; // note due to leap seconds tm_sec can go up to 61
-+
-+  int digC = secs_left/50;
-+  // ((seconds left%50 to nsec) + nanoseconds) / (50s to nsec) = fraction of dig3. multiplying by 144 gives it in terms of dig5.
-+  long digDE = (((long)((secs_left%50) * 1e9) + current_time->tv_nsec) * 144 / 50e9);
-+  
-+  int season = val->tm_yday/91;
-+  if(season>3){season = 3;} // when yday is 364 or 365 we still want season to be the 4th one (0 indexed is 3)
-+  int day_of_season = val->tm_yday - season*91;
-+  char week = 'a'+(day_of_season/7); // will go to n0 for last day of year and n1 for leap year.
-+  char day = '0'+val->tm_yday%7;
-+
-+  struct battery_info info = get_battery_status();
-+
-+  char charge_sign = info.hours_left == 0 ? '=' : info.hours_left > 0 ? '+' : '-';
-+  int charge_digA = (int)(info.perc*12.0);
-+  int remaining_A = 0, remaining_B = 0, remaining_C = 0;
-+  if(isnan(info.hours_left) || fabs(info.hours_left) >= 24.0){
-+    charge_sign = "?";
-+    charge_digA = 12;
-+  } else{
-+    int left = (int)(fabs(info.hours_left) * 72.0);
-+    remaining_A = left/144;
-+    remaining_B = (left%12)/12;
-+    remaining_C = left%12;
-+  }
-+  
-+  sprintf(stext, "%s%% %c.%s%s%s %d%s%c%c.%s%s%s%s%s", DOZ[charge_digA], charge_sign, DOZ[remaining_A], DOZ[remaining_B], DOZ[remaining_C], val->tm_year+1900, SUITS[season], week, day, DOZ[digAB/12], DOZ[digAB%12], DOZ[digC], DOZ[digDE/12], DOZ[digDE%12]);
-+
-+  // and calculate the time that will next result in an update, next dig45
-+  long ns_next = (digDE+1)*50e9/144 - (secs_left%50) * 1e9;
-+  next_update->tv_sec = (ns_next < 1e9) ? current_time->tv_sec : current_time->tv_sec+1;
-+  next_update->tv_nsec= (ns_next < 1e9) ? ns_next : ns_next-1e9;
-+}
-+
++/** updates stext to display same info as dozonal function above but using more typical numbering */
 +void updatestatus_regular(char* stext, struct timespec *current_time, struct timespec *next_update){
 +  struct tm *val = localtime(&current_time->tv_sec);
 +  struct battery_info info = get_battery_status();

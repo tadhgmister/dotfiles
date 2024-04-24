@@ -12,7 +12,6 @@ I use alacritty as my terminal and dwm as my window manager, I specifically set 
 
 I am a fan of duckduckgo's bangs and have added a list of bangs I find useful to the list of auto-completes in dmenu so they open in brave directly. This lets me type windows+space "!wea" to autofill the whole command needed to visit environment canadas website for ottawa weather.
 
-Both dino and libinput are using outdated versions, dino because when they updated to version 4 to implement "proper" notifications they removed the x signals that most other desktop environments ignore but I rely on for my notifications
-and libinput because they had a bug where it broke secondary click on my framework trackpad and I submitted a single line patch to fix it, it got accepted and is probably in the main stream now but referencing the exact git version of my fix feels nice.
+Dino uses an outdated version, when they updated to version 4 to implement "proper" notifications they removed the x signals that most other desktop environments ignore but I rely on for my notifications.
 
 Also the info bar in dwm displays in dozonal by default, if you click on it while holding the windows key it switches to a normal clock display, changing `int usedoz = 1` to be 0 in the dwm\_personal.diff and then `guix home reconfigure home-config.scm` would change it to default to the normal display.
