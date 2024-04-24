@@ -9,6 +9,7 @@
 	     ((gnu packages gtk) #:select (pango))
 	     ((gnu packages python) #:select (python))
 	     ((gnu packages pkg-config) #:select (pkg-config))
+	     ((gnu packages xdisorg) #:select(scrot))
 	     ((guix gexp) #:select (gexp))
 	     ((guix build-system copy) #:select (copy-build-system))
 	     ((guix build-system trivial) #:select (trivial-build-system))
@@ -128,6 +129,8 @@ a simple interface.")
 
 ;;;;;;; END OF MINECRAFT STUFF
 
+;;;;;;; START OF PACKAGE DEFINITIONS
+
 ;; TODO: move single-script-package to separate module
 (define* (single-script-package name #:rest text)
   "this takes gexp strings to form a plain text script (should start with #!/bin/sh)
@@ -177,7 +180,9 @@ nix-env -iA nixpkgs.brave
 (define guix-manager-package
   (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
 	 (STAGEOS "git -C ~/src/dotfiles/ add os.scm")
-	 (CPDWM "diff -up -N $(guix build -f ~/src/dotfiles/dwmsource.scm --no-substitutes) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
+	 ;; for diff: -up gives more contxt, -N will display new files contents
+	 ;; for build -q is quiet, means only output is the build directory and not the build log and -f specifies the source file, no substitutes speeds it up since it won't find a viable substitute.
+	 (CPDWM "diff -up -N $(guix build -q -f ~/src/dotfiles/dwmsource.scm --no-substitutes) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
 	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
 	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
@@ -206,82 +211,152 @@ nix-env -iA nixpkgs.brave
   "esac\n"
   )))
 
+;; no longer needed but want to keep a reference to it :D
+(define transform-libinput-my-trackpad-fix (options->transformation '(
+      (with-commit . "libinput-minimal=e8732802b7a3a45194be242a02ead13027c7fd73")
+      (with-git-url . "libinput-minimal=https://gitlab.freedesktop.org/libinput/libinput.git"))))
+;;(define libinput-pack (transform1 (specification->package "xf86-input-libinput")))
+(define transform2
+  ;; this selects the latest version of dino that still supports the x alarm thingy that gets dwm to do notifications
+  (options->transformation
+   `((with-commit
+      .
+      "dino=c5cb4a7406c8ed5f18d0580c5edcc3b600ded78d")
+     (with-git-url
+      .
+      "dino=https://github.com/dino/dino.git")
+     )))
+(define dino-with-dwm-notifications (transform2 (specification->package "dino")))
 
-(define worktimer-package (single-script-package "worktimer"
+(define xorg-packages (list 
+		       ;;"dmenu" ;; is like quicklook (from mac) for dwm
+		       "xorg-server" ;; the server
+		       ;;"xf86-input-libinput" ;; input drivers using patched one instead with my fix for the framework trackpad
+		       "xf86-video-fbdev" ;; TODO is this needed?
+		       "setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
+		       "xinput" ;; TODO: remove this once config is used to configure mouse instead of doing it in xinitrc
+		       ;; "xrdb" "xinit" ;; can get away with both of these uninstalled and referenced directly in the profile
+		       "alacritty" ;; terminal, not exactly needed just for xorg but ties in with keybindings in dwm so putting it here
+		       "xdg-utils" ;; not sure exactly what this provides, might just be command line tools or could be necssary for the xdg default applications stuff to work properly.
+		       "xf86-input-libinput" ;; drivers, mainly the one for the trackpad with the quirk patch I submitted
+		       ))
+(define productivity-packages (list
+			       ;;"vim" ;; leave vim installed os wide so if things go wrong it is still there to use in tty
+			       "emacs"
+			       "festival" ;; for speech synthesis:
+			       "alsa-utils" ;; needed for volume controls used by dwm
+			       "xclip" ;; used by dwm command to use festival
+			       ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
+			       "git"
+			       "tup" ;; build system
+			       "icedove" ;; email
+			       ))
+(define entertainment-packages (list
+				"mpv"
+				"steam"
+				"wine"
+				"dolphin-emu"
+				;;"dino" ; removed and used transformed version for v0.3 so it has dwm notifications
+				))
+(define utility-packages (list
+			  "tree" ;; showing directory structures
+			  "pavucontrol" ;; audio control, used by headphone script
+			  "bluez" ;; bluetooth control, used by headphone script
+			  "simplescreenrecorder"
+			  ))
+			  
+(define packages-for-home
+  (append
+   ;; standard packages from above lists
+   (specifications->packages xorg-packages)
+   (specifications->packages productivity-packages)
+   (specifications->packages entertainment-packages)
+   (specifications->packages utility-packages)
+   (list
+   ;; few complicated packages that are defined above
+    mclauncher-package
+    dino-with-dwm-notifications
+    guix-manager-package
+   ;; and other scripts that I want to use
+   (single-script-package "screenshot"
+    "#!/bin/sh\n"
+    "mkdir -p ~/Pictures/screenshots/\n"					  
+    scrot "/bin/scrot ~/Pictures/screenshots/%Y-%m-%d_%H:%M:%S.%f$1.png")
+   
+   (single-script-package "webcam"
+   "#!/bin/sh\n"
+   "mpv --cache=no --demuxer-lavf-format=video4linux2 --demuxer-lavf-o=video_size=1920x1080,input_format=mjpeg av://v4l2:/dev/video0")
+
+   (single-script-package "worktimer"
     "#!/bin/sh\n"
     "echo 1 > /sys/class/leds/input2\\:\\:capslock/brightness\n"
     "sleep $1\n"
-    "echo 0 > /sys/class/leds/input2\\:\\:capslock/brightness\n"))
+    "echo 0 > /sys/class/leds/input2\\:\\:capslock/brightness\n")
 
-(define playtimer-package (single-script-package "playtimer"
+   (single-script-package "playtimer"
     "#!/bin/sh\n"
     "worktimer $1\n"
     "if [ $# -gt 1 ]; then\n"
     "    echo \"timer is done,\" ${@:2} | festival --tts\n"
     "else\n"
     "    echo timer is done, stop what you are doing. Look away from the screen. Set another timer | festival --tts\n"
-    "fi\n"
-    ;;"mpv --loop=3 " alarm-noise-file "\n"
-    ))
-(define list_of_bangs (local-file "./list_of_bangs.txt"))
-(define dmenu-custom-command (single-script-package "dmenuwithbangs"
+    "fi\n")
+
+   (single-script-package "dmenuwithbangs"
     "#!/bin/sh\n"
-    "thing_to_run=`" dmenu "/bin/dmenu_path | cat " list_of_bangs " - | " dmenu "/bin/dmenu \"$@\"`\n"
+    "thing_to_run=`" dmenu "/bin/dmenu_path | cat " (local-file "./list_of_bangs.txt") " - | " dmenu "/bin/dmenu \"$@\"`\n"
     "if [ \"${thing_to_run:0:1}\" = \"!\" ]; then\n"
     "    brave \"? $thing_to_run\" &\n"
     "else\n"
     "    echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &\n"
-    "fi\n"
-    ))
-(define brctl-package (single-script-package "brctl"
-   "#!/bin/sh\n"
-   "echo $1 > /sys/class/backlight/intel_backlight/brightness"
-   ))
+    "fi\n")
+
+   (single-script-package "brctl"
+    "#!/bin/sh\n"
+    "echo $1 > /sys/class/backlight/intel_backlight/brightness")
+   
 ;; TODO: figure out how wine is installed and whether there is any configs given to wine to make this work
-(define sims3-package (single-script-package "sims3"
-   "#!/bin/sh\n"
-   "wine ~/.wine/drive_c/Program\\ Files/Electronic\\ Arts/The\\ Sims\\ 3/Game/Bin/TS3W.exe\n"
-   ))
+   (single-script-package "sims3"
+    "#!/bin/sh\n"
+    "wine ~/.wine/drive_c/Program\\ Files/Electronic\\ Arts/The\\ Sims\\ 3/Game/Bin/TS3W.exe\n")
+   
 ;; note that this script relies on having pavucontrol and bluez packages installed, both are occasionally needed outside this script
 ;; so having them installed makes the most sense.
-(define headphones-package (single-script-package "headphones"
-   "#!/bin/sh\n"
-   "if [ $# -eq 0 ]; then\n"
-   "  pavucontrol & \n"
-   "  bluetoothctl power on\n"
-   "  bluetoothctl connect 10:AC:DD:E6:97:45\n"
-   "fi\n"
-   "if [ $# -eq 1 ]; then\n"
-   "  bluetoothctl power off\n"
-   "fi\n"
- ))
-(define ciarancostume-package (single-script-package "ciarancostume"
-   "#!/bin/sh\n"
-   "cd ~/Documents/\n"
-   "  guix shell bluez -- bluetoothctl power on\n"
-   "  guix shell bluez -- bluetoothctl connect 75:D2:98:42:EA:A4\n"
-   "python3 ciaransoundthing.py &\n"
-   "while [ 1 -le 3 ];do python3 -m ble_serial -d E1:CF:11:21:DF:BE; done\n"
-   ))
-(define connect-tv-package (single-script-package "connecttotv"
-   "#!/bin/sh\n"
-   ;; set output profile to load the hdmi audio, this can also be done with pavucontrol					  
-   "pacmd set-card-profile 0 'output:hdmi-stereo+input:analog-stereo'\n"
-   ;; the profile annoyingly removes the builtin speaker as a viable output, so we can reload it
-   ;; (if I wanted the built in speaker to stay the default I should probably just figure out what to set the 'device' to to add the hdmi as a new sink)
-   "pacmd load-module module-alsa-sink device=hw:0,0\n"
-   ;; and then use xrandr to load the display above the built in one.
-   ;; TODO: when hdmi is in front left port it is DP-3, check that the '3' is determiend by the port and if I may change it set it correctly in the script.
-   xrandr "/bin/xrandr --output DP-3 --above eDP-1\n"
-   ))
-(define slstatus-patched
-  (package
-   (inherit slstatus)
-   (source (origin
-	    (inherit (package-source slstatus))
-	    (patches (list (local-file "./slstatus_personal.diff")))
-	))    
-   ))
+   (single-script-package "headphones"
+    "#!/bin/sh\n"
+    "if [ $# -eq 0 ]; then\n"
+    "  pavucontrol & \n"
+    "  bluetoothctl power on\n"
+    "  bluetoothctl connect 10:AC:DD:E6:97:45\n"
+    "fi\n"
+    "if [ $# -eq 1 ]; then\n"
+    "  bluetoothctl power off\n"
+    "fi\n")
+
+   (single-script-package "ciarancostume"
+    "#!/bin/sh\n"
+    "cd ~/Documents/\n"
+    "  guix shell bluez -- bluetoothctl power on\n"
+    "  guix shell bluez -- bluetoothctl connect 75:D2:98:42:EA:A4\n"
+    "python3 ciaransoundthing.py &\n"
+    "while [ 1 -le 3 ];do python3 -m ble_serial -d E1:CF:11:21:DF:BE; done\n")
+   (single-script-package "connecttotv"
+    "#!/bin/sh\n"
+    ;; set output profile to load the hdmi audio, this can also be done with pavucontrol					  
+    "pacmd set-card-profile 0 'output:hdmi-stereo+input:analog-stereo'\n"
+    ;; the profile annoyingly removes the builtin speaker as a viable output, so we can reload it
+    ;; (if I wanted the built in speaker to stay the default I should probably just figure out what to set the 'device' to to add the hdmi as a new sink)
+    "pacmd load-module module-alsa-sink device=hw:0,0\n"
+    ;; and then use xrandr to load the display above the built in one.
+    ;; TODO: when hdmi is in front left port it is DP-3, check that the '3' is determiend by the port and if I may change it set it correctly in the script.
+    xrandr "/bin/xrandr --output DP-3 --above eDP-1\n")
+
+)))
+
+;;; END OF PACKAGES
+
+;;; START OF XORG (dwm, xinit profile script etc.)
+
 
 (define pango-with-copied-pkgconfig
   (package
@@ -388,88 +463,17 @@ Xcursor.size: 64
 if [ \"$(tty)\" = \"/dev/tty1\" ]; then
   " xinit "/bin/xinit " xinitrc " -- " XORG " :0 vt1 -dpi 192 -keeptty -configdir " CONFIGDIR " -modulepath " MODULEPATH "
 fi")))
-;; TODO: see if my patch for framework trackpad is now in main stream libinput and remove this transform
-(define transform1
-  ;; this selects the version of libinput with my submitted patch to fix the framework trackpad 
-  (options->transformation
-    '((with-commit
-        .
-        "libinput-minimal=e8732802b7a3a45194be242a02ead13027c7fd73")
-      (with-git-url
-        .
-        "libinput-minimal=https://gitlab.freedesktop.org/libinput/libinput.git"))))
-(define libinput-pack (transform1 (specification->package "xf86-input-libinput")))
-(define transform2
-  ;; this selects the latest version of dino that still supports the x alarm thingy that gets dwm to do notifications
-  (options->transformation
-   `((with-commit
-      .
-      "dino=c5cb4a7406c8ed5f18d0580c5edcc3b600ded78d")
-     (with-git-url
-      .
-      "dino=https://github.com/dino/dino.git")
-     )))
-(define dino-with-dwm-notifications (transform2 (specification->package "dino")))
 
-(define xorg-packages (list 
-		       ;;"dmenu" ;; is like quicklook (from mac) for dwm
-		       "xorg-server" ;; the server
-		       ;;"xf86-input-libinput" ;; input drivers using patched one instead with my fix for the framework trackpad
-		       "xf86-video-fbdev" ;; TODO is this needed?
-		       "setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
-		       "xinput" ;; TODO: remove this once config is used to configure mouse instead of doing it in xinitrc
-		       ;; "xrdb" "xinit" ;; can get away with both of these uninstalled and referenced directly in the profile
-		       "alacritty" ;; terminal, not exactly needed just for xorg but ties in with keybindings in dwm so putting it here
-		       "xdg-utils" ;; not sure exactly what this provides, might just be command line tools or could be necssary for the xdg default applications stuff to work properly.
-		       ))
-(define productivity-packages (list
-			       ;;"vim" ;; leave vim installed os wide so if things go wrong it is still there to use in tty
-			       "emacs"
-			       "festival" ;; for speech synthesis:
-			       "alsa-utils" ;; needed for volume controls used by dwm
-			       "xclip" ;; used by dwm command to use festival
-			       ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
-			       "git"
-			       "tup" ;; build system
-			       "icedove" ;; email
-			       ))
-(define entertainment-packages (list
-				"mpv"
-				"steam"
-				"wine"
-				"dolphin-emu"
-				;;"dino" ; removed and used transformed version for v0.3 so it has dwm notifications
-				))
-(define utility-packages (list
-			  "tree" ;; showing directory structures
-			  "pavucontrol" ;; audio control, used by headphone script
-			  "bluez" ;; bluetooth control, used by headphone script
-			  "simplescreenrecorder"
-			  ))
-			  
+
+;;;;;;; END OF XORG
+
+;;;;;;; START OF HOME ENVIRONMENT AND SERVICES
 
 
 (home-environment
   ;; Below is the list of packages that will show up in your
   ;; Home profile, under ~/.guix-home/profile.
- (packages (cons* libinput-pack
-		  dino-with-dwm-notifications
-		  guix-manager-package
-		  brctl-package
-		  headphones-package
-		  worktimer-package
-		  playtimer-package
-		  dmenu-custom-command
-		  mclauncher-package
-		  connect-tv-package
-		  ;;ciarancostume-package
-		  sims3-package
-		  (specifications->packages
-		   (append
-		    xorg-packages
-		    productivity-packages
-		    entertainment-packages
-		    utility-packages))))
+ (packages packages-for-home)
 
   ;; Below is the list of Home services.  To search for available
   ;; services, run 'guix home search KEYWORD' in a terminal.
@@ -562,3 +566,5 @@ alias grep='grep --color=auto'
 "))
       
                                         )))))
+
+;;;;;;; END OF HOME ENVIRONMENT AND SERVICES
