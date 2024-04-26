@@ -20,7 +20,6 @@
  ((gnu packages freedesktop) #:select(fprintd))
  ((gnu packages suckless) #:select(slock))
  ((gnu packages games) #:select (steam-devices-udev-rules))
- ((gnu packages certs) #:select (nss-certs))
  ((gnu packages linux) #:select (brightnessctl))
  ((gnu packages wm) #:select (swaylock))
  ((gnu packages cups) #:select (cups cups-filters epson-inkjet-printer-escpr hplip-minimal))
@@ -154,7 +153,6 @@
                          %base-file-systems))
   (packages (append
 	     (list
-	      (specification->package "nss-certs") ;;needed for either mdns (using host.local web addresses) or guix channel stuff, not sure.
 	      (specification->package "qemu") ;; for running VMs from command line, TODO: possibly move this to home config and make script from morgan in configs somewhere
 	      ;; note that I've previously used the package virt-manager but it sucked, however I'm not sure how else to make the qcow files.
 	      (specification->package "libvirt") ;; for virtualization, hypervisor support I believe.

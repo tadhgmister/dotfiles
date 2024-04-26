@@ -162,6 +162,7 @@ a simple interface.")
 
 (define guix-man-pull-command (single-script-package "guixmanpullcmd"
 "#!/bin/sh
+nix-channel --update & 
 ICEDOVEPATH=$(realpath $(which icedove))
 guix pull
 guix home reconfigure ~/src/dotfiles/home-config.scm
@@ -171,11 +172,13 @@ if [ \"$ICEDOVEPATH\" != \"$(realpath $(which icedove))\" ]; then
 fi
 guix system build ~/src/dotfiles/os.scm
 
+
+guix pull --news
+wait #wait for nix-channel
 echo
 echo !!! REMEMBER !!!
-echo you still need to do 'guixman os' to reconfigure the system
-echo also to update brave do 'guixman brave'
-nix-env -iA nixpkgs.brave	
+echo nix channels were updated, run 'nix-env -r -i' to update nix packages
+echo os config was build, run 'guixman os' to reconfigure the system
 "))	 
 (define guix-manager-package
   (let* ((STAGEHOME "git -C ~/src/dotfiles/ add -u -- :!os.scm")
@@ -183,7 +186,10 @@ nix-env -iA nixpkgs.brave
 	 ;; for diff: -up gives more contxt, -N will display new files contents
 	 ;; for build -q is quiet, means only output is the build directory and not the build log and -f specifies the source file, no substitutes speeds it up since it won't find a viable substitute.
 	 (CPDWM "diff -up -N $(guix build -q -f ~/src/dotfiles/dwmsource.scm --no-substitutes) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
-	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
+	 ;; nix-env will load .nix-defexpr/default.nix which lists packages to install with nix (is specified near bottom of this file)
+	 ;; -r removes all previously installed packages and -i installs 'the default' packages, meaning the list of packages listed in the default.nix I guess.
+	 ;; nix has to be updated after reconfiguring home since updates to the default.nix file in this config will change which packages are updated and that is the whole point of doing it there, it doesn't print anything when nothing needs updating so most of the time it won't matter
+	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm && nix-env -r -i")
 	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
 	 (GITPUSH "git -C ~/src/dotfiles/ push")
@@ -357,35 +363,13 @@ nix-env -iA nixpkgs.brave
 
 ;;; START OF XORG (dwm, xinit profile script etc.)
 
-
-(define pango-with-copied-pkgconfig
-  (package
-    (inherit pango)
-    (arguments
-     '(#:glib-or-gtk? #t             ; To wrap binaries and/or compile schemas
-       #:phases (modify-phases %standard-phases
-		  ;;; TODO: instead of copying this verbatim from the original, figure out how to get the list of phases frfom pango instead of standard-phases above.
-                  (add-after 'unpack 'disable-cantarell-tests
-                    (lambda _
-                      (substitute* "tests/meson.build"
-                        ;; XXX FIXME: These tests require "font-abattis-cantarell", but
-                        ;; adding it here would introduce a circular dependency.
-                        (("\\[ 'test-layout'.*") "")
-                        (("\\[ 'test-itemize'.*") "")
-                        (("\\[ 'test-font'.*") "")
-                        (("\\[ 'test-harfbuzz'.*") ""))))
-		  ;; pkg-config expects these to be under /share/pkgconfig instead of /lib/pkgconfig
-                  (add-after 'install 'link-ac-files
-                    (lambda* (#:key outputs #:allow-other-keys)
-                        (symlink "../lib/pkgconfig" (string-append (assoc-ref outputs "out") "/share/pkgconfig")))))))))
-
 (define dwm-patched
   (package
    (inherit dwm)
    (version "6.4")
    ;; add pango dependency
    (inputs (modify-inputs (package-inputs dwm)
-             (prepend pango-with-copied-pkgconfig)))
+             (prepend pango)))
    ;; pango patch adds pkg-config as a dependency to grab necessary compiler flags.
    (native-inputs (modify-inputs (package-native-inputs dwm) (append pkg-config)))
    (source (origin
@@ -552,6 +536,14 @@ fi")))
 	email = tadhgmister@gmail.com
 	name = Tadhg McDonald-Jensen
 "))
+      (".nix-defexpr/default.nix" ,(plain-file "default.nix"
+"let
+   nixpkgs = import ./channels/nixpkgs { config.allowUnfree = true; };
+in
+[
+    nixpkgs.discord
+    nixpkgs.brave
+]"))
       (".bashrc" ,(plain-file "bashrc"
 "# Adjust the prompt depending on whether we're in 'guix environment'.
 # also use \\a to signal bel so when a command finishs it signals x in the same way as chat apps do

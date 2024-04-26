@@ -15,3 +15,4 @@ I am a fan of duckduckgo's bangs and have added a list of bangs I find useful to
 Dino uses an outdated version, when they updated to version 4 to implement "proper" notifications they removed the x signals that most other desktop environments ignore but I rely on for my notifications.
 
 Also the info bar in dwm displays in dozonal by default, if you click on it while holding the windows key it switches to a normal clock display, changing `int usedoz = 1` to be 0 in the dwm\_personal.diff and then `guix home reconfigure home-config.scm` would change it to default to the normal display.
+

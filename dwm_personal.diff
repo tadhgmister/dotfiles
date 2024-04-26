@@ -1,6 +1,6 @@
 diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2024-04-23 20:05:23.655596526 -0400
++++ /home/tadhg/src/dwm/config.def.h	2024-04-26 08:29:41.345762758 -0400
 @@ -1,12 +1,12 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -65,7 +65,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
 +static const char *brctlcmd[] = { "brctl", "10000", NULL };
 +
 +static const char *chatclientcmd[] = { "dino", NULL };
-+static const char *discordbrave[] = {"brave", "--app=https://discord.com/channels/@me",NULL};
++static const char *discordbrave[] = {"discord", NULL};
 +static const char *fbmessengerbrave[] = {"brave", "--app=https://www.messenger.com/", NULL};
 +static const char *browsercmd[] = {"brave", NULL};
 +static const char *emailclientcmd[] = {"icedove", NULL};
@@ -77,12 +77,12 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
 -	{.cmd = keepassxccmd, .tags = 1 << 4 },
 -	{.cmd = emacscmd, .tags = 1 << 7 },
 -	{.cmd = termcmd2, .tags = 1 << 8 },
-+  { .tags=1<< 1, .cmd=chatclientcmd },
 +  { .tags=1<< 2, .cmd=browsercmd },
 +  { .tags=1<< 3, .cmd=emacscmd },
 +  { .tags=1<< 5, .cmd=emailclientcmd },
 +  { .tags=1<< 1, .cmd=fbmessengerbrave },
 +  { .tags=1<< 1, .cmd=discordbrave },
++  { .tags=1<< 1, .cmd=chatclientcmd },
 +  
 +  
  	{.cmd = NULL, .tags = 0 },
