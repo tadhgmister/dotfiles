@@ -498,8 +498,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/Makefil
 Common subdirectories: /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
 diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
 --- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.c	2024-04-24 18:17:33.082551869 -0400
-@@ -0,0 +1,164 @@
++++ /home/tadhg/src/dwm/status.c	2024-04-27 10:28:37.896956732 -0400
+@@ -0,0 +1,163 @@
 +#include <time.h>
 +#include <string.h>
 +#include <stdio.h>
@@ -538,7 +538,6 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.
 +  double perc; // number from 0 to 1 for percentage filled
 +  double hours_left; // number of hours left, negative if discharging and positive if charging
 +};
-+#define NAN 0.0/0.0
 +#define NAN_IF_NOT_ONE(X) if(X != 1){info.perc=NAN;info.hours_left=NAN;return info;}
 +/** returns number of hours until complete,
 +    negative when discharging positive when charging,
@@ -629,7 +628,7 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.
 +  int charge_digA = (int)(info.perc*12.0);
 +  int remaining_A = 0, remaining_B = 0, remaining_C = 0;
 +  if(isnan(info.hours_left) || fabs(info.hours_left) >= 24.0){
-+    charge_sign = "?";
++    charge_sign = '?';
 +    charge_digA = 12;
 +  } else{
 +    int left = (int)(fabs(info.hours_left) * 72.0);

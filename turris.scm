@@ -6,15 +6,60 @@
  (guix gexp)
  ((guix packages) #:select (package origin base32 modify-inputs package-native-inputs))
  ((guix git-download) #:select (git-fetch git-reference git-file-name))
+ ((guix platform) #:select(platform))
+
+ ((gnu bootloader) #:select(bootloader))
+ ((gnu bootloader u-boot) #:select(u-boot-bootloader))
 
  ((gnu packages ssh) #:select(openssh))
  ((gnu packages autotools) #:select(automake autoconf))
 
- ;;((gnu bootloader grub) #:select(grub-efi-bootloader))
  ((gnu services networking) #:select(dhcp-client-service-type))
  ((gnu services ssh) #:select(openssh-service-type openssh-configuration))
 
+ ((guix records) #:select(define-record-type*))
+ ((ice-9 match) #:select(match-lambda))
+ ((gnu services shepherd) #:select(shepherd-root-service-type shepherd-service))
+
  )
+
+
+
+(define-record-type* <startupscript-configuration>
+  startupscript-configuration make-startupscript-configuration
+  startupscript-configuration?
+  (settings startupscript-configuration-settings  ; alist of string pairs
+            (default '())))
+
+(define startupscript-shepherd-service
+  (match-lambda
+    (($ <startupscript-configuration> settings)
+       (shepherd-service
+        (documentation "turns on user led light at startup")
+        (provision '(startupscript))
+        (start #~(lambda _
+                   (call-with-output-file "/sys/class/leds/omnia-led:user1/color"
+		     (lambda (port)
+		       (display "255 60 0" port)))
+		   (call-with-output-file "/sys/class/leds/omnia-led:user1/brightness"
+		     (lambda (port)
+		       (display "255" port)))))
+        (one-shot? #t)))))
+
+(define startupscript-service-type
+  (service-type
+   (name 'startupscript)
+   (extensions
+    (list (service-extension shepherd-root-service-type
+                             (compose list startupscript-shepherd-service))))
+   ;; (compose concatenate)
+   ;; (extend (lambda (config settings)
+   ;;           (sysctl-configuration
+   ;;            (inherit config)
+   ;;            (settings (append (sysctl-configuration-settings config)
+   ;;                              settings)))))
+   (default-value (startupscript-configuration))
+   (description "turns on the omnia led at startup to see if it is loading guix")))
 
 ;; this contains one commit to comment out the configure code for -fzero-call-used-regs
 (define patched-ssh
@@ -30,55 +75,66 @@
                                  (commit "59758a3c3764b35dca7f22f8e37eb301f688eab0")))
 	     (file-name (git-file-name "openssh" "tadhgpatch"))))))
 
-;;; STUFF FROM UBOOT
-;;; TODO: remove this after confirming grub-efi works
-(use-modules
- ((gnu bootloader u-boot) #:select(u-boot-bootloader))
- ((gnu bootloader) #:select(bootloader))
-  ((gnu packages bootloaders) #:select(make-u-boot-package))
-  ((gnu packages tls) #:select(openssl))
-  ((gnu packages algebra) #:select(bc)))
-;;(define TURRIS_SELF_DECLARED_ARCHITECTURE "arm-linux-muslgnueabi")
-;;(define WORKING_ARCHITECTURE                  "arm-linux-gnueabihf")
-;;(define base (make-u-boot-package "turris_omnia" WORKING_ARCHITECTURE))
-;;(define omnia-u-boot (package (inherit base) (native-inputs (modify-inputs (package-native-inputs base) (append openssl bc)))))
+	
+;; u-boot-bootloader inherits the extlinux.conf from extlinux but we just rely on the u-boot in nor flash to try to load from the configuration file.
 (define turris-omnia-u-boot-bootloader
   (bootloader
    (inherit u-boot-bootloader)
+   (name 'omniaboot)
    (package #f)
    (installer #f)
    (disk-image-installer #f)))
 
 
-(define HOSTNAME "omniaguix")
-(define DEVICENAME "/dev/mmc0p1")
+(define HOSTNAME "omniaguix1")
+(define DEVICENAME "/dev/mmcblk0p1")
+(define PARTITION-UUID "bc1980eb-68ee-4ac7-b540-8dc3cebf5ab2")
 (define my-system (operating-system
 		    (host-name HOSTNAME)
 		    (timezone "America/Toronto")
 		    (bootloader (bootloader-configuration
 				 (bootloader turris-omnia-u-boot-bootloader)
-				 (targets (list DEVICENAME))))
+				 (timeout 0)
+				 (targets '())))
 		    (file-systems (cons (file-system
 					  (mount-point "/")
-					  (device DEVICENAME)
+					  (device (uuid PARTITION-UUID))
 					  (type "ext4"))
 					%base-file-systems))
 		    (services
-		     (cons*       (service dhcp-client-service-type)
-				  (service openssh-service-type
-					   (openssh-configuration
-					    (openssh patched-ssh)
-					    (permit-root-login #t)
-					    (allow-empty-passwords? #t)))
-				  %base-services))))
+		     (cons*       ;;(service dhcp-client-service-type)
+		      (service startupscript-service-type)
+		      (service static-networking-service-type
+			       (list (static-networking
+				      (addresses
+				       (list (network-address
+					      (device "lan4")
+					      (value "192.168.1.1/24"))))
+				      (routes
+				       (list (network-route
+					      (destination "default")
+					      (gateway "192.168.2.1"))))
+				      (name-servers '()))))
+
+		      (service openssh-service-type
+			       (openssh-configuration
+				(openssh patched-ssh)
+				(permit-root-login #t)
+				(allow-empty-passwords? #t)))
+		      %base-services))))
 
 (image
  (format 'disk-image)
+ (platform (platform
+	    (glibc-dynamic-linker "/lib/ld-linux-armhf.so.3")
+	    (target "arm-linux-gnueabihf")
+	    (system "armhf-linux")))
  (operating-system  my-system)
  (partitions
   (list
    (partition
     (size 'guess)
+    (uuid PARTITION-UUID)
     (label root-label)
     (file-system "ext4")
     (flags '(boot))
