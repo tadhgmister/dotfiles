@@ -1,5 +1,5 @@
-diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
---- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
+--- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.def.h	2024-04-26 08:29:41.345762758 -0400
 @@ -1,12 +1,12 @@
  /* See LICENSE file for copyright and license details. */
@@ -204,8 +204,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
 +	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
  };
  
-diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
---- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
+--- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.mk	2024-04-23 14:56:32.801882541 -0400
 @@ -36,4 +36,4 @@ LDFLAGS  = ${LIBS}
  #LDFLAGS = ${LIBS}
@@ -213,8 +213,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/config.
  # compiler and linker
 -CC = cc
 +CC = gcc
-diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
---- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
+--- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/dwm.c	2024-04-24 18:04:35.571894270 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
@@ -482,9 +482,9 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/dwm.c /
  }
  
  void
-Common subdirectories: /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
-diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
---- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
+Common subdirectories: /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
+diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
+--- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/Makefile	2024-04-23 17:10:33.274202418 -0400
 @@ -3,7 +3,7 @@
  
@@ -495,9 +495,9 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/Makefil
  OBJ = ${SRC:.c=.o}
  
  all: options dwm
-Common subdirectories: /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
-diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
---- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
+Common subdirectories: /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
+diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
+--- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/status.c	2024-04-27 10:28:37.896956732 -0400
 @@ -0,0 +1,163 @@
 +#include <time.h>
@@ -663,8 +663,8 @@ diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.
 +  next_update->tv_sec = current_time->tv_sec + 1;
 +  next_update->tv_nsec = 0;
 +}
-diff -up -N /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
---- /gnu/store/8ibr3xwn9dl63n48zkp777jhmzmzrn2w-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
+diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
+--- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/status.h	2024-04-23 17:22:37.540978117 -0400
 @@ -0,0 +1,5 @@
 +

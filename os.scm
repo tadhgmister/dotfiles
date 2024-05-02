@@ -37,6 +37,8 @@
  ((gnu services authentication) #:select (fprintd-service-type))
  ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration))
  ((gnu services pm) #:select (tlp-service-type tlp-configuration thermald-service-type))
+ (tadhg packagelist)
+ ((tadhg channels-and-subs) #:prefix tadhg:)
 )
 
 ;; (define ledtrigger-udev (udev-rule "90-ledtrigger.rules"
@@ -46,34 +48,9 @@
 ;; Note that the wifi connection to CU-Wireless was done with the nm-applet (and guix shell stalonetray) to configure wPA-Enterprise
 ;; idk where else to put this, wifi info isn't something I expect to ever save to the guix config but want to remember how to do it.
 ;; also eduroam has an install script for ottawa U, haven't tried it yet since I don't have ottawa U credentials at time of writing
-(define slock-patched
-  (let ((pam-patch (origin
-   (method url-fetch)
-   (uri "https://tools.suckless.org/slock/patches/pam_auth/slock-pam_auth-20190207-35633d4.diff")
-   (file-name "slock-pam.diff")
-   (sha256 (base32 "0dlhif9vlci9w3cs2wlb73j7s9w3nzxwf5h170ybcywwj7y9gjsc"))
-   )))
-  (package
-   (inherit slock)
-   (source (origin (inherit (package-source slock))
-		   (patches (list pam-patch))))
-   (inputs (modify-inputs (package-inputs slock)
-              (append  (specification->package "linux-pam"))))
-   )))
+
 (define username "tadhg")
-(define (nonguix-subs config) (guix-configuration
-               (inherit config)
-               (substitute-urls (cons*
-		 "https://substitutes.nonguix.org"
-                 %default-substitute-urls
-	       ))
-               (authorized-keys (cons*
-		 (origin (method url-fetch)
-			 (uri "https://substitutes.nonguix.org/signing-key.pub")
-			 (sha256 (base32 "0j66nq1bxvbxf5n8q2py14sjbkn57my0mjwq7k1qm9ddghca7177")))
-		 %default-authorized-guix-keys
-	       ))
-))
+
 
 (operating-system
   (kernel linux)
@@ -152,16 +129,7 @@
                          (dependencies mapped-devices)) 
                          %base-file-systems))
   (packages (append
-	     (list
-	      (specification->package "qemu") ;; for running VMs from command line, TODO: possibly move this to home config and make script from morgan in configs somewhere
-	      ;; note that I've previously used the package virt-manager but it sucked, however I'm not sure how else to make the qcow files.
-	      (specification->package "libvirt") ;; for virtualization, hypervisor support I believe.
-	      (specification->package "zip") ;; zip and unzip are needed enough I just want them always present.
-	      (specification->package "unzip")
-	      (specification->package "openssh")
-	      (specification->package "vim") ;; useful to be in os since if there is a problem with X this is good editor in tty
-	      (specification->package "glibc-locales") ;;TODO: what are these actually needed for?
-	      slock-patched)
+	     os-packages
              %base-packages))
 
   ;; Below is the list of system services.  To search for available
@@ -207,7 +175,7 @@
     ;;(udev-rules-service 'ledtrigger ledtrigger-udev)
     (modify-services
         %desktop-services
-	(guix-service-type config => (nonguix-subs config))
+	(guix-service-type config => (tadhg:substitutes config))
 	;; (pulseaudio-service-type config => (pulseaudio-configuration
 ;; 					    (inherit config)
 ;; 					    (extra-script-files
