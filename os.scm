@@ -61,7 +61,7 @@
 		     "resume_offset=105000311"
 		     ;; https://wiki.archlinux.org/title/Intel_graphics#Screen_flickering
 		     "i915.enable_psr=0" ;; fixes screen lag / not updating
-		     ;; https://wiki.archlinux.org/title/Framework_Laptop#Changing_the_brightness_of_the_monitor_does_not_work
+		     ;; https://wiki.archlinux.org/title/Framework_Laptop_13#12th_.26_13th_gen_brightness_and_airplane_mode_keys
 		     "modprobe.blacklist=hid_sensor_hub" ;; makes brightness keys visible to X
 		     ;; https://wiki.archlinux.org/title/Framework_Laptop#Intel_Wi-Fi_6E_AX210_reset/_low_throughput_/_%22Microcode_SW_error%22
 		     "iwlwifi.disable_11ax=Y" ;; should fix wifi repeatedly dying on me issue

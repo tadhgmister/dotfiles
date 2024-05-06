@@ -343,6 +343,7 @@ in
 [
     nixpkgs.discord
     nixpkgs.brave
+    nixpkgs.vscode
 ]"))
       ;;;;;;;;;;;;;;;;;;;;;;;;;
       (".bashrc" ,(plain-file "bashrc"

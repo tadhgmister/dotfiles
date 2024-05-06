@@ -1,12 +1,15 @@
 
 (use-modules
+ 
+					;((gnu packages linux) #:select(customize-linux linux-libre linux-libre-arm64-generic))
+ (gnu packages linux)
  (gnu)
  (gnu image)
  (gnu system image)
  (guix gexp)
  ((guix packages) #:select (package origin base32 modify-inputs package-native-inputs))
  ((guix git-download) #:select (git-fetch git-reference git-file-name))
- ((guix platform) #:select(platform))
+ ((guix platforms arm) #:select(armv7-linux))
 
  ((gnu bootloader) #:select(bootloader))
  ((gnu bootloader u-boot) #:select(u-boot-bootloader))
@@ -77,29 +80,65 @@
 
 	
 ;; u-boot-bootloader inherits the extlinux.conf from extlinux but we just rely on the u-boot in nor flash to try to load from the configuration file.
-(define turris-omnia-u-boot-bootloader
-  (bootloader
-   (inherit u-boot-bootloader)
-   (name 'omniaboot)
-   (package #f)
-   (installer #f)
-   (disk-image-installer #f)))
+;; (define turris-omnia-u-boot-bootloader
+;;   (bootloader
+;;    (inherit u-boot-bootloader)
+;;    (name 'omniaboot)
+;;    (package #f)
+;;    (installer #f)
+;;    (disk-image-installer #f)))
 
 
-(define HOSTNAME "omniaguix1")
-(define DEVICENAME "/dev/mmcblk0p1")
-(define PARTITION-UUID "bc1980eb-68ee-4ac7-b540-8dc3cebf5ab2")
+
+(define HOSTNAME "omniaguix")
+;;(define DEVICENAME "/dev/mmcblk0p1")
+;;(define PARTITION-UUID "38af4c98-a457-ab59-caf5-b77b38af4c98")
+
+
+;; kernel setting based on https://gitlab.com/Cynerd/nixturris/-/blob/master/pkgs/default.nix#L15
+;; I can't access hard drives without it and that source claims this the turris omnia doesn't work with the PCIEASPM symbol
+;; (define KERNEL_CONFIGS (list "CONFIG_PCIEASPM=n"))
+(define make-linux-libre* (@@ (gnu packages linux) make-linux-libre*))
+(define %default-extra-linux-options (@@ (gnu packages linux) %default-extra-linux-options))
+(define kernel-config (@@ (gnu packages linux) kernel-config))
+
+(define linux-libre-arm-omnia
+  (make-linux-libre* linux-libre-version
+                     linux-libre-gnu-revision
+                     linux-libre-source
+                     '("armhf-linux")
+                     #:extra-version "arm-omnia"
+		     #:configuration-file kernel-config
+                     #:extra-options
+                     (append
+                      `(
+                        ("CONFIG_PCIEASPM" . #f))
+                      %default-extra-linux-options)))
+
+
 (define my-system (operating-system
+		    
+		    (kernel linux-libre-arm-omnia)
+		    (kernel-arguments (cons*
+				       "earlyprintk"
+				       "console=ttyS0,115200"
+				       %default-kernel-arguments))
+		    (initrd-modules (cons*
+				     ;; these are both used in nixturris with the comment about led support
+				     
+				     ;;"ahci_mvebu" ;; ahci is about SATA support which might be important when loading from internal card but for now loading from USB probably doesn't need it
+				     ;; "rtc_armada38x" ;; something about real time clock, idk if it is important.
+				     %base-initrd-modules))
 		    (host-name HOSTNAME)
 		    (timezone "America/Toronto")
 		    (bootloader (bootloader-configuration
-				 (bootloader turris-omnia-u-boot-bootloader)
-				 (timeout 0)
+				 (bootloader u-boot-bootloader)
+				 (timeout 1)
 				 (targets '())))
 		    (file-systems (cons (file-system
 					  (mount-point "/")
-					  (device (uuid PARTITION-UUID))
-					  (type "ext4"))
+					  (device (file-system-label "GuixRoot"))
+					  (type "btrfs"))
 					%base-file-systems))
 		    (services
 		     (cons*       ;;(service dhcp-client-service-type)
@@ -125,20 +164,17 @@
 
 (image
  (format 'disk-image)
- (platform (platform
-	    (glibc-dynamic-linker "/lib/ld-linux-armhf.so.3")
-	    (target "arm-linux-gnueabihf")
-	    (system "armhf-linux")))
+ (platform armv7-linux)
  (operating-system  my-system)
  (partitions
   (list
    (partition
     (size 'guess)
-    (uuid PARTITION-UUID)
     (label root-label)
     (file-system "ext4")
     (flags '(boot))
     (initializer (gexp initialize-root-partition))))))
+
 
 ;; (list (machine
 ;;        (operating-system my-system)
