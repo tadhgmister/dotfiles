@@ -27,6 +27,7 @@
    ;; "xrdb" "xinit" ;; can get away with both of these uninstalled and referenced directly in the profile
    "xdg-utils" ;; not sure exactly what this provides, might just be command line tools or could be necssary for the xdg default applications stuff to work properly.
    "xf86-input-libinput" ;; drivers, mainly the one for the trackpad with the quirk patch I submitted
+   "font-apple-color-emoji" ;; because I finally got tired of not knowing what emojis people were sending me
    ))
 (define productivity
   (list
