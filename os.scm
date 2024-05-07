@@ -1,14 +1,17 @@
-;; This is an operating system configuration generated
-;; by the graphical installer.
+
+
+;; Tadhg's personal OS definition for framework laptop
+
+;; note about btrfs setup:
+;; right now there is a small boot partition and the encrypted btrfs partition
+;; I'd like to set it up so it has these subvolumes:
+;; / (root subvolume)
+;; /keyfile.cpio (file with key to decrypt the root partition that is loaded by grub)
+;; /guix (subvolume for root partition of guix system
+;; /guix/gnu/store (seperate subvolume)
+;; /guix/home (seperate subvolume)
 ;;
-;; Once installation is complete, you can learn and modify
-;; this file to tweak the system configuration, and pass it
-;; to the 'guix system reconfigure' command to effect your
-;; changes.
-
-
-;; Indicate which modules to import to access the variables
-;; used in this configuration.
+;; It would be interesting to see what files actually end up residing on the /guix subvolume, also 
 (use-modules
  (gnu)
  
@@ -50,8 +53,19 @@
 ;; also eduroam has an install script for ottawa U, haven't tried it yet since I don't have ottawa U credentials at time of writing
 
 (define username "tadhg")
-
-
+;; commit 39a9404 in guix broke this, a function in the os checks for equality with luks-device-mapping as the type and only puts the
+;; needed commands into grub.cfg if it identifies it that way, so this makes grub just not try to mount the encrypted device which
+;; obviously causes it to fail. I will need to submit a bug report and get it properly fixed but for now I will just need to
+;; continue to type my decryption password twice.
+(define cryptroot-type (luks-device-mapping-with-options
+				 ;; NOTE: when specified as a string this is a path relative to the initrd internal filesystem
+				 ;; which is populated by the cpio file passed as 'extra-initrd' to grub above.
+				 ;; if it was (local-file "/crypto_keyfile.bin") it would copy the file on the local filesystem
+				 ;; to the initrd, but it would also put a copy of it in the guix store which is globally readable
+				 ;; (it'd also be readable from the initrd which is also in the guix store so even if it
+				 ;;   wasn't copied in there'd be a problem)
+				 ;; if this file ever needs to be recaptured use the command `cpio -i /crypto_keyfile.bin < /crypto_keyfile.cpio` run as root and it will restore this file to the root directory.
+				 #:key-file "/crypto_keyfile.bin"))
 (operating-system
   (kernel linux)
   (kernel-arguments (cons*
@@ -101,12 +115,16 @@
   (bootloader (bootloader-configuration
                 (bootloader grub-efi-bootloader)
                 (targets (list "/boot"))
-                (keyboard-layout keyboard-layout)))
+                (keyboard-layout keyboard-layout)
+		(extra-initrd "/crypto_keyfile.cpio")
+		))
   (mapped-devices (list (mapped-device
                           (source (uuid
                                    "c0010d06-0bd1-4ae2-93e6-f2f89a3a670b"))
                           (target "cryptroot")
-                          (type luks-device-mapping))))
+			  ;;(type cryptroot-type))))
+			  (type luks-device-mapping))))
+  
   (swap-devices (list (swap-space
                        (target "/swapfile")
 		       (dependencies mapped-devices))))
