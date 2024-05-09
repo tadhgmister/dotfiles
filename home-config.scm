@@ -165,7 +165,12 @@ echo os config was build, run 'guixman os' to reconfigure the system
 
    (single-script-package "brctl"
     "#!/bin/sh\n"
-    "echo $1 > /sys/class/backlight/intel_backlight/brightness")
+    "if [ $1 -ge 2 ]; then\n"
+    "    number=$(( ($1 - 1) * 1000))\n"
+    "else\n"
+    "    number=$1\n"
+    "fi\n"
+    "echo $number > /sys/class/backlight/intel_backlight/brightness\n")
    
 ;; TODO: figure out how wine is installed and whether there is any configs given to wine to make this work
    (single-script-package "sims3"
