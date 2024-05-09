@@ -16,3 +16,40 @@ Dino uses an outdated version, when they updated to version 4 to implement "prop
 
 Also the info bar in dwm displays in dozonal by default, if you click on it while holding the windows key it switches to a normal clock display, changing `int usedoz = 1` to be 0 in the dwm\_personal.diff and then `guix home reconfigure home-config.scm` would change it to default to the normal display.
 
+
+## Notes about initial install
+
+once the system is fully setup my `guixman` script can be used for the main operations, running without a recognized command prints the source file which serves as the documentation for the viable options since it is a pretty simple switch case. However, 'bootstrapping' this environment is not trivial since there are some dependencies on nongnu software and nix stuff which can get in the way. I will try to explain the dependency chains here (mainly for my own sake) and intend to setup scripts to help this initial setup phase.
+
+### nix
+- guix home creates the `.nix-channels` file that specifies which channel should be used and `.nix-defexpr/default.nix` which specify what packages to install
+- `nix-channels --update` updates the channels based on the .nix-channels file and populates `~/.nix-defexpr/channels` directory
+- `nix-env -i -r` uses both things in `.nix-defexpr` mentioned above to install the packages desired through nix.
+
+### non gnu guix channels
+
+- guix system must be used with libre kernel, it also specifies the substitute server for nonguix
+- guix home must be used without non free packages included, this sets up the channels as a home service
+- guix pull updates the index of the new channels (may be skippable but kind of doubt it)
+- guix system and guix home can now use non free packages.
+
+### partitioning / initial disk creation
+
+TODO: write a script to automate this process and write the details to a scheme module that exports relevant variables
+
+- partition device with gpt partition table with one partition of 30MB and a second using the rest of the harddrive
+  - the 30MB will hold the grub bootloader, it uses less than 12MB on my system but 30 is plenty and having the bootloader fail to install because there isn't enough space sucks.
+  - if your device is relatively old it may not support gpt partition table, use mbr if you are unsure.
+- format the first partition as fat32
+- encrypt the second partition with `cryptosetup` and `luks`
+- mount the encrypted drive and format the mapper device with btrfs
+- make subvolumes as desired, at minimum one to put the swap file in.
+- make swapfile in swap subvolume
+- OPTIONAL: make keyfile for luks ([not supported properly on guix atm][luks-mapped-device-with-options])
+
+[luks-mapped-device-with-options]: https://issues.guix.gnu.org/70826
+
+### hard coded paths
+
+- os.scm defines the home path of the main user as `/home/tadhg` which is also hard coded in several places in home-config.scm.
+- mainly guixman but possibly others hard code the paths of dwm and dotfiles under `~/src/`, which would be ideal to change and de-dup with smarter code construction.

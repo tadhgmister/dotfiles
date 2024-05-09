@@ -98,29 +98,30 @@ echo os config was build, run 'guixman os' to reconfigure the system
 	 (NIX "nix-env -r -i")
 	 ;; for diff command -up gives more context, -N displays new files contents.
 	 ;; we specifically use guix build to grab the most up to date version of the package definitions
-	 (DWM_DIFF "diff -up -N $(guix build -L ~/src/dotfiles/packages/ -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
-	 (HOME "guix home reconfigure -L ~/src/dotfiles/packages/ ~/src/dotfiles/home-config.scm")
-	 (OS "sudo guix system reconfigure  -L ~/src/dotfiles/packages/ ~/src/dotfiles/os.scm")
+	 (DWM_DIFF "diff -up -N $(guix build -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
+	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
+	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
 	 (GITPUSH "git -C ~/src/dotfiles/ push")
 	 )
     (single-script-package "guixman"
-  "#!/bin/sh\n"
-  "case $1 in\n"
-  "\n  \"home\" )\n"
-  "    " DWM_DIFF ";\n"
-  "    " HOME " && " STAGEHOME " && " NIX ";;\n"
-  "\n  \"os\" )\n"
-  "    " OS " && " STAGEOS ";;\n"
-  "\n  \"commit\" )\n"
-  "    " COMMIT " && " GITPUSH ";;\n"
-  "\n  \"pull\" )\n"
-  "    " guix-man-pull-command "/bin/guixmanpullcmd;;\n"
-  "  *)\n"
-  "   echo invalid command, see following;\n"
-  "   cat $(which $0);;\n"
-  "esac\n"
-  )))
+			   "#!/bin/sh
+GUILE_LOAD_PATH=$GUILE_LOAD_PATH:/home/tadhg/src/dotfiles/packages
+case $1 in
+  \"home\" )
+    " DWM_DIFF ";
+    " HOME " && " STAGEHOME " && " NIX ";;
+  \"os\" )
+    " OS " && " STAGEOS ";;
+  \"commit\" )
+    " COMMIT " && " GITPUSH ";;
+  \"pull\" )
+    " guix-man-pull-command "/bin/guixmanpullcmd;;
+  *)
+   echo invalid command, see following;
+   cat $(which $0);;
+esac
+")))
 
 (define packages-for-home
   (append
@@ -133,47 +134,48 @@ echo os config was build, run 'guixman os' to reconfigure the system
     dozfont
    ;; and other scripts that I want to use
    (single-script-package "screenshot"
-    "#!/bin/sh\n"
-    "mkdir -p ~/Pictures/screenshots/\n"					  
-    scrot "/bin/scrot ~/Pictures/screenshots/%Y-%m-%d_%H:%M:%S.%f$1.png")
-   
+    "#!/bin/sh
+mkdir -p ~/Pictures/screenshots/
+"  scrot "/bin/scrot ~/Pictures/screenshots/%Y-%m-%d_%H:%M:%S.%f$1.png
+")
    (single-script-package "webcam"
-   "#!/bin/sh\n"
-   "mpv --cache=no --demuxer-lavf-format=video4linux2 --demuxer-lavf-o=video_size=1920x1080,input_format=mjpeg av://v4l2:/dev/video0")
-
+   "#!/bin/sh
+mpv --cache=no --demuxer-lavf-format=video4linux2 --demuxer-lavf-o=video_size=1920x1080,input_format=mjpeg av://v4l2:/dev/video0
+")
    (single-script-package "worktimer"
-    "#!/bin/sh\n"
-    "echo 1 > /sys/class/leds/input2\\:\\:capslock/brightness\n"
-    "sleep $1\n"
-    "echo 0 > /sys/class/leds/input2\\:\\:capslock/brightness\n")
-
+    "#!/bin/sh
+echo 1 > /sys/class/leds/input2\\:\\:capslock/brightness
+sleep $1
+echo 0 > /sys/class/leds/input2\\:\\:capslock/brightness
+")
    (single-script-package "playtimer"
-    "#!/bin/sh\n"
-    "worktimer $1\n"
-    "if [ $# -gt 1 ]; then\n"
-    "    echo \"timer is done,\" ${@:2} | festival --tts\n"
-    "else\n"
-    "    echo timer is done, stop what you are doing. Look away from the screen. Set another timer | festival --tts\n"
-    "fi\n")
-
+    "#!/bin/sh
+worktimer $1
+if [ $# -gt 1 ]; then
+    echo \"timer is done,\" ${@:2} | festival --tts
+else
+    echo timer is done, stop what you are doing. Look away from the screen. Set another timer | festival --tts
+fi
+")
    (single-script-package "dmenuwithbangs"
-    "#!/bin/sh\n"
-    "thing_to_run=`" dmenu "/bin/dmenu_path | cat " (local-file "./list_of_bangs.txt") " - | " dmenu "/bin/dmenu \"$@\"`\n"
-    "if [ \"${thing_to_run:0:1}\" = \"!\" ]; then\n"
-    "    brave \"? $thing_to_run\" &\n"
-    "else\n"
-    "    echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &\n"
-    "fi\n")
-
+			  ;; NOTE: dmenu needs to be installed for this to work properly since dmenu_path references stest directly.
+    "#!/bin/sh
+thing_to_run=`dmenu_path | cat " (local-file "./list_of_bangs.txt") " - | dmenu \"$@\"`
+if [ \"${thing_to_run:0:1}\" = \"!\" ]; then
+    brave \"? $thing_to_run\" &
+else
+    echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &
+fi
+")
    (single-script-package "brctl"
-    "#!/bin/sh\n"
-    "if [ $1 -ge 2 ]; then\n"
-    "    number=$(( ($1 - 1) * 1000))\n"
-    "else\n"
-    "    number=$1\n"
-    "fi\n"
-    "echo $number > /sys/class/backlight/intel_backlight/brightness\n")
-   
+    "#!/bin/sh
+if [ $1 -ge 2 ]; then
+    number=$(( ($1 - 1) * 1000))
+else
+    number=$1
+fi
+echo $number > /sys/class/backlight/intel_backlight/brightness
+")
 ;; TODO: figure out how wine is installed and whether there is any configs given to wine to make this work
    (single-script-package "sims3"
     "#!/bin/sh\n"
@@ -182,16 +184,16 @@ echo os config was build, run 'guixman os' to reconfigure the system
 ;; note that this script relies on having pavucontrol and bluez packages installed, both are occasionally needed outside this script
 ;; so having them installed makes the most sense.
    (single-script-package "headphones"
-    "#!/bin/sh\n"
-    "if [ $# -eq 0 ]; then\n"
-    "  pavucontrol & \n"
-    "  bluetoothctl power on\n"
-    "  bluetoothctl connect 10:AC:DD:E6:97:45\n"
-    "fi\n"
-    "if [ $# -eq 1 ]; then\n"
-    "  bluetoothctl power off\n"
-    "fi\n")
-
+			  "#!/bin/sh
+if [ $# -eq 0 ]; then
+  pavucontrol &
+  bluetoothctl power on
+  bluetoothctl connect 10:AC:DD:E6:97:45
+fi
+if [ $# -eq 1 ]; then
+  bluetoothctl power off
+fi
+")
    (single-script-package "ciarancostume"
     "#!/bin/sh\n"
     "cd ~/Documents/\n"
@@ -343,6 +345,7 @@ fi")))
 gtk-application-prefer-dark-theme = true
 "))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      (".nix-channels" ,(plain-file "nix-channels" "https://nixos.org/channels/nixpkgs-unstable nixpkgs\n"))
       (".nix-defexpr/default.nix" ,(plain-file "default.nix"
 "let
    nixpkgs = import ./channels/nixpkgs { config.allowUnfree = true; };
