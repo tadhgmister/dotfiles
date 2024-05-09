@@ -1,6 +1,6 @@
-diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
---- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2024-05-09 12:53:32.619478992 -0400
+diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
+--- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
++++ /home/tadhg/src/dwm/config.def.h	2024-05-09 16:49:39.585470668 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -19,7 +19,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
  static const char col_gray1[]       = "#222222";
  static const char col_gray2[]       = "#444444";
  static const char col_gray3[]       = "#bbbbbb";
-@@ -19,113 +20,183 @@ static const char *colors[][3]      = {
+@@ -19,23 +20,33 @@ static const char *colors[][3]      = {
  };
  
  /* tagging */
@@ -58,12 +58,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
  
  static const Layout layouts[] = {
  	/* symbol     arrange function */
--	{ "[]=",      tile },    /* first entry is default */
-+        { "[]=",      tile },    /* first entry is default */
-+	//{ "|=|",      tileWithNMaster0 },
- 	{ "><>",      NULL },    /* no layout function means floating behavior */
--	{ "[M]",      monocle },
-+	/* { "[M]",      monocle }, */
+@@ -47,89 +58,148 @@ static const Layout layouts[] = {
  };
  
  /* key definitions */
@@ -167,6 +162,8 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
 -	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
 -	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
 -	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
+-	{ MODKEY,                       XK_u,      setlayout,      {.v = &layouts[3]} },
+-	{ MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },
 -	{ MODKEY,                       XK_space,  setlayout,      {0} },
 -	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
 -	{ MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
@@ -182,6 +179,8 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
 +	/* { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
 +	/* { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },*/
 +	/* { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },*/
++	/* { MODKEY,                       XK_u,      setlayout,      {.v = &layouts[3]} },*/
++	/* { MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },*/
 +	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
 +	/*{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },*/
 +	{ MODKEY,                       XK_f,      togglefullscr,  {0} },
@@ -246,7 +245,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
 -	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 +  // clicking on layout symbol switches to tiling, rightclick switches to list mode
 +	{ ClkLtSymbol,          MODKEY,              Button1,        setlayout,      {.v = &layouts[0]} },
-+        //{ ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[1]} },
++        { ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[3]} },
 +	{ ClkWinTitle,          MODKEY,              Button2,        zoom,           {0} },
 +	{ ClkStatusText,        MODKEY,              Button1,        toggledoz,     {0} },
 +	{ ClkStatusText,        MODKEY,              Button2,        spawn,          {.v = termcmd } },
@@ -259,8 +258,8 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
 +	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
  };
  
-diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
---- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
+--- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.mk	2024-04-23 14:56:32.801882541 -0400
 @@ -36,4 +36,4 @@ LDFLAGS  = ${LIBS}
  #LDFLAGS = ${LIBS}
@@ -268,9 +267,9 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
  # compiler and linker
 -CC = cc
 +CC = gcc
-diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
---- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2024-04-24 18:04:35.571894270 -0400
+diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
+--- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
++++ /home/tadhg/src/dwm/dwm.c	2024-05-09 16:48:59.897298620 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -306,7 +305,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  static void holdbar(const Arg *arg);
  static void togglefloating(const Arg *arg);
  static void togglefullscr(const Arg *arg);
-@@ -506,9 +513,15 @@ buttonpress(XEvent *e)
+@@ -508,9 +515,15 @@ buttonpress(XEvent *e)
  	}
  	if (ev->window == selmon->barwin) {
  		i = x = 0;
@@ -324,7 +323,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  		if (i < LENGTH(tags)) {
  			click = ClkTagBar;
  			arg.ui = 1 << i;
-@@ -800,19 +813,18 @@ drawbar(Monitor *m)
+@@ -802,19 +815,18 @@ drawbar(Monitor *m)
  	}
  
  	for (c = m->clients; c; c = c->next) {
@@ -348,7 +347,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  		x += w;
  	}
  	w = TEXTW(m->ltsymbol);
-@@ -1087,11 +1099,25 @@ keypress(XEvent *e)
+@@ -1089,11 +1101,25 @@ keypress(XEvent *e)
  			keys[i].func(&(keys[i].arg));
  }
  
@@ -376,7 +375,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  	if (!sendevent(selmon->sel, wmatom[WMDelete])) {
  		XGrabServer(dpy);
  		XSetErrorHandler(xerrordummy);
-@@ -1457,14 +1483,70 @@ restack(Monitor *m)
+@@ -1459,14 +1485,70 @@ restack(Monitor *m)
  	XSync(dpy, False);
  	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
  }
@@ -448,7 +447,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  		if (!(autostartcomplete || autostarttags))
  			autostarttagsspawner();
  		if (handler[ev.type])
-@@ -1664,6 +1746,7 @@ setup(void)
+@@ -1666,6 +1748,7 @@ setup(void)
  		scheme[i] = drw_scm_create(drw, colors[i], 3);
  	/* init bars */
  	updatebars();
@@ -456,7 +455,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  	updatestatus();
  	/* supporting window for NetWMCheck */
  	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
-@@ -1694,6 +1777,13 @@ seturgent(Client *c, int urg)
+@@ -1696,6 +1779,13 @@ seturgent(Client *c, int urg)
  	XWMHints *wmh;
  
  	c->isurgent = urg;
@@ -470,7 +469,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  	if (!(wmh = XGetWMHints(dpy, c->win)))
  		return;
  	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
-@@ -1822,6 +1912,13 @@ togglebar(const Arg *arg)
+@@ -1824,6 +1914,13 @@ togglebar(const Arg *arg)
  }
  
  void
@@ -484,7 +483,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  togglefloating(const Arg *arg)
  {
  	if (!selmon->sel)
-@@ -2133,9 +2230,19 @@ updatesizehints(Client *c)
+@@ -2135,9 +2232,19 @@ updatesizehints(Client *c)
  void
  updatestatus(void)
  {
@@ -507,7 +506,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2163,19 +2270,27 @@ void
+@@ -2165,19 +2272,27 @@ void
  updatewmhints(Client *c)
  {
  	XWMHints *wmh;
@@ -537,9 +536,21 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/dwm.c /
  }
  
  void
-Common subdirectories: /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
-diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
---- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
+@@ -2340,6 +2455,11 @@ bstack(Monitor *m) {
+ 			w = (m->ww - mx) / (MIN(n, m->nmaster) - i);
+ 			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0);
+ 			mx += WIDTH(c);
++			if(m->nmaster == 1 && HEIGHT(c) != mh){
++			  // one main window that had an aspect ratio that allows more space
++			  mh = HEIGHT(c);
++			  ty = m->wy + mh;
++			}
+ 		} else {
+ 			h = m->wh - mh;
+ 			resize(c, tx, ty, tw - (2 * c->bw), h - (2 * c->bw), 0);
+Common subdirectories: /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
+diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
+--- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/Makefile	2024-04-23 17:10:33.274202418 -0400
 @@ -3,7 +3,7 @@
  
@@ -550,9 +561,9 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/Makefil
  OBJ = ${SRC:.c=.o}
  
  all: options dwm
-Common subdirectories: /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
-diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
---- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
+Common subdirectories: /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
+diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
+--- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/status.c	2024-04-27 10:28:37.896956732 -0400
 @@ -0,0 +1,163 @@
 +#include <time.h>
@@ -718,8 +729,8 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.
 +  next_update->tv_sec = current_time->tv_sec + 1;
 +  next_update->tv_nsec = 0;
 +}
-diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
---- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
+diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
+--- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/status.h	2024-04-23 17:22:37.540978117 -0400
 @@ -0,0 +1,5 @@
 +

@@ -27,6 +27,9 @@
 	   (uri "https://dwm.suckless.org/patches/autostarttags/dwm-autostarttags-6.4.diff")
 	   (sha256 (base32 "0rc75hip9kayh62mwhrfp0jjrf1z1l0617mviy5qaqyvxi4g994z")))
    (origin (method url-fetch)
+   	   (uri "https://dwm.suckless.org/patches/bottomstack/dwm-bottomstack-20160719-56a31dc.diff")
+   	   (sha256 (base32 "0lq7r887hby7mf8y3ksw28zwi4zzh0wzlwaj9viczir7a4fwlbk4")))
+   (origin (method url-fetch)
 	   (uri "https://dwm.suckless.org/patches/actualfullscreen/dwm-actualfullscreen-20211013-cb3f58a.diff")
 	   (sha256 (base32 "0882k8w6651c18ina0245b558f1bvqydcycw07lp711hpbg7f9gv")))))
 

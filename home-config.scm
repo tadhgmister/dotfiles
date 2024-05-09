@@ -96,6 +96,9 @@ echo os config was build, run 'guixman os' to reconfigure the system
 	 ;; -r removes all previously installed packages and -i installs 'the default' packages, meaning the list of packages listed in the default.nix I guess.
 	 ;; nix has to be updated after reconfiguring home since updates to the default.nix file in this config will change which packages are updated and that is the whole point of doing it there, it doesn't print anything when nothing needs updating so most of the time it won't matter
 	 (NIX "nix-env -r -i")
+	 ;; for diff command -up gives more context, -N displays new files contents.
+	 ;; we specifically use guix build to grab the most up to date version of the package definitions
+	 (DWM_DIFF "diff -up -N $(guix build -L ~/src/dotfiles/packages/ -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
 	 (HOME "guix home reconfigure -L ~/src/dotfiles/packages/ ~/src/dotfiles/home-config.scm")
 	 (OS "sudo guix system reconfigure  -L ~/src/dotfiles/packages/ ~/src/dotfiles/os.scm")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
@@ -105,9 +108,8 @@ echo os config was build, run 'guixman os' to reconfigure the system
   "#!/bin/sh\n"
   "case $1 in\n"
   "\n  \"home\" )\n"
-  ;; for diff command -up gives more context, -N displays new files contents.
-  "    diff -up -N " dwm-checkout-without-personal " ~/src/dwm > ~/src/dotfiles/dwm_personal.diff;\n"
-  "    "  HOME " && " STAGEHOME " && " NIX ";;\n"
+  "    " DWM_DIFF ";\n"
+  "    " HOME " && " STAGEHOME " && " NIX ";;\n"
   "\n  \"os\" )\n"
   "    " OS " && " STAGEOS ";;\n"
   "\n  \"commit\" )\n"
