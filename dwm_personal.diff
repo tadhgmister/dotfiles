@@ -1,6 +1,6 @@
 diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2024-05-09 11:14:13.388597400 -0400
++++ /home/tadhg/src/dwm/config.def.h	2024-05-09 12:53:32.619478992 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -19,7 +19,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
  static const char col_gray1[]       = "#222222";
  static const char col_gray2[]       = "#444444";
  static const char col_gray3[]       = "#bbbbbb";
-@@ -19,113 +20,198 @@ static const char *colors[][3]      = {
+@@ -19,113 +20,183 @@ static const char *colors[][3]      = {
  };
  
  /* tagging */
@@ -56,26 +56,11 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
 -static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 +static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
  
-+// TODO: maybe set better ways to handle this?
-+// I like the default tile arrangement but only ever want to have one main window or 0 since I generally only have up to 3 windows open on any given tab.
-+// and even then the case where they are all layered vertically is usually to have a movie and a terminal visible at a time.
-+void
-+tileWithNMaster1(Monitor *m)
-+{
-+  m->nmaster = 1;
-+  tile(m);
-+}
-+void
-+tileWithNMaster0(Monitor *m)
-+{
-+  m->nmaster = 0;
-+  tile(m);
-+}
  static const Layout layouts[] = {
  	/* symbol     arrange function */
 -	{ "[]=",      tile },    /* first entry is default */
-+	{ "[]=",      tileWithNMaster1 },    /* first entry is default */
-+	{ "|=|",      tileWithNMaster0 },
++        { "[]=",      tile },    /* first entry is default */
++	//{ "|=|",      tileWithNMaster0 },
  	{ "><>",      NULL },    /* no layout function means floating behavior */
 -	{ "[M]",      monocle },
 +	/* { "[M]",      monocle }, */
@@ -261,7 +246,7 @@ diff -up -N /gnu/store/4yw2wa171xc5bppnn22sjvyajgskzaqq-dwm-6.4-checkout/config.
 -	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 +  // clicking on layout symbol switches to tiling, rightclick switches to list mode
 +	{ ClkLtSymbol,          MODKEY,              Button1,        setlayout,      {.v = &layouts[0]} },
-+        { ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[1]} },
++        //{ ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[1]} },
 +	{ ClkWinTitle,          MODKEY,              Button2,        zoom,           {0} },
 +	{ ClkStatusText,        MODKEY,              Button1,        toggledoz,     {0} },
 +	{ ClkStatusText,        MODKEY,              Button2,        spawn,          {.v = termcmd } },
