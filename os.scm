@@ -5,13 +5,18 @@
 ;; note about btrfs setup:
 ;; right now there is a small boot partition and the encrypted btrfs partition
 ;; I'd like to set it up so it has these subvolumes:
-;; / (root subvolume)
-;; /keyfile.cpio (file with key to decrypt the root partition that is loaded by grub)
-;; /guix (subvolume for root partition of guix system
-;; /guix/gnu/store (seperate subvolume)
-;; /guix/home (seperate subvolume)
-;;
-;; It would be interesting to see what files actually end up residing on the /guix subvolume, also 
+;; /keyfile.cpio (decrypt key for luks partition)
+;; /swapfile (having a swapfile in a subvolume stops it from getting snapshotted so having it in root is desirable)
+;; /guixroot -> /
+;; /guixstore -> /gnu/store (mounted with very high compression, enables reusing store in dualboot)
+;; /nixstore -> /nix/store (probably not strictly necessary but it is the principle.)
+;; /tadhghome -> /home/tadhg (low compression for faster lookup)
+;; /steamhome -> /home/tadhg/.local/share/.guix-sandbox-home (might be desirable to put in own subvolume)
+
+;; there are 3 possible issues with this setup:
+;; 1. grub might get confused about where things are and mess up (probably not but will need to check)
+;; 2. keyfile may be problematic, I doubt this since grub will be mounting the default partition and will load the .cpio file from there
+;; 3. swapfile can't be easily accesssed, might have to mount the root partition somewhere to make it visible.
 (use-modules
  (gnu)
  
@@ -127,6 +132,7 @@
   
   (swap-devices (list (swap-space
                        (target "/swapfile")
+		       ;; TODO: see example about btrfs mounting in docs about swap, just depending on mapped-devices isn't sufficient to guarentee the root partition is mounted.
 		       (dependencies mapped-devices))))
 
   ;; The list of file systems that get "mounted".  The unique
