@@ -167,7 +167,7 @@ else
     echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &
 fi
 ")
-   (single-script-package "brctl"
+   (single-script-package "brctl" ;;TODO: don't make this hardcoded path to backlight?
     "#!/bin/sh
 if [ $1 -ge 2 ]; then
     number=$(( ($1 - 1) * 1000))
@@ -329,6 +329,7 @@ fi")))
       ))))
        
     (simple-service 'dotfiles home-files-service-type `(
+      (".emacs.d/init.el" ,(local-file "./init.el"))
       (".gitconfig" ,(plain-file "gitconfig"
 "[user]
 	email = tadhgmister@gmail.com
