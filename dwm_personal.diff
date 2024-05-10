@@ -564,8 +564,8 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/Makefil
 Common subdirectories: /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
 diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
 --- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.c	2024-04-27 10:28:37.896956732 -0400
-@@ -0,0 +1,163 @@
++++ /home/tadhg/src/dwm/status.c	2024-05-09 20:35:41.885339819 -0400
+@@ -0,0 +1,168 @@
 +#include <time.h>
 +#include <string.h>
 +#include <stdio.h>
@@ -613,8 +613,8 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.
 +  double charge, current;
 +  char state[13];
 +  struct battery_info info;
-+  NAN_IF_NOT_ONE(pscanf(BAT_STATUS, "%12s", state));
-+  if(!strcmp(state, "Full")){
++  NAN_IF_NOT_ONE(pscanf(BAT_STATUS, "%12[a-zA-Z ]", state));
++  if(strncmp(state, "Not charging", 10) == 0 || strcmp(state, "Full") == 0){
 +    info.perc = 1.0;
 +    info.hours_left = 0.0;
 +    return info;
@@ -634,7 +634,6 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.
 +  } else {
 +    // if status isn't Charging, Discharging, or Full then I have no idea what is going on.
 +    info.hours_left = NAN;
-+    info.perc = NAN;
 +  }
 +  return info;
 +}
@@ -690,12 +689,18 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.
 +
 +  struct battery_info info = get_battery_status();
 +
-+  char charge_sign = info.hours_left == 0 ? '=' : info.hours_left > 0 ? '+' : '-';
-+  int charge_digA = (int)(info.perc*12.0);
-+  int remaining_A = 0, remaining_B = 0, remaining_C = 0;
-+  if(isnan(info.hours_left) || fabs(info.hours_left) >= 24.0){
-+    charge_sign = '?';
-+    charge_digA = 12;
++  char charge_sign = info.hours_left == 0 ? '/' : info.hours_left > 0 ? '+' : '-';
++  int charge_digA = isnan(info.perc) ? 0 : (int)(info.perc*12.0);
++  int remaining_A, remaining_B, remaining_C;
++  if(isnan(info.hours_left)){
++      charge_sign = '?';
++      remaining_A = 0;
++      remaining_B = 0;
++      remaining_C = 0;
++  } else if(fabs(info.hours_left) >= 24.0){
++    remaining_A = 12;
++    remaining_B = 12;
++    remaining_C = 12;
 +  } else{
 +    int left = (int)(fabs(info.hours_left) * 72.0);
 +    remaining_A = left/144;
