@@ -33,11 +33,11 @@
 	     (gnu home services desktop)
 	     (tadhg dwm)
 	     (tadhg packagelist)
+	     ((tadhg dunst) #:select(home-dunst-service-type home-dunst-configuration))
 	     (tadhg dozfont)
+	     ((tadhg dbus-temp) #:prefix tadhgs:)
 	     ((tadhg channels-and-subs) #:select(channels) #:prefix tadhgs: )
 )
-
-
 
 
 ;;;;;;; START OF PACKAGE DEFINITIONS
@@ -279,6 +279,10 @@ fi")))
   ;; services, run 'guix home search KEYWORD' in a terminal.
   (services
    (list
+    (service tadhgs:home-dbus-service-type)
+    ;; (service home-dunst-service-type
+    ;; 	     (home-dunst-configuration
+    ;; 	      (config-file (local-file "dusnt.conf"))
     (simple-service 'profile home-shell-profile-service-type
 		    (list
 		     ;; source nix profile to make brave (and any other applications maybe installed with nix) available
