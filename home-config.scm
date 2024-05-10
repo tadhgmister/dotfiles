@@ -29,6 +29,8 @@
              (guix gexp)
              (gnu home services shells)
 	     (gnu home services xdg)
+	     (gnu home services ssh)
+	     (gnu home services desktop)
 	     (tadhg dwm)
 	     (tadhg packagelist)
 	     (tadhg dozfont)
@@ -222,8 +224,6 @@ fi
 ;; TODO: probably clean up this definition slightly, is kind of unreadable as is.
 (define profile-script
   (let* (
-	 (LAT_LONG_FOR_REDSHIFT "45.421532:-75.697189")
-	 (REDSHIFT_OPTIONS (string-append "-l " LAT_LONG_FOR_REDSHIFT " -b 1:0.9 -t 6500K:3000K"))
        (Xresources (plain-file "Xresources" "
 Xft.dpi: 192
 Xft.hinting: 1
@@ -251,7 +251,6 @@ Xcursor.size: 64
 	 ;;; then start tasks in parallel
 	 python "/bin/python3 " (local-file "battery_script.py") " & "
 	 ;;slstatus-patched "/bin/slstatus & "
-	 redshift "/bin/redshift " REDSHIFT_OPTIONS " & "
 	 ;;; finally, execute dwm to open window manager.
 	 "exec " dwm-tadhg "/bin/dwm"))
        (DIR "~/.guix-home/profile")
@@ -286,10 +285,19 @@ fi")))
 		     (plain-file "nixprofile" "source /run/current-system/profile/etc/profile.d/nix.sh")
 		     profile-script)) 
     (simple-service 'lower-brightness home-run-on-first-login-service-type
-     `(system "echo 1 > /sys/class/backlight/intel_backlight/brightness"))
+		    `(system "echo 1 > /sys/class/backlight/intel_backlight/brightness"))
+    (service home-redshift-service-type
+         (home-redshift-configuration
+          (location-provider 'manual)
+          (latitude 45.421532)
+          (longitude -75.697189)
+	  (nighttime-temperature 2500)
+	  (nighttime-brightness 0.9)))
+    ;; (service  home-batsignal-service-type
+    ;; 		    (home-batsignal-configuration
+    ;; 		     (
     
-    (simple-service 'channels home-channels-service-type
-     (append tadhgs:channels %default-channels))
+    (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
 		    `(("EDITOR" . "vim")
 		      ;;("XCURSOR_SIZE" . "64") ;; TODO: don't think this has any affect, larger cursor would be really nice.
@@ -326,8 +334,21 @@ fi")))
         (name "brave")
         (type 'application)
         (config '((exec . "brave %U"))))
-      ))))
-       
+       ))))
+    (service home-openssh-service-type
+	     (home-openssh-configuration
+	      (hosts (list
+		      (openssh-host
+		       (name "turris")
+		       (host-name "192.168.1.1")
+		       (user "root")
+		       (host-key-algorithms '("+ssh-rsa"))
+		       (extra-content "  StrictHostKeyChecking no"))))))
+    (simple-service 'configfiles home-xdg-configuration-files-service-type `(
+      ("gtk-3.0/settings.ini" ,(plain-file "settings.ini"
+"[Settings]
+gtk-application-prefer-dark-theme = true
+"))))
     (simple-service 'dotfiles home-files-service-type `(
       (".emacs.d/init.el" ,(local-file "./init.el"))
       (".gitconfig" ,(plain-file "gitconfig"
@@ -339,11 +360,6 @@ fi")))
 	smtpuser = tadhgmister@gmail.com
 	smtpencryption = ssl
 	smtpserverport = 465
-"))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      (".config/gtk-3.0/settings.ini" ,(plain-file "settings.ini"
-"[Settings]
-gtk-application-prefer-dark-theme = true
 "))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       (".nix-channels" ,(plain-file "nix-channels" "https://nixos.org/channels/nixpkgs-unstable nixpkgs\n"))
