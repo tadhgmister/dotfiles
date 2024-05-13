@@ -4,13 +4,13 @@
 ;; TODO: clean up imports
 (use-modules (gnu home)
 	     ((gnu packages xorg) #:select (xrdb xrandr xinit))
-	     ((gnu packages xdisorg) #:select(redshift))
+	     ((gnu packages xdisorg) #:select(redshift xdo))
 	     ((gnu packages suckless) #:select (slstatus dmenu))
 	     ((gnu packages gtk) #:select (pango))
 	     ((gnu packages python) #:select (python))
 	     ((gnu packages pkg-config) #:select (pkg-config))
 	     ((gnu packages xdisorg) #:select(scrot))
-	     ((guix gexp) #:select (gexp))
+	     ((gnu packages wm) #:select(dunst))
 	     ((guix build-system copy) #:select (copy-build-system))
 	     ((guix build-system trivial) #:select (trivial-build-system))
 	     ((guix transformations) #:select (options->transformation))
@@ -279,10 +279,52 @@ fi")))
   ;; services, run 'guix home search KEYWORD' in a terminal.
   (services
    (list
-    (service tadhgs:home-dbus-service-type)
-    ;; (service home-dunst-service-type
-    ;; 	     (home-dunst-configuration
-    ;; 	      (config-file (local-file "dusnt.conf"))
+    (service home-dbus-service-type)
+    (service home-dunst-service-type
+	     (home-dunst-configuration (rules
+     `(
+       (global
+	;;(dmenu . "/gnu/store/ppbhrgv67g3rzkdxdksw5sqgn8p55cxs-dmenu-5.2/bin/dmenu -p dunst")
+	(dmenu . ,#~(string-append "\"" #$dmenu "/bin/dmenu -p dunst\""))
+	(script . ,#~(lambda* (#:key app-name summary body icon urgency id progress
+			       category stack-tag urls timeout timestamp desktop-entry #:allow-other-keys)
+			      (begin
+				(use-modules (ice-9 format))
+				(display "TEST TEXT HERE MAYBE?\n")
+				(define port (open-output-file (string-append "/home/tadhg/src/dotfiles/logs/" timestamp ".dump")))
+				(format port "
+app-name: ~s
+summary: ~s
+body: ~s
+icon: ~s
+urgency: ~s
+id: ~s
+progress: ~s
+category ~s
+stack-tag: ~s
+urls: ~s
+timeout: ~s
+timestamp: ~s
+desktop-entry: ~s
+" app-name summary body icon urgency id progress category stack-tag urls timeout timestamp desktop-entry )
+				(close-port port)
+	)))
+	(mouse_left_click . "context, close_current")
+	(mouse_right_click . "close_current")
+	(timeout . "10m")
+       )
+       (dino-trigger-immidiate
+	(appname . "Dino")
+	(skip_display . "true")
+	(script . ,#~(lambda* (#:key app-name #:allow-other-keys) (system* (string-append #$xdo "/bin/xdo") "activate" "-N" "dino")))
+	;;(script . ,#~(lambda* (#:key app-name #:allow-other-keys) (system* "dunstctl" "action" "0")))
+	)
+       (discord-trigger-immidiate
+	(appname . "discord")
+	(skip_display . "true")
+	(script . ,#~(lambda* (#:key app-name #:allow-other-keys) (system* (string-append #$xdo "/bin/xdo") "activate" "-N" "discord")))
+       )
+    ))))
     (simple-service 'profile home-shell-profile-service-type
 		    (list
 		     ;; source nix profile to make brave (and any other applications maybe installed with nix) available
@@ -304,6 +346,7 @@ fi")))
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
 		    `(("EDITOR" . "vim")
+		      ;;("GTK_THEME" . "Adwaita-dark")
 		      ;;("XCURSOR_SIZE" . "64") ;; TODO: don't think this has any affect, larger cursor would be really nice.
 		      ("CC" . "gcc")
 		      ("CFLAGS" . "-Wall")))
@@ -352,7 +395,17 @@ fi")))
       ("gtk-3.0/settings.ini" ,(plain-file "settings.ini"
 "[Settings]
 gtk-application-prefer-dark-theme = true
-"))))
+"))
+      ("gtk-4.0/gtk.css" ,(plain-file "settings.ini"
+"window.dino-main {
+        font-size: 30px;
+}
+
+window.dino-main .dino-conversation {
+        font-size: 40px;
+}
+"))
+       ))
     (simple-service 'dotfiles home-files-service-type `(
       (".emacs.d/init.el" ,(local-file "./init.el"))
       (".gitconfig" ,(plain-file "gitconfig"

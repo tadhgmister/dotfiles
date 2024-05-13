@@ -39,8 +39,12 @@
     ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
     "git"
     "tup" ;; build system
-    "icedove" ;; email
     ))
+(define communication
+  (list
+   "icedove" ;; email
+   "dino" ;; jabber
+   )) 
 (define entertainment
   (list
    "mpv" ;; video / audio
@@ -58,21 +62,21 @@
    "qemu" ;; for VM stuff
     "zip" "unzip" ;; zip and unzip are used enough I'd like to have them always present
    ))
-(define dino-with-x-alarm-transform
-  ;; this selects the latest version of dino that still supports the x alarm thingy that gets dwm to do notifications
-  (options->transformation
-   `((with-commit
-      .
-      "dino=c5cb4a7406c8ed5f18d0580c5edcc3b600ded78d")
-     (with-git-url
-      .
-      "dino=https://github.com/dino/dino.git")
-     )))
+;; (define dino-with-x-alarm-transform
+;;   ;; this selects the latest version of dino that still supports the x alarm thingy that gets dwm to do notifications
+;;   (options->transformation
+;;    `((with-commit
+;;       .
+;;       "dino=c5cb4a7406c8ed5f18d0580c5edcc3b600ded78d")
+;;      (with-git-url
+;;       .
+;;       "dino=https://github.com/dino/dino.git")
+;;      )))
 (define-public home-packages
   (cons*
-   (dino-with-x-alarm-transform (specification->package "dino"))
+   ;;(dino-with-x-alarm-transform (specification->package "dino"))
    (specifications->packages
-    (append xorg productivity entertainment utility))))
+    (append xorg productivity communication entertainment utility))))
 
 (define-public os-packages
   (specifications->packages (append os-level)))
