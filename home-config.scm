@@ -281,12 +281,12 @@ fi")))
    (list
     (service home-dbus-service-type)
     (service home-dunst-service-type
-	     (home-dunst-configuration (rules
-     `(
-       (global
+	     (home-dunst-configuration
+	      (log-file "/home/tadhg/.local/state/log/dunst.log")
+       (global `(
 	;;(dmenu . "/gnu/store/ppbhrgv67g3rzkdxdksw5sqgn8p55cxs-dmenu-5.2/bin/dmenu -p dunst")
-	(dmenu . ,#~(string-append "\"" #$dmenu "/bin/dmenu -p dunst\""))
-	(script . ,#~(lambda* (#:key app-name summary body icon urgency id progress
+	(dmenu ,#~(string-append #$dmenu "/bin/dmenu -p dunst"))
+	(script ,#~(lambda* (#:key app-name summary body icon urgency id progress
 			       category stack-tag urls timeout timestamp desktop-entry #:allow-other-keys)
 			      (begin
 				(use-modules (ice-9 format))
@@ -308,23 +308,23 @@ timestamp: ~s
 desktop-entry: ~s
 " app-name summary body icon urgency id progress category stack-tag urls timeout timestamp desktop-entry )
 				(close-port port)
-	)))
-	(mouse_left_click . "context, close_current")
-	(mouse_right_click . "close_current")
-	(timeout . "10m")
-       )
-       (dino-trigger-immidiate
-	(appname . "Dino")
-	(skip_display . "true")
-	(script . ,#~(lambda* (#:key app-name #:allow-other-keys) (system* (string-append #$xdo "/bin/xdo") "activate" "-N" "dino")))
-	;;(script . ,#~(lambda* (#:key app-name #:allow-other-keys) (system* "dunstctl" "action" "0")))
-	)
-       (discord-trigger-immidiate
-	(appname . "discord")
-	(skip_display . "true")
-	(script . ,#~(lambda* (#:key app-name #:allow-other-keys) (system* (string-append #$xdo "/bin/xdo") "activate" "-N" "discord")))
-       )
-    ))))
+				)))
+	;;(mouse_left_click . "context, close_current")
+	;;(mouse_right_click . "close_current")
+	;;(timeout . "10m")
+	))
+       (rules `(
+		(dino-trigger-immidiate
+		 (appname "Dino")
+		 (skip_display #t)
+		 (script ,#~(lambda* (#:key app-name #:allow-other-keys) (system* (string-append #$xdo "/bin/xdo") "activate" "-N" "dino")))
+		 )
+		(discord-trigger-immidiate
+		 (appname "discord")
+		 (skip_display  #t)
+		 (script ,#~(lambda* (#:key app-name #:allow-other-keys) (system* (string-append #$xdo "/bin/xdo") "activate" "-N" "discord")))
+		 )
+		))))
     (simple-service 'profile home-shell-profile-service-type
 		    (list
 		     ;; source nix profile to make brave (and any other applications maybe installed with nix) available
