@@ -3,7 +3,7 @@
 
 ;; TODO: clean up imports
 (use-modules (gnu home)
-	     ((gnu packages xorg) #:select (xrdb xrandr xinit))
+	     ((gnu packages xorg) #:select (xrdb xrandr xinit xsetroot))
 	     ((gnu packages xdisorg) #:select(redshift xdo))
 	     ((gnu packages suckless) #:select (slstatus dmenu))
 	     ((gnu packages gtk) #:select (pango))
@@ -229,7 +229,7 @@ Xft.dpi: 192
 Xft.hinting: 1
 Xft.autohint: 0
 Xft.antialias: 1
-Xcursor.theme: default
+Xcursor.theme: redglass
 Xcursor.size: 64
 "))
        (xinitrc (mixed-text-file "xinitrc"
@@ -259,7 +259,7 @@ Xcursor.size: 64
        (MODULEPATH (string-append DIR "/lib/xorg/modules"))
        )
     (mixed-text-file "profile" ;; name of the file, not part of the script
-"
+		     "
 if [ \"$(tty)\" = \"/dev/tty1\" ]; then
   " xinit "/bin/xinit " xinitrc " -- " XORG " :0 vt1 -dpi 192 -keeptty -configdir " CONFIGDIR " -modulepath " MODULEPATH "
 fi")))

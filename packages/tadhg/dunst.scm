@@ -9,6 +9,8 @@
   #:export (home-dunst-configuration
 	    home-dunst-service-type)
   )
+
+(define (serialize-string field value) value)
 (define (make-program-file rule-title script-function)
   (program-file (string-append "dunst-" rule-title "-script")
 			       #~(#$script-function
