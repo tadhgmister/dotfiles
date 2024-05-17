@@ -1,0 +1,21 @@
+import GUILE_LOAD_PATH=
+GUILE_LOAD_PATH+=:$(TUP_CWD)/packages
+export GUILE_LOAD_PATH
+import GUILE_LOAD_COMPILED_PATH=
+GUILE_LOAD_COMPILED_PATH+=:$(TUP_CWD)/packages
+export GUILE_LOAD_COMPILED_PATH
+
+CPREFIX=guix shell guile guix grep --pure --
+GUIX_FLAGS= -L $(TUP_CWD)/packages
+
+preload packages
+preload packages/tadhg
+
+!guild = |> guild compile %f -o %o $(GUIX_FLAGS) |> 
+
+#: packages/tadhg/dunst.scm |> !guild |>
+: home-config.scm | packages/tadhg/*.go  |> guix home build home-config.scm $(GUIX_FLAGS); echo done > %o |> HOME.txt
+
+: os.scm packages/tadhg/*.go |> guix system build os.scm $(GUIX_FLAGS); echo done > %o |> OS.txt
+
+: foreach packages/tadhg/*.scm |> !guild |>  packages/tadhg/%B.go

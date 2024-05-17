@@ -1,5 +1,6 @@
 
 (define-module (tadhg dozfont)
+  #:use-module ((guix utils) #:select(current-source-directory))
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module ((gnu packages python) #:select(python))
@@ -15,7 +16,7 @@
     (version "1")
     (synopsis "dozonal font")
     (description "tadhg's dozonal font")
-    (source (local-file "./makefont.py"))
+    (source (local-file "makefont.py"))
     (build-system font-build-system)
     (native-inputs (list python fontforge))
     (arguments
@@ -26,3 +27,4 @@
 	     (invoke (which "python3") (assoc-ref inputs "source")))))))
     (home-page #f)
     (license license:gpl3)))
+

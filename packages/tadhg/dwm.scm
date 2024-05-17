@@ -1,4 +1,5 @@
 (define-module (tadhg dwm)
+  #:use-module ((guix utils) #:select(current-source-directory))
   #:use-module ((gnu packages suckless) #:select(dwm))
   #:use-module ((gnu packages gtk) #:select(pango))
   #:use-module ((gnu packages pkg-config) #:select (pkg-config))
@@ -35,7 +36,7 @@
 
 
 ;;; 'list' of personal patches, in theory the vacant tags and config changes could be split into seperate patches so this is kept as a list.
-(define personal-patches (list (local-file "../../dwm_personal.diff")))
+(define personal-patches (list (local-file "dwm_personal.diff" )))
 
 
 (define VERSION "6.4")
