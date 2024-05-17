@@ -35,7 +35,6 @@
 	     (tadhg packagelist)
 	     ((tadhg dunst) #:select(home-dunst-service-type home-dunst-configuration))
 	     (tadhg dozfont)
-	     ((tadhg dbus-temp) #:prefix tadhgs:)
 	     ((tadhg channels-and-subs) #:select(channels) #:prefix tadhgs: )
 )
 

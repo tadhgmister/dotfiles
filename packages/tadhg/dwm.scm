@@ -36,7 +36,7 @@
 
 
 ;;; 'list' of personal patches, in theory the vacant tags and config changes could be split into seperate patches so this is kept as a list.
-(define personal-patches (list (local-file "dwm_personal.diff" )))
+(define personal-patches (list (local-file "aux-files/dwm_personal.diff" )))
 
 
 (define VERSION "6.4")

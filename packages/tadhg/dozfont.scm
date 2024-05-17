@@ -16,7 +16,7 @@
     (version "1")
     (synopsis "dozonal font")
     (description "tadhg's dozonal font")
-    (source (local-file "makefont.py"))
+    (source (local-file "aux-files/makefont.py"))
     (build-system font-build-system)
     (native-inputs (list python fontforge))
     (arguments
