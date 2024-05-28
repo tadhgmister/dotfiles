@@ -390,7 +390,7 @@ desktop-entry: ~s
 		       (user "root")
 		       (host-key-algorithms '("+ssh-rsa"))
 		       (extra-content "  StrictHostKeyChecking no"))))))
-    (simple-service 'configfiles home-xdg-configuration-files-service-type `(
+    (simple-service 'configfiles home-xdg-configuration-files-service-type `(	   
       ("gtk-3.0/settings.ini" ,(plain-file "settings.ini"
 "[Settings]
 gtk-application-prefer-dark-theme = true
@@ -403,6 +403,10 @@ gtk-application-prefer-dark-theme = true
 window.dino-main .dino-conversation {
         font-size: 40px;
 }
+"))
+      ("foot/foot.ini" ,(plain-file "foot.ini" "
+[ bell ]
+urgent=yes
 "))
        ))
     (simple-service 'dotfiles home-files-service-type `(

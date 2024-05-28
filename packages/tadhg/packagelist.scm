@@ -27,7 +27,7 @@
    ;; "xrdb" "xinit" ;; can get away with both of these uninstalled and referenced directly in the profile
    "xdg-utils" ;; not sure exactly what this provides, might just be command line tools or could be necssary for the xdg default applications stuff to work properly.
    "xf86-input-libinput" ;; drivers, mainly the one for the trackpad with the quirk patch I submitted
-   "font-apple-color-emoji" ;; because I finally got tired of not knowing what emojis people were sending me
+   ;;"font-apple-color-emoji" ;; because I finally got tired of not knowing what emojis people were sending me
    "dmenu" ;; since dmenu has a script dmenu_path which references it's stest utility by name this needs to be installed for the list of autocomplete programs to work properly.
    ))
 (define productivity
@@ -47,8 +47,8 @@
    )) 
 (define entertainment
   (list
-   "mpv" ;; video / audio
-   "steam" ;; most of games
+   ;;"mpv" ;; video / audio
+   ;;"steam" ;; most of games
    "wine" ;; sims3
    "dolphin-emu" ;; TODO: maybe remove this?
    ))

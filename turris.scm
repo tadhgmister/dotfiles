@@ -7,6 +7,7 @@
  (gnu image)
  (gnu system image)
  (guix gexp)
+ (guix transformations)
  ((guix packages) #:select (package origin base32 modify-inputs package-native-inputs))
  ((guix git-download) #:select (git-fetch git-reference git-file-name))
  ((guix platforms arm) #:select(armv7-linux))
@@ -63,7 +64,9 @@
    ;;                              settings)))))
    (default-value (startupscript-configuration))
    (description "turns on the omnia led at startup to see if it is loading guix")))
-
+(define transform1
+  (options->transformation
+    '((without-tests . "guile-ssh"))))
 ;; this contains one commit to comment out the configure code for -fzero-call-used-regs
 (define patched-ssh
   (package
@@ -118,10 +121,12 @@
 
 (define my-system (operating-system
 		    
-		    (kernel linux-libre-arm-omnia)
+		    ;;(kernel linux-libre-arm-omnia)
 		    (kernel-arguments (cons*
 				       "earlyprintk"
 				       "console=ttyS0,115200"
+				       "pcie_aspm=no"
+				       "modprobe.blacklist=pcieaspm"
 				       %default-kernel-arguments))
 		    (initrd-modules (cons*
 				     ;; these are both used in nixturris with the comment about led support
@@ -162,18 +167,19 @@
 				(allow-empty-passwords? #t)))
 		      %base-services))))
 
-(image
- (format 'disk-image)
- (platform armv7-linux)
- (operating-system  my-system)
- (partitions
-  (list
-   (partition
-    (size 'guess)
-    (label root-label)
-    (file-system "ext4")
-    (flags '(boot))
-    (initializer (gexp initialize-root-partition))))))
+my-system
+;; (image
+;;  (format 'disk-image)
+;;  (platform armv7-linux)
+;;  (operating-system  my-system)
+;;  (partitions
+;;   (list
+;;    (partition
+;;     (size 'guess)
+;;     (label root-label)
+;;     (file-system "ext4")
+;;     (flags '(boot))
+;;     (initializer (gexp initialize-root-partition))))))
 
 
 ;; (list (machine
