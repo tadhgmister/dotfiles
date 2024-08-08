@@ -33,7 +33,7 @@
  ((gnu packages cups) #:select (cups cups-filters epson-inkjet-printer-escpr hplip-minimal))
  ((gnu services cups) #:select (cups-service-type cups-configuration))
  ((gnu services nfs) #:select (nfs-service-type nfs-configuration))
- ((gnu services desktop) #:select (bluetooth-service-type gnome-desktop-service-type %desktop-services elogind-service-type elogind-configuration))
+ ((gnu services desktop) #:select (sane-service-type bluetooth-service-type %desktop-services elogind-service-type elogind-configuration))
  ;;((gnu services docker) #:select(docker-service-type))
  ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms libvirt-service-type))
  ((gnu services nix) #:select (nix-service-type))
@@ -42,12 +42,67 @@
  ((gnu services sound) #:select (pulseaudio-service-type pulseaudio-configuration))
  ((gnu services audio) #:select (mpd-service-type mpd-configuration))
  ((gnu services xorg) #:select (xorg-server-service-type gdm-service-type screen-locker-service screen-locker-service-type xorg-configuration set-xorg-configuration))
- ((gnu services authentication) #:select (fprintd-service-type))
+ ;;((gnu services authentication) #:select (fprintd-service-type))
  ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration))
  ((gnu services pm) #:select (tlp-service-type tlp-configuration thermald-service-type))
  (tadhg packagelist)
  ((tadhg channels-and-subs) #:prefix tadhg:)
-)
+ )
+
+(use-modules
+ (gnu services)
+ (gnu services base)
+ (gnu services configuration)
+ (gnu services dbus)
+ (gnu services shepherd)
+ (gnu system pam)
+ (gnu system shadow)
+ (gnu packages admin)
+ (gnu packages freedesktop)
+ )
+
+(define-configuration fprintd-configuration
+  (fprintd      (file-like fprintd)
+                "The fprintd package")
+  (pam-modules (list '())
+               "list of pam modules to use fprint for"
+	       empty-serializer))
+
+(define (fprintd-dbus-service config)
+  (list (fprintd-configuration-fprintd config)))
+
+(define (fprintd-pam-service config)
+  ;; returns list of pam extension objects
+  ;; TODO: extract variables with let
+  (if (null? (fprintd-configuration-pam-modules config))
+      '() ;; when there are no pam modules specified don't add any transforms
+      ;; otherwise we have a transformer
+      (list (pam-extension
+             (transformer
+              (lambda (pam)
+                (if (member (pam-service-name pam) (fprintd-configuration-pam-modules config))
+                    (pam-service
+                     (inherit pam)
+		     ;; add fingerprint as sufficient to gain access
+		     (auth (cons (pam-entry (module (file-append (fprintd-configuration-fprintd config) "/lib/security/pam_fprintd.so"))
+					    (control "sufficient"))
+				 (pam-service-auth pam))))
+                    pam)))
+             (shepherd-requirements '(dbus-system))))))
+                 
+
+(define fprintd-service-type
+  (service-type (name 'fprintd)
+                (extensions
+                 (list (service-extension dbus-root-service-type
+                                          fprintd-dbus-service)
+                       (service-extension polkit-service-type
+                                          fprintd-dbus-service)
+		       (service-extension pam-root-service-type
+					  fprintd-pam-service)))
+                (default-value (fprintd-configuration))
+                (description
+                 "Run fprintd, a fingerprint management daemon.")))
 
 ;; (define ledtrigger-udev (udev-rule "90-ledtrigger.rules"
 ;; "ACTION==\"add\", SUBSYSTEM==\"leds\", RUN+=\"/run/current-system/profile/bin/chgrp input /sys/class/leds/%k/trigger\"
@@ -73,6 +128,8 @@
 				 #:key-file "/crypto_keyfile.bin"))
 (operating-system
   (kernel linux)
+  (initrd microcode-initrd)
+  (firmware (list linux-firmware))
   (kernel-arguments (cons*
 		     ;; point to partition that hibernate will resume from based on the offset of our swapfile specified on next line
 		     "resume=/dev/mapper/cryptroot"
@@ -87,8 +144,6 @@
 		     ;; morgan recommended this to ensure the power light turns off during suspend
 		     "acpi_osi=\"!Windows 2020\"" ; framework laptop suspend issue
 		     %default-kernel-arguments))
-  (initrd microcode-initrd)
-  (firmware (list linux-firmware))
   (locale "en_CA.utf8")
   (timezone "America/Toronto")
   (keyboard-layout (keyboard-layout "us"))
@@ -110,6 +165,7 @@
 					  "netdev" ;; TODO: what is this for?
 					  "audio" ;; to be able to use alsamixer etc
 					  "video"  ;; think this is to control brightness
+					  "scanner" ;; for scanning
 					  "input" ;; to control caps lock light
 					  "lp" ;; for printing / scanning TODO: confirm this is needed for printing/scanning
 					  "transmission" ;; for transmission (torrent)
@@ -171,6 +227,7 @@
     ;;          (state-file "~/.config/mpd/state")
     ;;          (sticker-file "~/.config/mpd/sticker.sql")))
     (service xorg-server-service-type) ;; needed for display (kind of important)
+    (service sane-service-type)
     (service cups-service-type ;; for printing
 	     (cups-configuration
 	      (web-interface? #t) ;; http://localhost:631
@@ -184,7 +241,9 @@
          (qemu-binfmt-configuration
            (platforms (lookup-qemu-platforms "arm" "aarch64"))))
     (service bluetooth-service-type) ;; allows bluetooth
-    (service fprintd-service-type) ;; enable fingerprint for sudo
+    (service fprintd-service-type
+	     (fprintd-configuration
+	      (pam-modules '("sudo" "login" "polkit-1")))) ;; enable fingerprint for sudo
     (service tlp-service-type ;; enables power optimizations
 	     (tlp-configuration
 	      (wifi-pwr-on-bat? #f))) ;; tried this to fix wifi issue, don't think it fixed
@@ -220,17 +279,5 @@
 	)))
   ;; allow using .local with mdns resolution, used for printer in particular
   (name-service-switch %mdns-host-lookup-nss)
-  (pam-services (map (lambda (pam)
-		       ;; if the pam service is either sudo or login
-		       (if (member (pam-service-name pam) (list "sudo" "login" "polkit-1"))
-			   (pam-service
-			    (inherit pam)
-			    ;; add fingerprint as sufficient to gain access
-			    (auth (cons (pam-entry (module (file-append fprintd "/lib/security/pam_fprintd.so"))
-						   (control "sufficient"))
-					(pam-service-auth pam)))
-			    ;; otherwise, leave pam service as is.
-			   ) pam
-		      )) (base-pam-services)))
   )
                       
