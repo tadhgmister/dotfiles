@@ -273,7 +273,7 @@
           (inherit config)
 	  (handle-power-key 'hibernate)
 	  ;;(idle-action 'suspend)
-          ;;(handle-lid-switch 'ignore)
+          (handle-lid-switch 'hybrid-sleep)
 	  ))
 	(delete gdm-service-type)
 	)))

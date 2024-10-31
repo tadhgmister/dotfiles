@@ -1,4 +1,11 @@
 
+;;;;; to connect to device while it is plugged in
+;; guix shell minicom -- sudo minicom -w -b 115200 -D /dev/ttyUSB0
+;;;; to disable watchdog timer while in the uboot prompt
+;; mw 0xf1020300 0x403
+;;;;; to continue to normal boot sequence after disabling watchdog
+;; run bootcmd
+
 (use-modules
  
 					;((gnu packages linux) #:select(customize-linux linux-libre linux-libre-arm64-generic))
@@ -102,7 +109,7 @@
 ;; I can't access hard drives without it and that source claims this the turris omnia doesn't work with the PCIEASPM symbol
 ;; (define KERNEL_CONFIGS (list "CONFIG_PCIEASPM=n"))
 (define make-linux-libre* (@@ (gnu packages linux) make-linux-libre*))
-(define %default-extra-linux-options (@@ (gnu packages linux) %default-extra-linux-options))
+(define %default-extra-linux-options ((@@ (gnu packages linux) default-extra-linux-options) linux-libre-version))
 (define kernel-config (@@ (gnu packages linux) kernel-config))
 
 (define linux-libre-arm-omnia
@@ -116,24 +123,25 @@
                      (append
                       `(
                         ("CONFIG_PCIEASPM" . #f))
-                      %default-extra-linux-options)))
+		      %default-extra-linux-options)))
 
 
+(define root-label "GuixRoot")
 (define my-system (operating-system
 		    
-		    ;;(kernel linux-libre-arm-omnia)
-		    (kernel-arguments (cons*
+		    (kernel linux-libre-arm-omnia)
+		    (kernel-arguments (list
 				       "earlyprintk"
 				       "console=ttyS0,115200"
 				       "pcie_aspm=no"
-				       "modprobe.blacklist=pcieaspm"
-				       %default-kernel-arguments))
-		    (initrd-modules (cons*
-				     ;; these are both used in nixturris with the comment about led support
+				       "modprobe.blacklist=pcieaspm,usbmouse,usbkbd"
+				       ))
+		    ;; (initrd-modules (cons*
+		    ;; 		     ;; these are both used in nixturris with the comment about led support
 				     
-				     ;;"ahci_mvebu" ;; ahci is about SATA support which might be important when loading from internal card but for now loading from USB probably doesn't need it
-				     ;; "rtc_armada38x" ;; something about real time clock, idk if it is important.
-				     %base-initrd-modules))
+		    ;; 		     ;;"ahci_mvebu" ;; ahci is about SATA support which might be important when loading from internal card but for now loading from USB probably doesn't need it
+		    ;; 		     "rtc_armada38x" ;; something about real time clock, idk if it is important.
+		    ;; 		     %base-initrd-modules))
 		    (host-name HOSTNAME)
 		    (timezone "America/Toronto")
 		    (bootloader (bootloader-configuration
@@ -142,12 +150,12 @@
 				 (targets '())))
 		    (file-systems (cons (file-system
 					  (mount-point "/")
-					  (device (file-system-label "GuixRoot"))
+					  (device (uuid "c8f29ed6-1b77-467d-826a-597c5785f5c3"));;(file-system-label root-label))
 					  (type "btrfs"))
 					%base-file-systems))
 		    (services
 		     (cons*       ;;(service dhcp-client-service-type)
-		      (service startupscript-service-type)
+		      ;; (service startupscript-service-type)
 		      (service static-networking-service-type
 			       (list (static-networking
 				      (addresses
@@ -160,11 +168,11 @@
 					      (gateway "192.168.2.1"))))
 				      (name-servers '()))))
 
-		      (service openssh-service-type
-			       (openssh-configuration
-				(openssh patched-ssh)
-				(permit-root-login #t)
-				(allow-empty-passwords? #t)))
+		      ;; (service openssh-service-type
+		      ;; 	       (openssh-configuration
+		      ;; 		(openssh patched-ssh)
+		      ;; 		(permit-root-login #t)
+		      ;; 		(allow-empty-passwords? #t)))
 		      %base-services))))
 
 my-system

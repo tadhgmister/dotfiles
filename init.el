@@ -1,6 +1,28 @@
 ;; emacs dark theme, one specifically designed to have high contrast.
 (load-theme 'modus-vivendi t)
+; cache the gpg passphrase so it doesn't prompt me every single time for it.
+(setq plstore-cache-passphrase-for-symmetric-encryption t)
 
+(require 'org-caldav)
+(setq org-caldav-url "http://localhost:8080/user/calendars")
+(setq org-caldav-calendar-id "calendar")
+;; Org filename where new entries from calendar stored
+(setq org-caldav-inbox "~/Sync/cal.org")
+
+;; Additional Org files to check for calendar events
+(setq org-caldav-files '("~/Sync/work.org"))
+;; and set the org agenda to also have those files
+(setq org-agenda-files '("~/Sync/work.org"
+                         "~/Sync/cal.org"))
+
+;; Usually a good idea to set the timezone manually
+(setq org-icalendar-timezone "America/Toronto")
+
+;; sync todos as well.
+(setq org-icalendar-include-todo 'all
+      org-caldav-sync-todo t)
+;; creates SCHEDULED timestamp from DEADLINE
+;; (setq org-caldav-todo-deadline-schedule-warning-days t)
 
 ;; guix uses .dir-local.el with some functions that emacs doesn't recognize as safe,
 ;; the parts that are of questionable safety are copied here to mark them as safe

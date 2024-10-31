@@ -36,6 +36,7 @@
 	     ((tadhg dunst) #:select(home-dunst-service-type home-dunst-configuration))
 	     (tadhg dozfont)
 	     ((tadhg channels-and-subs) #:select(channels) #:prefix tadhgs: )
+	     (tadhg cyrus-sasl-xoauth)
 )
 
 
@@ -100,8 +101,8 @@ echo os config was build, run 'guixman os' to reconfigure the system
 	 ;; for diff command -up gives more context, -N displays new files contents.
 	 ;; we specifically use guix build to grab the most up to date version of the package definitions
 	 (DWM_DIFF "diff -up -N $(guix build -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
-	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm")
-	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm")
+	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm -L ~/src/dotfiles/packages/")
+	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm -L ~/src/dotfiles/packages/")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
 	 (GITPUSH "git -C ~/src/dotfiles/ push")
 	 )
@@ -133,6 +134,7 @@ esac
     ;;mclauncher-package
     guix-manager-package
     dozfont
+    ;;cyrus-sasl-xoauth2
    ;; and other scripts that I want to use
    (single-script-package "screenshot"
     "#!/bin/sh
@@ -345,6 +347,8 @@ desktop-entry: ~s
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
 		    `(("EDITOR" . "vim")
+		      ("SASL_PATH" . ,(file-append cyrus-sasl-xoauth2 "/lib/sasl2/"))
+		      ;;("GUIX_BUILD_OPTIONS" . "--max-jobs=6")
 		      ;;("GTK_THEME" . "Adwaita-dark")
 		      ;;("XCURSOR_SIZE" . "64") ;; TODO: don't think this has any affect, larger cursor would be really nice.
 		      ("CC" . "gcc")

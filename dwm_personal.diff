@@ -1,6 +1,6 @@
 diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2024-05-28 09:03:11.895188640 -0400
++++ /home/tadhg/src/dwm/config.def.h	2024-10-30 17:52:50.282956460 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -186,8 +186,8 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.
 +	{ MODKEY|ShiftMask,             XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 40") },
 +	{ MODKEY|ShiftMask,             XK_F8,                      spawn, SHCMD("brctl 40") },
 +	// mute button: without modkey unconditional unmute, with modkey unconditional mute
-+	{ 0,                            XF86XK_AudioMute,           spawn, SHCMD("amixer set Master unmute") },
-+	{ MODKEY,                       XF86XK_AudioMute,           spawn, SHCMD("amixer set Master mute") },
++	{ 0,                            XF86XK_AudioMute,           spawn, SHCMD("amixer set Master mute") },
++	{ MODKEY,                       XF86XK_AudioMute,           spawn, SHCMD("amixer set Master unmute") },
 +	// volume down: (without modkey decreases volume by 5%, with modkey sets volume to 0
 +	{ 0,                            XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 5%-") },
 +	{ MODKEY,                       XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 0%") },
