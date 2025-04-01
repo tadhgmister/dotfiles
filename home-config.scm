@@ -100,7 +100,7 @@ echo os config was build, run 'guixman os' to reconfigure the system
 	 (NIX "nix-env -r -i")
 	 ;; for diff command -up gives more context, -N displays new files contents.
 	 ;; we specifically use guix build to grab the most up to date version of the package definitions
-	 (DWM_DIFF "diff -up -N $(guix build -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
+	 (DWM_DIFF "diff -up -N $(guix build -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q -L ~/src/dotfiles/packages/) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
 	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm -L ~/src/dotfiles/packages/")
 	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm -L ~/src/dotfiles/packages/")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
@@ -322,7 +322,7 @@ desktop-entry: ~s
 		 )
 		(discord-trigger-immidiate
 		 (appname "discord")
-		 (skip_display  #t)
+		 (skip_display  #f)
 		 (script ,#~(lambda* (#:key app-name #:allow-other-keys) (system* (string-append #$xdo "/bin/xdo") "activate" "-N" "discord")))
 		 )
 		))))
@@ -342,7 +342,7 @@ desktop-entry: ~s
 	  (nighttime-brightness 0.9)))
     ;; (service  home-batsignal-service-type
     ;; 		    (home-batsignal-configuration
-    ;; 		     (
+    ;; 		     ()))
     
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
@@ -394,8 +394,17 @@ desktop-entry: ~s
 		       (user "root")
 		       (host-key-algorithms '("+ssh-rsa"))
 		       (extra-content "  StrictHostKeyChecking no"))))))
-    (simple-service 'configfiles home-xdg-configuration-files-service-type `(	   
+    (simple-service 'configfiles home-xdg-configuration-files-service-type `(
+      ("mpv.conf" ,(plain-file "mpv.conf"
+"#align video to top of window so if there is extra room subtitles will use black space
+video-align-y=-1
+save-position-on-quit=y
+"))											      
       ("gtk-3.0/settings.ini" ,(plain-file "settings.ini"
+"[Settings]
+gtk-application-prefer-dark-theme = true
+"))	   
+      ("gtk-4.0/settings.ini" ,(plain-file "settings.ini"
 "[Settings]
 gtk-application-prefer-dark-theme = true
 "))

@@ -1,5 +1,5 @@
-diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
---- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
+--- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.def.h	2024-10-30 17:52:50.282956460 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
@@ -305,8 +305,8 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.
 +	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
  };
  
-diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
---- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
+--- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.mk	2024-04-23 14:56:32.801882541 -0400
 @@ -36,4 +36,4 @@ LDFLAGS  = ${LIBS}
  #LDFLAGS = ${LIBS}
@@ -314,8 +314,8 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/config.
  # compiler and linker
 -CC = cc
 +CC = gcc
-diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
---- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
+--- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/dwm.c	2024-05-28 08:46:18.893203766 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
@@ -605,9 +605,9 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/dwm.c /
  		} else {
  			h = m->wh - mh;
  			resize(c, tx, ty, tw - (2 * c->bw), h - (2 * c->bw), 0);
-Common subdirectories: /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
-diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
---- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
+Common subdirectories: /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
+diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
+--- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/Makefile	2024-04-23 17:10:33.274202418 -0400
 @@ -3,7 +3,7 @@
  
@@ -618,10 +618,181 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/Makefil
  OBJ = ${SRC:.c=.o}
  
  all: options dwm
-Common subdirectories: /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
-diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
---- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.c	2024-05-09 20:35:41.885339819 -0400
+Common subdirectories: /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
+diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
+--- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/status.c	2024-10-30 19:14:56.083605952 -0400
+@@ -0,0 +1,167 @@
++#include <time.h>
++#include <string.h>
++#include <stdio.h>
++#include <stdarg.h>
++#include <math.h>
++#include "status.h"
++#include "util.h"
++
++// stolen from slstatus/util.c
++int
++pscanf(const char *path, const char *fmt, ...)
++{
++	FILE *fp;
++	va_list ap;
++	int n;
++
++	if (!(fp = fopen(path, "r"))) {
++		perror(path);
++		return -1;
++	}
++	va_start(ap, fmt);
++	n = vfscanf(fp, fmt, ap);
++	va_end(ap);
++	fclose(fp);
++
++	return (n == EOF) ? -1 : n;
++}
++
++
++#define CHARGE_NOW "/sys/class/power_supply/BAT1/charge_now"
++#define CHARGE_FULL "/sys/class/power_supply/BAT1/charge_full"
++#define CURRENT_DRAW "/sys/class/power_supply/BAT1/current_now"
++#define BAT_STATUS "/sys/class/power_supply/BAT1/status"
++
++struct battery_info {
++  double perc; // number from 0 to 1 for percentage filled
++  double hours_left; // number of hours left, negative if discharging and positive if charging
++};
++#define NAN_IF_NOT_ONE(X) if(X != 1){info.perc=NAN;info.hours_left=NAN;return info;}
++/** returns number of hours until complete,
++    negative when discharging positive when charging,
++    returns NAN on error */
++struct battery_info  get_battery_status(void){
++  static double full = 0.0;
++  double charge, current;
++  char state[13];
++  struct battery_info info;
++  NAN_IF_NOT_ONE(pscanf(BAT_STATUS, "%12[a-zA-Z ]", state));
++  if(strncmp(state, "Not charging", 10) == 0 || strcmp(state, "Full") == 0){
++    info.perc = 1.0;
++    info.hours_left = 0.0;
++    return info;
++  }
++  NAN_IF_NOT_ONE(pscanf(CURRENT_DRAW, "%lf", &current));
++  NAN_IF_NOT_ONE(pscanf(CHARGE_NOW, "%lf", &charge));
++  if(full == 0.0){
++    NAN_IF_NOT_ONE(pscanf(CHARGE_FULL, "%lf", &full));
++  }
++  info.perc = charge/full;
++  if (!strcmp(state, "Discharging")){
++    // discharging so negate charge to be negative
++    info.hours_left = -charge / current;
++  } else if (!strcmp(state, "Charging")){
++    // full - charge_now will give positive value of how much we still need to charge.
++    info.hours_left = (full - charge)/current;
++  } else {
++    // if status isn't Charging, Discharging, or Full then I have no idea what is going on.
++    info.hours_left = NAN;
++  }
++  return info;
++}
++
++// dozonal characters specified by my own custom font
++// they are put in the range for "Ideographic Telegraph Symbol For Hour X" so theoretically some fonts that implement those won't be totally wrong.
++static const char *DOZ[] ={"\u3358", // 0
++			   "\u3359", // 1
++			   "\u335a", // 2
++			   "\u335b", // 3
++			   "\u335c", // 4
++			   "\u335d", // 5
++			   "\u335e", // 6
++			   "\u335f", // 7
++			   "\u3360", // 8
++			   "\u3361", // 9
++			   "\u3362", //10
++			   "\u3363", //11
++			   // 12 shouldn't be used in typical usage but full battery and leap seconds can hit this case.
++			   // although for leap seconds I think it would end up being the 3rd digit that overflows given
++			   // how the code below is structured.
++			   "\u3364"};
++
++// used for seasons in the date system, this ordering seems the most natural to me for the quarters of the year roughly
++// matching seasons but if I wanted to use this system to save files I'd want to figure out symbols that have strictly
++// increasing unicode values for sorting.
++static const char *SUITS[] = {
++  "\u2666", // diamond
++  "\u2665", // heart
++  "\u2663", // club
++  "\u2660"  // spade
++};
++/**
++   updates stext to show: (battery percentage, time until battery full/empty, date, time)
++   where the date uses my silly 4*13*7 + 1 system and the rest uses dozonal.
++   The battery "percentage" is really just twelves, the percentage symbol is kind of misleading but since the battery fraction
++   is the only thing that uses the percentage symbol it makes it clearer what it represents.
++ */
++void updatestatus_dozonal(char* stext, struct timespec *current_time, struct timespec *next_update){
++  struct tm *val = localtime(&current_time->tv_sec);
++  int digAB = val->tm_hour*6 + val->tm_min/10;
++  int secs_left = (val->tm_min%10)*60 + val->tm_sec; // note due to leap seconds tm_sec can go up to 61
++  int digC = secs_left/50;
++  // ((seconds left%50 to nsec) + nanoseconds) / (50s to nsec) = fraction of dig3. multiplying by 144 gives it in terms of dig5.
++  long digDE = (((long)((secs_left%50) * 1e9) + current_time->tv_nsec) * 144 / 50e9);
++  
++  int season = val->tm_yday/91;
++  if(season>3){season = 3;} // when yday is 364 or 365 we still want season to be the 4th one (0 indexed is 3)
++  int day_of_season = val->tm_yday - season*91;
++  char week = 'a'+(day_of_season/7); // will go to n0 for last day of year and n1 for leap year.
++  char day = '0'+val->tm_yday%7;
++
++  struct battery_info info = get_battery_status();
++
++  char charge_sign = info.hours_left == 0 ? '/' : info.hours_left > 0 ? '+' : '-';
++  int charge_digA = isnan(info.perc) ? 0 : (int)(info.perc*12.0);
++  int remaining_A, remaining_B, remaining_C;
++  if(isnan(info.hours_left)){
++      charge_sign = '?';
++      remaining_A = 0;
++      remaining_B = 0;
++      remaining_C = 0;
++  } else if(fabs(info.hours_left) >= 24.0){
++    remaining_A = 12;
++    remaining_B = 12;
++    remaining_C = 12;
++  } else{
++    int left = (int)(fabs(info.hours_left) * 72.0);
++    remaining_A = left/144;
++    remaining_B = (left/12)%12;
++    remaining_C = left%12;
++  }
++  
++  sprintf(stext, "%s%% %c.%s%s%s %d%s%c%c.%s%s%s%s%s", DOZ[charge_digA], charge_sign, DOZ[remaining_A], DOZ[remaining_B], DOZ[remaining_C], val->tm_year+1900, SUITS[season], week, day, DOZ[digAB/12], DOZ[digAB%12], DOZ[digC], DOZ[digDE/12], DOZ[digDE%12]);
++
++  // and calculate the time that will next result in an update, next dig45
++  long ns_next = (digDE+1)*50e9/144 - (secs_left%50) * 1e9;
++  next_update->tv_sec = (ns_next < 1e9) ? current_time->tv_sec : current_time->tv_sec+1;
++  next_update->tv_nsec= (ns_next < 1e9) ? ns_next : ns_next-1e9;
++}
++/** updates stext to display same info as dozonal function above but using more typical numbering */
++void updatestatus_regular(char* stext, struct timespec *current_time, struct timespec *next_update){
++  struct tm *val = localtime(&current_time->tv_sec);
++  struct battery_info info = get_battery_status();
++  int perc = (int)(info.perc*100.0);
++  int hours = (int)(info.hours_left);
++  int mins = (int)((info.hours_left - hours)*60);
++
++  if(isnan(info.hours_left)){
++    perc = -1;
++    hours = 888;
++    mins = 0;
++  } else if(mins < 0){
++    mins = -mins; // allow hours to display with negative but get minutes to be positive always.
++  }
++  sprintf(stext, " %2d%% %+dh %dm, %4d-%02d-%02d %2d:%02d:%02d",perc,hours,mins, val->tm_year+1900, val->tm_mon+1, val->tm_mday, val->tm_hour, val->tm_min, val->tm_sec);
++  next_update->tv_sec = current_time->tv_sec + 1;
++  next_update->tv_nsec = 0;
++}
+diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c~ /home/tadhg/src/dwm/status.c~
+--- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c~	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/status.c~	2024-05-09 20:35:41.885339819 -0400
 @@ -0,0 +1,168 @@
 +#include <time.h>
 +#include <string.h>
@@ -791,8 +962,8 @@ diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.
 +  next_update->tv_sec = current_time->tv_sec + 1;
 +  next_update->tv_nsec = 0;
 +}
-diff -up -N /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
---- /gnu/store/qf41ki0f1508412bpnyvnj7sbli8zfyq-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
+diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
+--- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/status.h	2024-04-23 17:22:37.540978117 -0400
 @@ -0,0 +1,5 @@
 +

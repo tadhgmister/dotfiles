@@ -31,7 +31,8 @@
  ((guix records) #:select(define-record-type*))
  ((ice-9 match) #:select(match-lambda))
  ((gnu services shepherd) #:select(shepherd-root-service-type shepherd-service))
-
+ ((srfi srfi-1) #:select(lset-difference))
+ ((nongnu packages linux) #:select(corrupt-linux linux-firmware))
  )
 
 
@@ -109,32 +110,72 @@
 ;; I can't access hard drives without it and that source claims this the turris omnia doesn't work with the PCIEASPM symbol
 ;; (define KERNEL_CONFIGS (list "CONFIG_PCIEASPM=n"))
 (define make-linux-libre* (@@ (gnu packages linux) make-linux-libre*))
-(define %default-extra-linux-options ((@@ (gnu packages linux) default-extra-linux-options) linux-libre-version))
+(define default-extra-linux-options (@@ (gnu packages linux) default-extra-linux-options))
 (define kernel-config (@@ (gnu packages linux) kernel-config))
 
-(define linux-libre-arm-omnia
-  (make-linux-libre* linux-libre-version
-                     linux-libre-gnu-revision
-                     linux-libre-source
+;; (define linux-libre-arm-omnia
+;;   (make-linux-libre* linux-libre-version
+;;                      linux-libre-gnu-revision
+;;                      linux-libre-source
+;;                      '("armhf-linux")
+;;                      #:extra-version "arm-omnia"
+;; 		     #:configuration-file kernel-config
+;;                      #:extra-options
+;;                      (append
+;;                       `(
+;;                         ("CONFIG_PCIEASPM" . #f))
+;; 		      %default-extra-linux-options)))
+
+(define KERNEL-VERSION "6.12.10")
+(define linux-non-libre-source
+  ((@@ (gnu packages linux) %upstream-linux-source) KERNEL-VERSION (base32 "15xjjn8ff7g9q0ljr2g8k098ppxnpvxlgv22rdrplls8sxg6wlaa")))
+(define* (kernel-config-from-turris-os arch #:key variant)
+  (local-file "turris-kernel.config"))
+(define kernel-to-use
+  (make-linux-libre* KERNEL-VERSION "IGNORED_VARIABLE" linux-non-libre-source 
                      '("armhf-linux")
-                     #:extra-version "arm-omnia"
-		     #:configuration-file kernel-config
+                     #:defconfig "mvebu_v7_defconfig"
+		     #:configuration-file kernel-config-from-turris-os
+                     #:extra-version "nonlibre-arm"
                      #:extra-options
                      (append
                       `(
-                        ("CONFIG_PCIEASPM" . #f))
-		      %default-extra-linux-options)))
+			;("CONFIG_BTRFS_FS" . #t)
+			;("CONFIG_OF" . #t) ;; required for turris leds, Device Tree and Open Firmware support
+			;;("CONFIG_MACH_ARMADA_38X" . #t) ;;; enabed by mvebu_v7_defconfig, needed by omnia leds
+			;("CONFIG_LEDS_CLASS_MULTICOLOR" . #t) ; depends on LEDS_CLASS which is enabled by defconfig
+			;("CONFIG_LEDS_TURRIS_OMNIA" . 'm) ;; also needs I2C which is in defconfig
 
+
+			("CONFIG_RD_GZIP") . #t) ;; absolutely necessary, guix gzips its initrd
+			("CONFIG_CZNIC_PLATFORMS" . #t)
+			("CONFIG_TURRIS_OMNIA_MCU" . m)
+                        ("CONFIG_TURRIS_OMNIA_MCU_GPIO" . #t)
+			("CONFIG_TURRIS_OMNIA_MCU_SYSOFF_WAKEUP" . #t)
+                        ("CONFIG_TURRIS_OMNIA_MCU_WATCHDOG" . #t)
+                        ("CONFIG_TURRIS_OMNIA_MCU_TRNG" . #t))
+                      (default-extra-linux-options KERNEL-VERSION))
+		     ))
 
 (define root-label "GuixRoot")
 (define my-system (operating-system
-		    
-		    (kernel linux-libre-arm-omnia)
+		    (kernel kernel-to-use)
+		    (firmware (cons* linux-firmware
+				     %base-firmware))
+
+
+		    (initrd-modules (lset-difference equal? %base-initrd-modules
+						     '("usb-storage" ;; baked into kernel
+						       "hid-apple" ;; we aren't going to use apple products as input device
+						       "virtio_console" ;; we are not in a vm
+						       "virtio-rng" ;; we are not a vm
+						       "btrfs" ;; baked into kernel
+						       )))
 		    (kernel-arguments (list
 				       "earlyprintk"
 				       "console=ttyS0,115200"
 				       "pcie_aspm=no"
-				       "modprobe.blacklist=pcieaspm,usbmouse,usbkbd"
+				       "modprobe.blacklist=pcieaspm";;,usbmouse,usbkbd"
 				       ))
 		    ;; (initrd-modules (cons*
 		    ;; 		     ;; these are both used in nixturris with the comment about led support
@@ -150,7 +191,7 @@
 				 (targets '())))
 		    (file-systems (cons (file-system
 					  (mount-point "/")
-					  (device (uuid "c8f29ed6-1b77-467d-826a-597c5785f5c3"));;(file-system-label root-label))
+					  (device (uuid "6e0391cd-f7f5-4d26-bff1-34bb52258812"));;(file-system-label root-label))
 					  (type "btrfs"))
 					%base-file-systems))
 		    (services
@@ -174,8 +215,9 @@
 		      ;; 		(permit-root-login #t)
 		      ;; 		(allow-empty-passwords? #t)))
 		      %base-services))))
-
+;linux-non-libre-source
 my-system
+
 ;; (image
 ;;  (format 'disk-image)
 ;;  (platform armv7-linux)

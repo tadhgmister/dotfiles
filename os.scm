@@ -37,7 +37,7 @@
  ;;((gnu services docker) #:select(docker-service-type))
  ((gnu services virtualization) #:select(qemu-binfmt-service-type qemu-binfmt-configuration lookup-qemu-platforms libvirt-service-type))
  ((gnu services nix) #:select (nix-service-type))
- ((gnu services networking) #:select (ipfs-service-type ipfs-configuration))
+ ((gnu services networking) #:select (hostapd-service-type hostapd-configuration ipfs-service-type ipfs-configuration))
  ((gnu services syncthing) #:select (syncthing-service-type syncthing-configuration))
  ((gnu services sound) #:select (pulseaudio-service-type pulseaudio-configuration))
  ((gnu services audio) #:select (mpd-service-type mpd-configuration))
@@ -239,7 +239,8 @@
     ;;(service docker-service-type) ;; for docker, used once as a TA to show a student how to use it for a lab.
     (service qemu-binfmt-service-type ;; enables cross compiling for turris or android box
          (qemu-binfmt-configuration
-           (platforms (lookup-qemu-platforms "arm" "aarch64"))))
+          (platforms (lookup-qemu-platforms "arm" "aarch64"))))
+   
     (service bluetooth-service-type) ;; allows bluetooth
     (service fprintd-service-type
 	     (fprintd-configuration
