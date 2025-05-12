@@ -1,6 +1,6 @@
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2024-10-30 17:52:50.282956460 -0400
++++ /home/tadhg/src/dwm/config.def.h	2025-04-29 11:38:26.148518742 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -307,7 +307,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
  
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.mk	2024-04-23 14:56:32.801882541 -0400
++++ /home/tadhg/src/dwm/config.mk	2025-04-29 11:38:26.149155775 -0400
 @@ -36,4 +36,4 @@ LDFLAGS  = ${LIBS}
  #LDFLAGS = ${LIBS}
  
@@ -316,7 +316,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
 +CC = gcc
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2024-05-28 08:46:18.893203766 -0400
++++ /home/tadhg/src/dwm/dwm.c	2025-04-29 11:38:26.149492342 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -608,7 +608,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
 Common subdirectories: /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/Makefile	2024-04-23 17:10:33.274202418 -0400
++++ /home/tadhg/src/dwm/Makefile	2025-04-29 11:38:26.150387576 -0400
 @@ -3,7 +3,7 @@
  
  include config.mk
@@ -618,10 +618,9 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/Makefil
  OBJ = ${SRC:.c=.o}
  
  all: options dwm
-Common subdirectories: /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/patches and /home/tadhg/src/dwm/patches
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.c	2024-10-30 19:14:56.083605952 -0400
++++ /home/tadhg/src/dwm/status.c	2025-04-29 11:38:26.150730541 -0400
 @@ -0,0 +1,167 @@
 +#include <time.h>
 +#include <string.h>
@@ -792,7 +791,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.
 +}
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c~ /home/tadhg/src/dwm/status.c~
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.c~	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.c~	2024-05-09 20:35:41.885339819 -0400
++++ /home/tadhg/src/dwm/status.c~	2025-04-29 11:38:26.150933916 -0400
 @@ -0,0 +1,168 @@
 +#include <time.h>
 +#include <string.h>
@@ -964,7 +963,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.
 +}
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/status.h	2024-04-23 17:22:37.540978117 -0400
++++ /home/tadhg/src/dwm/status.h	2025-04-29 11:38:26.151003982 -0400
 @@ -0,0 +1,5 @@
 +
 +void updatestatus_dozonal(char* stext, struct timespec *current_time, struct timespec *next_update);

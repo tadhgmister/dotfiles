@@ -1,4 +1,3 @@
-
 ;;;;; to connect to device while it is plugged in
 ;; guix shell minicom -- sudo minicom -w -b 115200 -D /dev/ttyUSB0
 ;;;; to disable watchdog timer while in the uboot prompt
@@ -7,227 +6,354 @@
 ;; run bootcmd
 
 (use-modules
- 
-					;((gnu packages linux) #:select(customize-linux linux-libre linux-libre-arm64-generic))
- (gnu packages linux)
+ ((gnu packages linux) #:select(customize-linux))
  (gnu)
  (gnu image)
+ ((guix platforms arm) #:select(armv7-linux))
  (gnu system image)
  (guix gexp)
  (guix transformations)
- ((guix packages) #:select (package origin base32 modify-inputs package-native-inputs))
- ((guix git-download) #:select (git-fetch git-reference git-file-name))
- ((guix platforms arm) #:select(armv7-linux))
+ ((guix packages) #:select (package origin base32 modify-inputs package-arguments package-native-inputs))
+ ((guix utils) #:select ( substitute-keyword-arguments))
+ ;((guix git-download) #:select (git-fetch git-reference git-file-name))
+ ;((guix platforms arm) #:select(armv7-linux))
 
  ((gnu bootloader) #:select(bootloader))
  ((gnu bootloader u-boot) #:select(u-boot-bootloader))
 
  ((gnu packages ssh) #:select(openssh))
- ((gnu packages autotools) #:select(automake autoconf))
+ ((gnu packages scanner) #:select (sane-backends))
+ ((gnu packages syncthing) #:select (syncthing))
+ ;((gnu packages autotools) #:select(automake autoconf))
 
- ((gnu services networking) #:select(dhcp-client-service-type))
+ ((gnu services networking) #:select(dhcp-client-service-type dhcp-client-configuration))
  ((gnu services ssh) #:select(openssh-service-type openssh-configuration))
+ ((gnu packages bittorrent) #:select(transmission))
+ ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration transmission-password-hash))
+ ((gnu services desktop) #:select (sane-service-type))
+ (gnu services syncthing)
 
  ((guix records) #:select(define-record-type*))
  ((ice-9 match) #:select(match-lambda))
  ((gnu services shepherd) #:select(shepherd-root-service-type shepherd-service))
  ((srfi srfi-1) #:select(lset-difference))
- ((nongnu packages linux) #:select(corrupt-linux linux-firmware))
+ ((nongnu packages linux) #:select(atheros-firmware))
  )
 
-
-
-(define-record-type* <startupscript-configuration>
-  startupscript-configuration make-startupscript-configuration
-  startupscript-configuration?
-  (settings startupscript-configuration-settings  ; alist of string pairs
-            (default '())))
-
-(define startupscript-shepherd-service
-  (match-lambda
-    (($ <startupscript-configuration> settings)
-       (shepherd-service
-        (documentation "turns on user led light at startup")
-        (provision '(startupscript))
-        (start #~(lambda _
-                   (call-with-output-file "/sys/class/leds/omnia-led:user1/color"
-		     (lambda (port)
-		       (display "255 60 0" port)))
-		   (call-with-output-file "/sys/class/leds/omnia-led:user1/brightness"
-		     (lambda (port)
-		       (display "255" port)))))
-        (one-shot? #t)))))
-
-(define startupscript-service-type
-  (service-type
-   (name 'startupscript)
-   (extensions
-    (list (service-extension shepherd-root-service-type
-                             (compose list startupscript-shepherd-service))))
-   ;; (compose concatenate)
-   ;; (extend (lambda (config settings)
-   ;;           (sysctl-configuration
-   ;;            (inherit config)
-   ;;            (settings (append (sysctl-configuration-settings config)
-   ;;                              settings)))))
-   (default-value (startupscript-configuration))
-   (description "turns on the omnia led at startup to see if it is loading guix")))
-(define transform1
-  (options->transformation
-    '((without-tests . "guile-ssh"))))
-;; this contains one commit to comment out the configure code for -fzero-call-used-regs
-(define patched-ssh
+(define syncthing-able-to-cross-compile
   (package
-    (inherit openssh)
-    (name "openssh_fzero-call-used-regs-removed")
-    ;; autoconf is used to build the configure.ac and it failed saying it needed aclocal which seems to come from automake
-    (native-inputs (modify-inputs (package-native-inputs openssh) (append automake autoconf)))
-     (source (origin
-             (method git-fetch)
-             (sha256 (base32 "09rih4paiw9hpchjplf8szl7z7w0pqqqx6bij5fkxxsxd5mvy00n"))
-             (uri (git-reference (url "https://github.com/tadhgmister/openssh-portable")
-                                 (commit "59758a3c3764b35dca7f22f8e37eb301f688eab0")))
-	     (file-name (git-file-name "openssh" "tadhgpatch"))))))
+    (inherit syncthing)
+    
+    (arguments
+     (substitute-keyword-arguments (package-arguments syncthing)
+       ((#:phases phases)
+        #~(modify-phases #$phases
+           (replace 'build
+             (lambda _
+               (with-directory-excursion "src/github.com/syncthing/syncthing"
+                 ; Build the primary Syncthing executable
+                 ; Build utilities used to run an independent Syncthing network
+                 (for-each (cut invoke "go" "run" "build.go" "build" <>)
+                           '("syncthing" "stcrashreceiver" "strelaypoolsrv" "stupgrades"
+                             "ursrv" "stdiscosrv" "strelaysrv")))))
 
-	
-;; u-boot-bootloader inherits the extlinux.conf from extlinux but we just rely on the u-boot in nor flash to try to load from the configuration file.
-;; (define turris-omnia-u-boot-bootloader
-;;   (bootloader
-;;    (inherit u-boot-bootloader)
-;;    (name 'omniaboot)
-;;    (package #f)
-;;    (installer #f)
-;;    (disk-image-installer #f)))
+           (replace 'install
+             (lambda _
+               ;; (with-directory-excursion "src/github.com/syncthing/syncthing/bin"
+               ;;   (install-file "syncthing" (string-append #$output "/bin"))
+               ;;   (for-each (cut install-file <> (string-append #$output:utils "/bin/"))
+               ;;             '("stdiscosrv" "strelaysrv")))
+               (with-directory-excursion "src/github.com/syncthing/syncthing"
+                 (install-file "syncthing" (string-append #$output "/bin"))
+                 (for-each (cut install-file <> (string-append #$output:utils "/bin/"))
+                           '("ursrv" "stupgrades" "strelaypoolsrv" "stcrashreceiver" "stdiscosrv" "strelaysrv")))))))))))
 
+(use-modules
+  (guix store)
+  (guix monads)
+  (guix derivations)
+  ;(guix utils)
+  ;(guix diagnostics)
+  ;(guix i18n)
+  (rnrs bytevectors)
+  (srfi srfi-26)
+  (ice-9 match)
+  (srfi srfi-1)
+  (srfi srfi-9))
+;; wrapper for gexp that ignores the system and target and instead compiles for arm system
+(define-record-type <force-arm-compiled>
+  (force-arm-compiled obj)
+  force-arm-compiled?
+  (obj  force-arm-compiled-object))              ;lowerable object
+
+(define-gexp-compiler force-arm-compiled-compiler <force-arm-compiled>
+  compiler => (lambda (obj system target)
+                (mlet %store-monad ((obj (lower-object
+                                          (force-arm-compiled-object obj)
+                                          "armhf-linux" #:target 'current)))
+                  ;; Returning the .drv file name instead of the <derivation>
+                  ;; record ensures that 'lower-gexp' will classify it as a
+                  ;; "source" and not as an "input".
+                  (return (if (derivation? obj)
+                              (derivation-file-name obj)
+                              obj))))
+  expander => (lambda (obj lowered output)
+                (if (derivation? lowered)
+                    (derivation-file-name lowered)
+                    lowered)))
+
+;; (define-record-type* <startupscript-configuration>
+;;   startupscript-configuration make-startupscript-configuration
+;;   startupscript-configuration?
+;;   (settings startupscript-configuration-settings  ; alist of string pairs
+;;             (default '())))
+
+;; (define startupscript-shepherd-service
+;;   (match-lambda
+;;     (($ <startupscript-configuration> settings)
+;;        (shepherd-service
+;;         (documentation "turns on user led light at startup")
+;;         (provision '(startupscript))
+;;         (start #~(lambda _
+;;                    (call-with-output-file "/sys/class/leds/omnia-led:user1/color"
+;;                      (lambda (port)
+;;                        (display "255 60 0" port)))
+;;                    (call-with-output-file "/sys/class/leds/omnia-led:user1/brightness"
+;;                      (lambda (port)
+;;                        (display "255" port)))))
+;;         (one-shot? #t)))))
+;; (define startupscript-service-type
+;;   (service-type
+;;    (name 'startupscript)
+;;    (extensions
+;;     (list (service-extension shepherd-root-service-type
+;;                              (compose list startupscript-shepherd-service))))
+;;    ;; (compose concatenate)
+;;    ;; (extend (lambda (config settings)
+;;    ;;           (sysctl-configuration
+;;    ;;            (inherit config)
+;;    ;;            (settings (append (sysctl-configuration-settings config)
+;;    ;;                              settings)))))
+;;    (default-value (startupscript-configuration))
+;;    (description "turns on the omnia led at startup to see if it is loading guix")))
 
 
 (define HOSTNAME "omniaguix")
-;;(define DEVICENAME "/dev/mmcblk0p1")
-;;(define PARTITION-UUID "38af4c98-a457-ab59-caf5-b77b38af4c98")
+(define disk-uuid "95e78a3a-7f1d-47d3-96ef-c02d95e78a3a")
+(define sshport 2222)
 
-
-;; kernel setting based on https://gitlab.com/Cynerd/nixturris/-/blob/master/pkgs/default.nix#L15
-;; I can't access hard drives without it and that source claims this the turris omnia doesn't work with the PCIEASPM symbol
-;; (define KERNEL_CONFIGS (list "CONFIG_PCIEASPM=n"))
 (define make-linux-libre* (@@ (gnu packages linux) make-linux-libre*))
-(define default-extra-linux-options (@@ (gnu packages linux) default-extra-linux-options))
-(define kernel-config (@@ (gnu packages linux) kernel-config))
-
-;; (define linux-libre-arm-omnia
-;;   (make-linux-libre* linux-libre-version
-;;                      linux-libre-gnu-revision
-;;                      linux-libre-source
-;;                      '("armhf-linux")
-;;                      #:extra-version "arm-omnia"
-;; 		     #:configuration-file kernel-config
-;;                      #:extra-options
-;;                      (append
-;;                       `(
-;;                         ("CONFIG_PCIEASPM" . #f))
-;; 		      %default-extra-linux-options)))
 
 (define KERNEL-VERSION "6.12.10")
 (define linux-non-libre-source
   ((@@ (gnu packages linux) %upstream-linux-source) KERNEL-VERSION (base32 "15xjjn8ff7g9q0ljr2g8k098ppxnpvxlgv22rdrplls8sxg6wlaa")))
-(define* (kernel-config-from-turris-os arch #:key variant)
-  (local-file "turris-kernel.config"))
+
+
+;; turris-kernel.config is pulled directly from turris os under /proc/config.gz
+;; this has things like the gcc version that was used and such and we do not want to keep them
+;; so what we want to do is run `make savedefconfig` to minify that to an effective defconfig
+;; then add our options to that defconfig, then recompute the full config file
+;; and ideally get it to yell at us if something we specified doesn't end up in the final config because linux
+;; is happy to just drop settings if you didn't specify the right dependencies
+;;
+;; the officially supported workflow for this is that you use customize-linux where the base config file is specified
+;; in the kernel being customized and the extra options are passed to customize-linux
+;; this is because the base kernel will logically have a full configuration file and if you don't specify a defconfig to customize
+;; then it needs to use the config from the base kernel and thus has to first minify it, thus getting the workflow we intend.
+(define kernel-base
+  (make-linux-libre* KERNEL-VERSION "IGNORED_VARIABLE" linux-non-libre-source '("armhf-linux")
+                     #:configuration-file (lambda _ (local-file "turris-kernel.config"))))
+
 (define kernel-to-use
-  (make-linux-libre* KERNEL-VERSION "IGNORED_VARIABLE" linux-non-libre-source 
-                     '("armhf-linux")
-                     #:defconfig "mvebu_v7_defconfig"
-		     #:configuration-file kernel-config-from-turris-os
-                     #:extra-version "nonlibre-arm"
-                     #:extra-options
-                     (append
-                      `(
-			;("CONFIG_BTRFS_FS" . #t)
-			;("CONFIG_OF" . #t) ;; required for turris leds, Device Tree and Open Firmware support
-			;;("CONFIG_MACH_ARMADA_38X" . #t) ;;; enabed by mvebu_v7_defconfig, needed by omnia leds
-			;("CONFIG_LEDS_CLASS_MULTICOLOR" . #t) ; depends on LEDS_CLASS which is enabled by defconfig
-			;("CONFIG_LEDS_TURRIS_OMNIA" . 'm) ;; also needs I2C which is in defconfig
+  (customize-linux #:name "omnia-arm"
+                   #:linux kernel-base
+                   #:configs ((@@ (gnu packages linux) config->string)
+                              '(
+                                ;; is critically needed, guix gzips its initrd
+                                ("CONFIG_RD_GZIP" . #t)
+                                ;; wifi drivers
+                                ("CONFIG_CFG80211" . m)
+                                ("CONFIG_MAC80211" . m)
+                                ("CONFIG_WLAN_VENDOR_ATH" . #t)
+                                ("CONFIG_ATH9K" . m)
+                                ("CONFIG_ATH10K" . m)
+                                ("CONFIG_ATH10K_PCI" . m)
+                                ;("CONFIG_HAVE_GCC_PLUGINS" . #t)
+                                ;("CONFIG_GCC_PLUGINS" . #t)
+                                ;("CONFIG_GCC_PLUGIN_LATENT_ENTROPY" . #t)
+                                ;; options that seem to be disabled in the turris but exist in the kernel
+                                ;; TODO: investigate these options
+                                ;("CONFIG_TURRIS_OMNIA_MCU_GPIO" . #t)
+                                ;("CONFIG_TURRIS_OMNIA_MCU_SYSOFF_WAKEUP" . #t)
+                                ;("CONFIG_TURRIS_OMNIA_MCU_WATCHDOG" . #t)
+                                ;("CONFIG_TURRIS_OMNIA_MCU_TRNG" . #t)
+                                ))))
 
 
-			("CONFIG_RD_GZIP") . #t) ;; absolutely necessary, guix gzips its initrd
-			("CONFIG_CZNIC_PLATFORMS" . #t)
-			("CONFIG_TURRIS_OMNIA_MCU" . m)
-                        ("CONFIG_TURRIS_OMNIA_MCU_GPIO" . #t)
-			("CONFIG_TURRIS_OMNIA_MCU_SYSOFF_WAKEUP" . #t)
-                        ("CONFIG_TURRIS_OMNIA_MCU_WATCHDOG" . #t)
-                        ("CONFIG_TURRIS_OMNIA_MCU_TRNG" . #t))
-                      (default-extra-linux-options KERNEL-VERSION))
-		     ))
-
-(define root-label "GuixRoot")
-(define my-system (operating-system
-		    (kernel kernel-to-use)
-		    (firmware (cons* linux-firmware
-				     %base-firmware))
+(define-public (substitutes guixconfig)
+  (guix-configuration
+   (inherit guixconfig)
+   (authorized-keys
+    (cons*
+     (local-file "/etc/guix/signing-key.pub")
+     %default-authorized-guix-keys))))
 
 
-		    (initrd-modules (lset-difference equal? %base-initrd-modules
-						     '("usb-storage" ;; baked into kernel
-						       "hid-apple" ;; we aren't going to use apple products as input device
-						       "virtio_console" ;; we are not in a vm
-						       "virtio-rng" ;; we are not a vm
-						       "btrfs" ;; baked into kernel
-						       )))
-		    (kernel-arguments (list
-				       "earlyprintk"
-				       "console=ttyS0,115200"
-				       "pcie_aspm=no"
-				       "modprobe.blacklist=pcieaspm";;,usbmouse,usbkbd"
-				       ))
-		    ;; (initrd-modules (cons*
-		    ;; 		     ;; these are both used in nixturris with the comment about led support
-				     
-		    ;; 		     ;;"ahci_mvebu" ;; ahci is about SATA support which might be important when loading from internal card but for now loading from USB probably doesn't need it
-		    ;; 		     "rtc_armada38x" ;; something about real time clock, idk if it is important.
-		    ;; 		     %base-initrd-modules))
-		    (host-name HOSTNAME)
-		    (timezone "America/Toronto")
-		    (bootloader (bootloader-configuration
-				 (bootloader u-boot-bootloader)
-				 (timeout 1)
-				 (targets '())))
-		    (file-systems (cons (file-system
-					  (mount-point "/")
-					  (device (uuid "6e0391cd-f7f5-4d26-bff1-34bb52258812"));;(file-system-label root-label))
-					  (type "btrfs"))
-					%base-file-systems))
-		    (services
-		     (cons*       ;;(service dhcp-client-service-type)
-		      ;; (service startupscript-service-type)
-		      (service static-networking-service-type
-			       (list (static-networking
-				      (addresses
-				       (list (network-address
-					      (device "lan4")
-					      (value "192.168.1.1/24"))))
-				      (routes
-				       (list (network-route
-					      (destination "default")
-					      (gateway "192.168.2.1"))))
-				      (name-servers '()))))
 
-		      ;; (service openssh-service-type
-		      ;; 	       (openssh-configuration
-		      ;; 		(openssh patched-ssh)
-		      ;; 		(permit-root-login #t)
-		      ;; 		(allow-empty-passwords? #t)))
-		      %base-services))))
-;linux-non-libre-source
+(define tadhg-laptop-syncthing-device
+  (syncthing-device
+   (id "JZPS3SH-Y7COQBF-LYJDWLO-UBISGMX-64MJTCD-5PE5HSC-QYQAEZZ-PCBYNAL")))
+
+
+(define my-system
+  (operating-system
+    (kernel kernel-to-use)
+    (firmware (cons* atheros-firmware
+                     %base-firmware))
+
+    (initrd-modules (lset-difference equal? ((@@ (gnu system linux-initrd) default-initrd-modules) "armhf-linux")
+                                     '("usb-storage" ;; baked into kernel
+                                       "hid-apple" ;; we aren't going to use apple products as input device
+                                       "virtio_console" ;; we are not in a vm
+                                       "virtio-rng" ;; we are not a vm
+                                       "btrfs" ;; baked into kernel
+
+
+                                       ;; TODO: FIGURE OUT WHY THIS WAS DESIRED
+                                                       ;;; !!!!!!!!!!
+					; !!!!!!!!!!
+					;"pata_acpi" "pata_atiixp" "isci" "virtio_pci" "virtio_bal?"
+                                       )))
+    (kernel-arguments (list
+                       "earlyprintk"
+                       "console=ttyS0,115200"
+                       ;;"pcie_aspm=no"
+                       ;;"modprobe.blacklist=pcieaspm";;,usbmouse,usbkbd"
+                       ))
+    (host-name HOSTNAME)
+    (timezone "America/Toronto")
+    (bootloader (bootloader-configuration
+                 (bootloader u-boot-bootloader)
+                 (timeout 1)
+                 ;; the uboot bootloader inherits from extlinux which the turris uboot can load
+                 ;; but I don't want to have guix reflashing the uboot on every reconfigure so we
+		 ;;just leave the targets empty
+                 (targets '())))
+    (file-systems (cons (file-system
+                          (mount-point "/")
+                          (device (uuid disk-uuid))
+                          (type "btrfs"))
+                        %base-file-systems))
+
+    ;; (packages
+    ;;  (specifications->packages
+    ;;   '("sane-backends")))
+      
+    ;; allow using .local with mdns resolution, used for printer in particular
+    (name-service-switch %mdns-host-lookup-nss)
+    (services
+     (cons*
+      ;; Add udev rules for scanners.
+					;(service sane-service-type sane-backends)
+      
+   (service syncthing-service-type
+	    (syncthing-configuration
+	     (syncthing syncthing-able-to-cross-compile)
+	     (user "root")
+	    (config-file
+	     (syncthing-config-file
+	      (gui-address "0.0.0.0:8384")
+	      (folders
+	       (list
+		(syncthing-folder
+		 (label "test_folder")
+		 (path "/home/test")
+		 (devices (list tadhg-laptop-syncthing-device))
+		 ) ; end test folder
+		)) ;; end list of folders
+	      
+	      )))) ;;end syncthing configuration and service
+      ;; (service transmission-daemon-service-type
+      ;;          (transmission-daemon-configuration
+      ;; 		(transmission (force-arm-compiled transmission))
+      ;;     ;; Restrict access to the RPC ("control") interface
+      ;;     (rpc-authentication-required? #t)
+      ;;     (rpc-username "torrenting")
+      ;;     (rpc-password
+      ;;      (transmission-password-hash
+      ;;       "torrenting" ; desired password
+      ;;       "uKd1uMs9"))   ; arbitrary salt value
+
+      ;;     ;; Accept requests from this and other hosts on the
+      ;;     ;; local network
+      ;;     (rpc-whitelist-enabled? #t)
+      ;;     (rpc-whitelist '("::1" "127.0.0.1" "192.168.2.*")) ;; allow local connections (if done while ssh'd into router) or on local network
+
+      ;; 	  (download-dir "/home/torrents")
+      ;; 	  (incomplete-dir-enabled? #t)
+      ;; 	  (incomplete-dir "/var/lib/transmission-daemon/downloads/")
+      ;; 	  (lpd-enabled? #t) ;; try to find peers on local network so copying torrent from a laptop to turris is fast
+      ;; 	  (ratio-limit-enabled? #t)
+      ;; 	  (ratio-limit 10.0)))
+
+      ;; automatically aquire ip address
+      (service dhcp-client-service-type
+	       (dhcp-client-configuration
+		(interfaces (list "eth2"))))
+      ;; (service static-networking-service-type
+      ;;               (list (static-networking
+      ;;                      (addresses
+      ;;                       (list (network-address
+      ;;                              (device "lan4")
+      ;;                              (value "192.168.1.1/24"))))
+      ;;                      (routes
+      ;;                       (list (network-route
+      ;;                              (destination "default")
+      ;;                              (gateway "192.168.2.1"))))
+      ;;                      (name-servers '()))))
+
+      ;; (service startupscript-service-type)
+      (service openssh-service-type
+               (openssh-configuration
+                (permit-root-login #t)
+                (port-number sshport)
+                (authorized-keys
+                 `(("root" ,(local-file "deploy_id.pub"))
+                   ("tadhg" ,(local-file "deploy_id.pub"))))))
+      
+      (modify-services
+          %base-services
+        (guix-service-type config => (substitutes config)))))))
+;;;; helper to debug configuration, when building this package it intentionally crashes after configuration so
+;;;; with --keep-failed the confuration used can be inspected
+;;;; probably not useful anymore now that I am using the customize linux script which fails if the configuration doesn't match
+;;;; what is explicitly specified
+;; (use-modules (guix utils) (guix packages))
+;; (package
+;;   (inherit kernel-to-use)
+;;   (arguments
+;;      (substitute-keyword-arguments
+;;          (package-arguments kernel-to-use)
+;;        ((#:phases phases)
+;;         #~(modify-phases #$phases
+;;             (add-after 'configure 'crash
+;;            (lambda _ (error "this is intentional"))))))))
+
+;kernel-to-use
 my-system
 
 ;; (image
 ;;  (format 'disk-image)
 ;;  (platform armv7-linux)
+;;  (partition-table-type 'gpt)
 ;;  (operating-system  my-system)
 ;;  (partitions
 ;;   (list
 ;;    (partition
 ;;     (size 'guess)
 ;;     (label root-label)
-;;     (file-system "ext4")
+;;     (uuid disk-uuid)
+;;     (file-system "btrfs")
 ;;     (flags '(boot))
 ;;     (initializer (gexp initialize-root-partition))))))
 
@@ -236,8 +362,11 @@ my-system
 ;;        (operating-system my-system)
 ;;        (environment managed-host-environment-type)
 ;;        (configuration (machine-ssh-configuration
-;;                        (host-name HOSTNAME)
+;;                        (host-name "192.168.2.176")
 ;;                        (system "armhf-linux")
-;;                        (user "alice")
-;;                        (identity "./id_rsa")
-;;                        (port 2222)))))
+;;                        ;(target "arm-linux-gnueabihf")
+;;                        (user "root")
+;;                        (identity "./deploy_id.key")
+;;                        (host-key "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBPLIU+lgpp4eOZOqDtm5t94DbuRODG/rWEmCSXVY9wa root@(none)")
+;;                        (port sshport)
+;;                        ))))

@@ -31,6 +31,7 @@
 	     (gnu home services xdg)
 	     (gnu home services ssh)
 	     (gnu home services desktop)
+	     ((gnu home services fontutils) #:select (home-fontconfig-service-type))
 	     (tadhg dwm)
 	     (tadhg packagelist)
 	     ((tadhg dunst) #:select(home-dunst-service-type home-dunst-configuration))
@@ -287,29 +288,29 @@ fi")))
        (global `(
 	;;(dmenu . "/gnu/store/ppbhrgv67g3rzkdxdksw5sqgn8p55cxs-dmenu-5.2/bin/dmenu -p dunst")
 	(dmenu ,#~(string-append #$dmenu "/bin/dmenu -p dunst"))
-	(script ,#~(lambda* (#:key app-name summary body icon urgency id progress
-			       category stack-tag urls timeout timestamp desktop-entry #:allow-other-keys)
-			      (begin
-				(use-modules (ice-9 format))
-				(display "TEST TEXT HERE MAYBE?\n")
-				(define port (open-output-file (string-append "/home/tadhg/src/dotfiles/logs/" timestamp ".dump")))
-				(format port "
-app-name: ~s
-summary: ~s
-body: ~s
-icon: ~s
-urgency: ~s
-id: ~s
-progress: ~s
-category ~s
-stack-tag: ~s
-urls: ~s
-timeout: ~s
-timestamp: ~s
-desktop-entry: ~s
-" app-name summary body icon urgency id progress category stack-tag urls timeout timestamp desktop-entry )
-				(close-port port)
-				)))
+;; 	(script ,#~(lambda* (#:key app-name summary body icon urgency id progress
+;; 			       category stack-tag urls timeout timestamp desktop-entry #:allow-other-keys)
+;; 			      (begin
+;; 				(use-modules (ice-9 format))
+;; 				(display "TEST TEXT HERE MAYBE?\n")
+;; 				(define port (open-output-file (string-append "/home/tadhg/src/dotfiles/logs/" timestamp ".dump")))
+;; 				(format port "
+;; app-name: ~s
+;; summary: ~s
+;; body: ~s
+;; icon: ~s
+;; urgency: ~s
+;; id: ~s
+;; progress: ~s
+;; category ~s
+;; stack-tag: ~s
+;; urls: ~s
+;; timeout: ~s
+;; timestamp: ~s
+;; desktop-entry: ~s
+;; " app-name summary body icon urgency id progress category stack-tag urls timeout timestamp desktop-entry )
+;; 				(close-port port)
+;; 				)))
 	;;(mouse_left_click . "context, close_current")
 	;;(mouse_right_click . "close_current")
 	;;(timeout . "10m")
@@ -328,9 +329,20 @@ desktop-entry: ~s
 		))))
     (simple-service 'profile home-shell-profile-service-type
 		    (list
-		     ;; source nix profile to make brave (and any other applications maybe installed with nix) available
-		     (plain-file "nixprofile" "source /run/current-system/profile/etc/profile.d/nix.sh")
-		     profile-script)) 
+		     ;; source nix profile to make apps installed with nix available
+		     ;; also add the nix-profile's /share folder visible to xdg-open
+		     (plain-file "nixprofile"
+				 "
+source /run/current-system/profile/etc/profile.d/nix.sh
+export XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share")
+		     profile-script))
+    ;; run nix-env to reinstall nix packages when the channels change
+    ;; TODO: how do I ensure this runs after symlink manager? doesn't that also just use activation service type?
+    ;; TODO: pack nix channels, nix package list, sourcing nix profile, and this activation into a single service.
+    (simple-service 'nix-env-update home-activation-service-type #~(begin
+								     (display "\nSetting up nix-env\n")
+								     (system* "nix-env" "-i" "-r")
+								     (display "\nFinished nix-env\n")))
     (simple-service 'lower-brightness home-run-on-first-login-service-type
 		    `(system "echo 1 > /sys/class/backlight/intel_backlight/brightness"))
     (service home-redshift-service-type
@@ -347,44 +359,12 @@ desktop-entry: ~s
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
 		    `(("EDITOR" . "vim")
-		      ("SASL_PATH" . ,(file-append cyrus-sasl-xoauth2 "/lib/sasl2/"))
+		      ;("SASL_PATH" . ,(file-append cyrus-sasl-xoauth2 "/lib/sasl2/"))
 		      ;;("GUIX_BUILD_OPTIONS" . "--max-jobs=6")
 		      ;;("GTK_THEME" . "Adwaita-dark")
 		      ;;("XCURSOR_SIZE" . "64") ;; TODO: don't think this has any affect, larger cursor would be really nice.
 		      ("CC" . "gcc")
 		      ("CFLAGS" . "-Wall")))
-
-    (service home-xdg-mime-applications-service-type
-	     (home-xdg-mime-applications-configuration
-	      ;; this is the mimetype list supported by icecat
-	      ;; MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;x-scheme-handler/chrome;video/webm;application/x-xpinstall;
-	      (default '(
-			 (text/html  . brave.desktop)
-			 (text/xml   . brave.desktop)
-			 (application/xhtml+xml . brave.desktop)
-			 (application/xml . brave.desktop)
-			 (image/gif . brave.desktop)
-			 (image/png . brave.desktop)
-			 (image/jpeg . brave.desktop)
-			 (x-scheme-handler/http . brave.desktop)
-			 (x-scheme-handler/https . brave.desktop)
-			 (x-scheme-handler/chrome . brave.desktop)
-			 (application/pdf . brave.desktop)
-
-			 (x-scheme-handler/mailto . icedove.desktop)
-			  ))
-     (desktop-entries (list
-       ;;(xdg-desktop-entry
-       ;; (file "mpv")
-       ;; (name "mpv")
-       ;; (type 'application)
-       ;; (config '((exec . "mpv -- %U"))))
-       (xdg-desktop-entry
-        (file "brave")
-        (name "brave")
-        (type 'application)
-        (config '((exec . "brave %U"))))
-       ))))
     (service home-openssh-service-type
 	     (home-openssh-configuration
 	      (hosts (list

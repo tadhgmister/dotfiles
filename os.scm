@@ -47,8 +47,11 @@
  ((gnu services pm) #:select (tlp-service-type tlp-configuration thermald-service-type))
  (tadhg packagelist)
  ((tadhg channels-and-subs) #:prefix tadhg:)
+ ((system-info setup) #:select(wrap-os))
  )
 
+;; stuff for fprintd that I need to submit a patch
+;; this adds support for pam modules
 (use-modules
  (gnu services)
  (gnu services base)
@@ -113,28 +116,22 @@
 ;; also eduroam has an install script for ottawa U, haven't tried it yet since I don't have ottawa U credentials at time of writing
 
 (define username "tadhg")
-;; commit 39a9404 in guix broke this, a function in the os checks for equality with luks-device-mapping as the type and only puts the
-;; needed commands into grub.cfg if it identifies it that way, so this makes grub just not try to mount the encrypted device which
-;; obviously causes it to fail. I will need to submit a bug report and get it properly fixed but for now I will just need to
-;; continue to type my decryption password twice.
-(define cryptroot-type (luks-device-mapping-with-options
-				 ;; NOTE: when specified as a string this is a path relative to the initrd internal filesystem
-				 ;; which is populated by the cpio file passed as 'extra-initrd' to grub above.
-				 ;; if it was (local-file "/crypto_keyfile.bin") it would copy the file on the local filesystem
-				 ;; to the initrd, but it would also put a copy of it in the guix store which is globally readable
-				 ;; (it'd also be readable from the initrd which is also in the guix store so even if it
-				 ;;   wasn't copied in there'd be a problem)
-				 ;; if this file ever needs to be recaptured use the command `cpio -i /crypto_keyfile.bin < /crypto_keyfile.cpio` run as root and it will restore this file to the root directory.
-				 #:key-file "/crypto_keyfile.bin"))
+
+
+(define* (my-os #:key hostname filesystems boot-config)
 (operating-system
+  (host-name hostname)
+  (bootloader boot-config)
+  (file-systems filesystems)
+
+  (locale "en_CA.utf8")
+  (timezone "America/Toronto")
+  (keyboard-layout (keyboard-layout "us"))
+  
   (kernel linux)
   (initrd microcode-initrd)
   (firmware (list linux-firmware))
   (kernel-arguments (cons*
-		     ;; point to partition that hibernate will resume from based on the offset of our swapfile specified on next line
-		     "resume=/dev/mapper/cryptroot"
-		     ;; btrfs inspect-internal map-swapfile -r /swapfile
-		     "resume_offset=105000311"
 		     ;; https://wiki.archlinux.org/title/Intel_graphics#Screen_flickering
 		     "i915.enable_psr=0" ;; fixes screen lag / not updating
 		     ;; https://wiki.archlinux.org/title/Framework_Laptop_13#12th_.26_13th_gen_brightness_and_airplane_mode_keys
@@ -144,23 +141,15 @@
 		     ;; morgan recommended this to ensure the power light turns off during suspend
 		     "acpi_osi=\"!Windows 2020\"" ; framework laptop suspend issue
 		     %default-kernel-arguments))
-  (locale "en_CA.utf8")
-  (timezone "America/Toronto")
-  (keyboard-layout (keyboard-layout "us"))
-  (host-name "framework")
+
 
   ;; The list of user accounts ('root' is implicit).
-  (users (cons* (user-account
-		 (name "test")
-		 (comment "test user")
-		 (group "users")
-		 (home-directory "/home/test")
-		 )
+  (users (cons* 
 	  (user-account
                   (name username)
                   (comment "Tadhg McDonald-Jensen")
                   (group "users")
-                  (home-directory "/home/tadhg")
+                  (home-directory (string-append "/home/" username))
                   (supplementary-groups '("wheel" ;; for sudo access
 					  "netdev" ;; TODO: what is this for?
 					  "audio" ;; to be able to use alsamixer etc
@@ -173,41 +162,7 @@
 					  "kvm" ;; kvm is a kernel thing for performance with virtualization, probably helps with optimization but wouldn't be strictly necessary, morgan recommended adding myself to this group to save myself hassle when figuring out VM stuff.
 					  )))
                 %base-user-accounts))
-  (bootloader (bootloader-configuration
-                (bootloader grub-efi-bootloader)
-                (targets (list "/boot"))
-                (keyboard-layout keyboard-layout)
-		(extra-initrd "/crypto_keyfile.cpio")
-		))
-  (mapped-devices (list (mapped-device
-                          (source (uuid
-                                   "c0010d06-0bd1-4ae2-93e6-f2f89a3a670b"))
-                          (target "cryptroot")
-			  ;;(type cryptroot-type))))
-			  (type luks-device-mapping))))
-  
-  (swap-devices (list (swap-space
-                       (target "/swapfile")
-		       ;; TODO: see example about btrfs mounting in docs about swap, just depending on mapped-devices isn't sufficient to guarentee the root partition is mounted.
-		       (dependencies mapped-devices))))
 
-  ;; The list of file systems that get "mounted".  The unique
-  ;; file system identifiers there ("UUIDs") can be obtained
-  ;; by running 'blkid' in a terminal.
-  (file-systems (cons* (file-system
-                         (mount-point "/boot")
-                         (device (uuid "5190-E840" 'fat32))
-                         (type "vfat"))
-                       (file-system
-                         (mount-point "/")
-                         (device "/dev/mapper/cryptroot")
-                         (type "btrfs")
-                         (flags '(lazy-time))
-                         (options
-                          (alist->file-system-options
-                           '(("compress" . "lzo"))))
-                         (dependencies mapped-devices)) 
-                         %base-file-systems))
   (packages (append
 	     os-packages
              %base-packages))
@@ -280,5 +235,7 @@
 	)))
   ;; allow using .local with mdns resolution, used for printer in particular
   (name-service-switch %mdns-host-lookup-nss)
-  )
+  ))
                       
+
+(wrap-os my-os)
