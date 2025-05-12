@@ -112,6 +112,11 @@
 ;; idk where else to put this, wifi info isn't something I expect to ever save to the guix config but want to remember how to do it.
 ;; also eduroam has an install script for ottawa U, haven't tried it yet since I don't have ottawa U credentials at time of writing
 
+(define hostname "tadhgfrmwrk")
+(define root-uuid "")
+(define efi-uuid "")
+(define resume-offset "")
+
 (define username "tadhg")
 ;; commit 39a9404 in guix broke this, a function in the os checks for equality with luks-device-mapping as the type and only puts the
 ;; needed commands into grub.cfg if it identifies it that way, so this makes grub just not try to mount the encrypted device which
@@ -125,7 +130,7 @@
 				 ;; (it'd also be readable from the initrd which is also in the guix store so even if it
 				 ;;   wasn't copied in there'd be a problem)
 				 ;; if this file ever needs to be recaptured use the command `cpio -i /crypto_keyfile.bin < /crypto_keyfile.cpio` run as root and it will restore this file to the root directory.
-				 #:key-file "/crypto_keyfile.bin"))
+				 #:key-file "/keyfile.bin"))
 (operating-system
   (kernel linux)
   (initrd microcode-initrd)
@@ -134,7 +139,7 @@
 		     ;; point to partition that hibernate will resume from based on the offset of our swapfile specified on next line
 		     "resume=/dev/mapper/cryptroot"
 		     ;; btrfs inspect-internal map-swapfile -r /swapfile
-		     "resume_offset=105000311"
+		     (string-append "resume_offset=" resume-offset)
 		     ;; https://wiki.archlinux.org/title/Intel_graphics#Screen_flickering
 		     "i915.enable_psr=0" ;; fixes screen lag / not updating
 		     ;; https://wiki.archlinux.org/title/Framework_Laptop_13#12th_.26_13th_gen_brightness_and_airplane_mode_keys
@@ -147,15 +152,10 @@
   (locale "en_CA.utf8")
   (timezone "America/Toronto")
   (keyboard-layout (keyboard-layout "us"))
-  (host-name "framework")
+  (host-name hostname)
 
   ;; The list of user accounts ('root' is implicit).
-  (users (cons* (user-account
-		 (name "test")
-		 (comment "test user")
-		 (group "users")
-		 (home-directory "/home/test")
-		 )
+  (users (cons* 
 	  (user-account
                   (name username)
                   (comment "Tadhg McDonald-Jensen")
@@ -177,17 +177,17 @@
                 (bootloader grub-efi-bootloader)
                 (targets (list "/boot"))
                 (keyboard-layout keyboard-layout)
-		(extra-initrd "/crypto_keyfile.cpio")
+		(extra-initrd "/swap/keyfile.cpio")
 		))
   (mapped-devices (list (mapped-device
                           (source (uuid
-                                   "c0010d06-0bd1-4ae2-93e6-f2f89a3a670b"))
+                                   root-uuid))
                           (target "cryptroot")
 			  ;;(type cryptroot-type))))
 			  (type luks-device-mapping))))
   
   (swap-devices (list (swap-space
-                       (target "/swapfile")
+                       (target "/swap/swapfile")
 		       ;; TODO: see example about btrfs mounting in docs about swap, just depending on mapped-devices isn't sufficient to guarentee the root partition is mounted.
 		       (dependencies mapped-devices))))
 
@@ -196,7 +196,7 @@
   ;; by running 'blkid' in a terminal.
   (file-systems (cons* (file-system
                          (mount-point "/boot")
-                         (device (uuid "5190-E840" 'fat32))
+                         (device (uuid efi-uuid 'fat32))
                          (type "vfat"))
                        (file-system
                          (mount-point "/")
