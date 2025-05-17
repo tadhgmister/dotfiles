@@ -12,13 +12,13 @@
   #:export (wrap-os)
 ) 
 ;; directly relate to stuff from system-info
-(define mapper-target "cryptroot")
+(define mapper-target (string-append HOSTNAME "_drive"))
 (define root-drive (string-append "/dev/mapper/" mapper-target))
 (define boot-config (bootloader-configuration
                 (bootloader grub-efi-removable-bootloader)
                 (targets (list "/boot/efi"))
                 ;(keyboard-layout keyboard-layout)
-		;;(extra-initrd "/swap/keyfile.cpio")
+		;(extra-initrd "/swap/keyfile.cpio")
 		))
 
 (define mapped-devices
@@ -26,7 +26,7 @@
    (mapped-device
     (source (uuid ROOT-UUID))
     (type luks-device-mapping)
-	   ;;(luks-device-mapping-with-options
+	   ;(luks-device-mapping-with-options
 	   ;; this keyfile is relative to the path when the cpio file containing the key was generated
 	   ;; whcih is specifically done at the root directory as I don't want any change of using a folder name that
 	   ;; is used by the initrd and this ends up visible after boot or overriding something else
@@ -54,32 +54,32 @@
    (file-system
      (mount-point "/boot/efi")
      (device (uuid EFI-UUID 'fat32))
-     (type "fat32"))
+     (type "vfat"))
    
-   (file-system
-     ;; guix store, use compress-force to try harder to compress stuff and with higher effort
-     (mount-point "/gnu")
-     (options
-      (alist->file-system-options
-       '(("subvol" . "gnu")
-	 ("compress-force" . "zstd:5"))))
-     (device root-drive)
-     ;; guix/nix/libstore/gc.cc indicates that gc randomizes the order of garbage to collect
-     ;; so there is no point storing any access times in the gnu store
-     (flags '(no-atime no-diratime))
-     (type "btrfs"))
-   (file-system
-     ;; nix store, use compress-force to try even harder to compress stuff as it is updated very infrequently
-     (mount-point "/nix")
-     (options
-      (alist->file-system-options
-       '(("subvol" . "nix")
-	 ("compress-force" . "zstd:7"))))
-     (device root-drive)
-     ;; guix/nix/libstore/gc.cc indicates that gc randomizes the order of garbage to collect
-     ;; so there is no point storing any access times in the gnu store
-     (flags '(no-atime no-diratime))
-     (type "btrfs"))
+   ;; (file-system
+   ;;   ;; guix store, use compress-force to try harder to compress stuff and with higher effort
+   ;;   (mount-point "/gnu")
+   ;;   (options
+   ;;    (alist->file-system-options
+   ;;     '(("subvol" . "gnu")
+   ;; 	 ("compress-force" . "zstd:5"))))
+   ;;   (device root-drive)
+   ;;   ;; guix/nix/libstore/gc.cc indicates that gc randomizes the order of garbage to collect
+   ;;   ;; so there is no point storing any access times in the gnu store
+   ;;   (flags '(no-atime no-diratime))
+   ;;   (type "btrfs"))
+   ;; (file-system
+   ;;   ;; nix store, use compress-force to try even harder to compress stuff as it is updated very infrequently
+   ;;   (mount-point "/nix")
+   ;;   (options
+   ;;    (alist->file-system-options
+   ;;     '(("subvol" . "nix")
+   ;; 	 ("compress-force" . "zstd:7"))))
+   ;;   (device root-drive)
+   ;;   ;; guix/nix/libstore/gc.cc indicates that gc randomizes the order of garbage to collect
+   ;;   ;; so there is no point storing any access times in the gnu store
+   ;;   (flags '(no-atime no-diratime))
+   ;;   (type "btrfs"))
    
    ;; allow /home and /swap to be automatically loaded by path as they don't need special options
    %base-file-systems
