@@ -115,8 +115,12 @@
 ;; idk where else to put this, wifi info isn't something I expect to ever save to the guix config but want to remember how to do it.
 ;; also eduroam has an install script for ottawa U, haven't tried it yet since I don't have ottawa U credentials at time of writing
 
-(define username "tadhg")
+(define hostname "tadhgfrmwrk")
+(define root-uuid "")
+(define efi-uuid "")
+(define resume-offset "")
 
+(define username "tadhg")
 
 (define* (my-os #:key hostname filesystems boot-config)
 (operating-system
@@ -141,7 +145,6 @@
 		     ;; morgan recommended this to ensure the power light turns off during suspend
 		     "acpi_osi=\"!Windows 2020\"" ; framework laptop suspend issue
 		     %default-kernel-arguments))
-
 
   ;; The list of user accounts ('root' is implicit).
   (users (cons* 
