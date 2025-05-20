@@ -1,9 +1,12 @@
 (define-module (tadhg channels-and-subs)
   #:use-module(gnu)
+  #:use-module((guix gexp) #:select(plain-file))
   #:use-module((guix download) #:select(url-fetch))
   #:use-module((guix packages) #:select(origin base32))
   #:use-module((guix channels) #:select (channel make-channel-introduction openpgp-fingerprint %default-channels))
   )
+
+(define-public nix-channels (plain-file "nix-channels" "https://nixos.org/channels/nixpkgs-unstable nixpkgs\n"))
 
 (define-public channels
   (list

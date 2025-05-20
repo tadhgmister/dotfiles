@@ -8,7 +8,7 @@
   #:use-module (gnu bootloader)
   #:use-module (gnu bootloader grub)
   ;#:use-module (gnu system keyboard)
-  #:use-module ((system-info details) #:select (HOSTNAME RESUME-OFFSET ROOT-UUID EFI-UUID))
+  #:use-module ((system-info details) #:select (USERNAME HOSTNAME RESUME-OFFSET ROOT-UUID EFI-UUID))
   #:export (wrap-os)
 ) 
 ;; directly relate to stuff from system-info
@@ -92,6 +92,7 @@
 
 (define* (wrap-os base-os-routine)
   (let ((base-os (base-os-routine #:hostname HOSTNAME
+				  #:username USERNAME
 				  #:filesystems filesystems
 				  #:boot-config boot-config)))
     

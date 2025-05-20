@@ -115,14 +115,8 @@
 ;; idk where else to put this, wifi info isn't something I expect to ever save to the guix config but want to remember how to do it.
 ;; also eduroam has an install script for ottawa U, haven't tried it yet since I don't have ottawa U credentials at time of writing
 
-(define hostname "tadhgfrmwrk")
-(define root-uuid "")
-(define efi-uuid "")
-(define resume-offset "")
 
-(define username "tadhg")
-
-(define* (my-os #:key hostname filesystems boot-config)
+(define* (my-os #:key hostname filesystems boot-config (username "tadhg"))
 (operating-system
   (host-name hostname)
   (bootloader boot-config)
@@ -131,10 +125,12 @@
   (locale "en_CA.utf8")
   (timezone "America/Toronto")
   (keyboard-layout (keyboard-layout "us"))
-  
+
+  ;; COMMENT OUT THESE LINES TO REMOVE DEPENDENCY ON NON GUIX
   (kernel linux)
   (initrd microcode-initrd)
   (firmware (list linux-firmware))
+  
   (kernel-arguments (cons*
 		     ;; https://wiki.archlinux.org/title/Intel_graphics#Screen_flickering
 		     "i915.enable_psr=0" ;; fixes screen lag / not updating
@@ -150,7 +146,7 @@
   (users (cons* 
 	  (user-account
                   (name username)
-                  (comment "Tadhg McDonald-Jensen")
+                  (comment username)
                   (group "users")
                   (home-directory (string-append "/home/" username))
                   (supplementary-groups '("wheel" ;; for sudo access

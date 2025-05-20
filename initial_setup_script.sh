@@ -1,24 +1,35 @@
 #!/bin/sh
 
+
 # the hostname we want to use, by my own convension I use this
-# appended with "drive" as the mapper name since the mapper name is arbitrary but must be distinct for multiple drives loaded at the same time
-# and since when installing a new operating system I need the mapper name to be different from the currently booted system and often want to change the hostname as well.
+# appended with "drive" as the mapper name since the mapper name is
+# arbitrary but must be distinct for multiple drives loaded at the
+# same time and since when installing a new operating system I need
+# the mapper name to be different from the currently booted system and
+# often want to change the hostname as well.
 NEW_HOSTNAME=tadhgfrmwrk
+
 # the amount of space for our swapfile, can probably be increased later but may be a pain.
 SWAP_SPACE=12G
+
+# if running this script with sudo the username is automatically extracted from the current user
+# otherwise (like in install media) this username is used
+# it only affects where the dotfiles with system-info is stored which is important for reconfiguring system
+USERNAME_TO_USE_IF_RUNNING_FROM_INSTALL_MEDIA=tadhg
 
 
 set -e
 
 if [[ ! $USER =~ ^root$ ]]; then
-    echo "this script must be run as root, it partitions drives and such so you have to run it with sudo"
+    echo "run this script like 'guix shell parted cryptsetup -- sudo ./initial_setup_script.sh /dev/??'"
+    echo "it needs both sudo and those programs which are installed on guix installer by default"
     exit 1
 else
     if [ -z $SUDO_USER ]; then
 	# running directly as root, assume this is on the installation media
 	# ideally we would set sudo_user to something read from the scm definitions but this is fine for my usage
 	ON_INSTALL_MEDIA=t
-	SUDO_USER=tadhg
+	SUDO_USER=${USERNAME_TO_USE_IF_RUNNING_FROM_INSTALL_MEDIA}
     else
 	# running in sudo, will
 	ON_INSTALL_MEDIA=f
@@ -159,6 +170,8 @@ cat > /mnt/home/$SUDO_USER/src/dotfiles/packages/system-info/details.scm <<EOF
 (define-public RESUME-OFFSET "${RESUME_OFFSET}")
 ;; hostname of machine
 (define-public HOSTNAME "${NEW_HOSTNAME}")
+;; main user of the machine
+(define-public USERNAME "${SUDO_USER}")
 EOF
 
 # and copy the template system info to the setup file, the system-info is in .gitignore so will not be edited by updates to the repo
@@ -199,6 +212,10 @@ echo "- system is initialized, you can interrupt this script and go use your sys
 ##EOF
 ##echo "- files needed for home config are copied over, you should be able to run 'guix home reconfigure' from booted system quickly"
 
+echo "set a password for root user in new system"
+passwd --root /mnt root
+echo "set a password for ${SUDO_USER} in new system"
+passwd --root /mnt ${SUDO_USER}
 
 sync
 echo "- FINISHED, unmounting drive"
