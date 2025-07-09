@@ -3,7 +3,7 @@
 
 ;; TODO: clean up imports
 (use-modules (gnu home)
-	     ((gnu packages xorg) #:select (xrdb xrandr xinit xsetroot))
+	     ((gnu packages xorg) #:select (xrdb xrandr xinit xsetroot xmodmap))
 	     ((gnu packages xdisorg) #:select(redshift xdo))
 	     ((gnu packages suckless) #:select (slstatus dmenu))
 	     ((gnu packages gtk) #:select (pango))
@@ -57,12 +57,14 @@
 	   (home-page "")
 	   (build-system copy-build-system)
 	   (source (computed-file name #~(begin
-	      (mkdir #$output)
+	      (mkdir #$output) ;make the output a directory with a /bin subdirectory
 	      (mkdir (string-append #$output "/bin"))
-	      (call-with-output-file
+	      (call-with-output-file ; write to a file in /bin with the name of the script
 	       (string-append #$output "/bin/" #$name)
 	       (lambda (port)
-		(display (string-append #$@text) port)
+		 ;; paste all the text ungexped into the port
+		 (display (string-append #$@text) port)
+		 ;; change permissions to give it execute and read permissions
 		(chmod port #o555)))
 	   )))
 ))
@@ -101,7 +103,7 @@ echo os config was build, run 'guixman os' to reconfigure the system
 	 (NIX "nix-env -r -i")
 	 ;; for diff command -up gives more context, -N displays new files contents.
 	 ;; we specifically use guix build to grab the most up to date version of the package definitions
-	 (DWM_DIFF "diff -up -N $(guix build -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q -L ~/src/dotfiles/packages/) ~/src/dwm > ~/src/dotfiles/dwm_personal.diff")
+	 (DWM_DIFF "diff -up -N $(guix build -e \"(@ (tadhg dwm) dwm-checkout-without-personal)\" -q -L ~/src/dotfiles/packages/) ~/src/dwm > ~/src/dotfiles/packages/tadhg/aux-files/dwm_personal.diff")
 	 (HOME "guix home reconfigure ~/src/dotfiles/home-config.scm -L ~/src/dotfiles/packages/")
 	 (OS "sudo guix system reconfigure ~/src/dotfiles/os.scm -L ~/src/dotfiles/packages/")
 	 (COMMIT "git -C ~/src/dotfiles/ commit")
@@ -113,7 +115,7 @@ GUILE_LOAD_PATH=$GUILE_LOAD_PATH:/home/tadhg/src/dotfiles/packages
 case $1 in
   \"home\" )
     " DWM_DIFF ";
-    " HOME " && " STAGEHOME " && " NIX ";;
+    " HOME " && " STAGEHOME ";;
   \"os\" )
     " OS " && " STAGEOS ";;
   \"commit\" )
@@ -226,6 +228,19 @@ fi
 ;; TODO: probably clean up this definition slightly, is kind of unreadable as is.
 (define profile-script
   (let* (
+	 (Xmodmap (plain-file "Xmodmap" "
+clear control
+clear mod3
+clear lock
+
+keycode 37 = Control_L
+keycode 105 = Hyper_R
+
+add Control = Control_L
+add Mod3 = Hyper_R
+
+keycode 66 = BackSpace
+"))
        (Xresources (plain-file "Xresources" "
 Xft.dpi: 192
 Xft.hinting: 1
@@ -237,8 +252,11 @@ Xcursor.size: 64
        (xinitrc (mixed-text-file "xinitrc"
 	 ;; one off operations to set configurations, done in parallel then waited on before starting other processes
 	 xrdb "/bin/xrdb -merge " Xresources " & "
-	 "setxkbmap -option caps:none & "
-         ;; TODO: use the proper method to set these in a config file instead of doing it at initrc
+	 ;; TODO: these settings are directly duplicated in the os.scm keyboard layout
+	 ;; figure out some way to co-locate them
+	 xmodmap "/bin/xmodmap " Xmodmap " & "
+	 ;; TODO: use the proper method to set these in a config file instead of doing it at initrc
+
 	 "xinput set-prop \"PIXA3854:00 093A:0274 Touchpad\""
          "     \"libinput Natural Scrolling Enabled\""
 	 "     1 & "
@@ -250,7 +268,7 @@ Xcursor.size: 64
 	 "     0 & "
 	 ;;; wait for above operations before starting main applications
 	 "wait; "
-	 ;;; then start tasks in parallel
+	 ;;; TODO: turn this into a home shepherd service
 	 python "/bin/python3 " (local-file "battery_script.py") " & "
 	 ;;slstatus-patched "/bin/slstatus & "
 	 ;;; finally, execute dwm to open window manager.
@@ -397,6 +415,22 @@ window.dino-main .dino-conversation {
         font-size: 40px;
 }
 "))
+      ("kitty/kitty.conf" ,(plain-file "kitty.conf" "
+## TODO: maybe enable this?
+ focus_follows_mouse yes
+
+window_alert_on_bell yes
+enable_audio_bell no
+
+# Hyper+C sends Ctrl+C (0x03) and same for Hyper+V
+map hyper+c send_text all \\x03
+map hyper+v send_text all \\x16
+map ctrl+shift+c send_text all \\x03
+map ctrl+shift+v send_text all \\x16
+# Ctrl+C and Ctrl+V does clipboard copy/paste
+map ctrl+c copy_to_clipboard
+map ctrl+v paste_from_clipboard
+"))
       ("foot/foot.ini" ,(plain-file "foot.ini" "
 [ bell ]
 urgent=yes
@@ -408,11 +442,11 @@ urgent=yes
 "[user]
 	email = tadhgmister@gmail.com
 	name = Tadhg McDonald-Jensen
-[sendemail]
-	smtpserver = smtp.gmail.com
-	smtpuser = tadhgmister@gmail.com
-	smtpencryption = ssl
-	smtpserverport = 465
+[filter \"lfs\"]
+ 	clean = git-lfs clean -- %f
+ 	smudge = git-lfs smudge -- %f
+ 	process = git-lfs filter-process
+ 	required = true
 "))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       (".nix-channels" ,(plain-file "nix-channels" "https://nixos.org/channels/nixpkgs-unstable nixpkgs\n"))
@@ -423,7 +457,6 @@ in
 [
     nixpkgs.discord
     nixpkgs.brave
-    nixpkgs.vscode
 ]"))
       ;;;;;;;;;;;;;;;;;;;;;;;;;
       (".bashrc" ,(plain-file "bashrc"

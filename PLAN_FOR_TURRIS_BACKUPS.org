@@ -1,0 +1,45 @@
+
+
+Files to be backed up will be saved on my laptop (or the machine
+compiling the code for the turris) Any compression or other archiving
+pre-processing is done manually.
+
+I will use guix scripts to define a directory of all files to be
+backed up to turris that should be available via web. This gets
+specified as the root folder of a quark service for web hosting.
+
+The files to be backed up and available on web will be pushed to
+turris on deploy. There will be a connonical folder in the guix store
+that contains symlinks to all the files in the guix store but
+otherwise is not trivial to make a full copy from the turris to
+another device in case my laptop is broken.
+
+I will write a patch for quark that can also find .drv files and get
+guix to build them on demand, this allows me to have files that are
+computed on demand and removed by `guix gc` and all dependencies to
+build the derivations should be considered roots as they are
+dependencies of the drv. (I hope, TODO: check this)
+
+
+
+- [ ] figure out how to make a file union of symlinks to other guix store files for root of quark service
+- [ ] write guix service for quark
+
+- [ ] figure out how to save .drv files and how to build them from shell / C code.
+- [ ] write patch for quark to build drv files
+- [ ] check that the .drv file does have build dependency of the code needed to build the output
+
+
+- do I try to get each file to be its own guix store item and then
+  make a folder of symlinks or should I try to get the connonical data
+  to be all together?
+  - getting everything seperate would be easier, just have individual
+    computed files and local files etc and then just make a directory
+    of symlinks
+  - getting it all together would maybe mean I can do chroot but also post-computed files (derivations) would still be hard.
+
+
+(with-status-verbosity 0
+  (with-store store
+     (build-things store (list (derivation-file-name drv)))))
+(display (derivation-output-path (cdar (derivation-outputs drv))))

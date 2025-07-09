@@ -3,6 +3,62 @@
 ; cache the gpg passphrase so it doesn't prompt me every single time for it.
 (setq plstore-cache-passphrase-for-symmetric-encryption t)
 
+;; we override right control to send the hyper modifier
+;; most programs will not make any use of it but I will get emacs to swap hyper and ctrl
+;; so the left control that I typically use will be bound to H- keybindings 
+(setq x-hyper-keysym 'ctrl)
+(setq x-ctrl-keysym 'hyper)
+
+(defun my/org-agenda-n-in-frame ()
+  "Open the Org Agenda in 'n' mode in a new frame."
+  (interactive)
+  (let ((frame (make-frame)))
+    (select-frame-set-input-focus frame)
+    (org-agenda nil "n")))
+(defun my/org-agenda-in-current-window ()
+  "Open Org agenda in the current window, replacing the current buffer."
+  (interactive)
+  (let ((display-buffer-overriding-action
+         '((display-buffer-same-window))))
+    (org-agenda nil "n")))
+
+(defun my/scold ()
+  "flashes the screen"
+  (interactive)
+  (invert-face 'default)
+  (run-at-time 0.1 nil #'invert-face 'default))
+
+;; replace startup screen with org agenda
+(setq inhibit-startup-screen t)
+(add-hook 'emacs-startup-hook #'my/org-agenda-in-current-window)
+
+;; keybindings, comment in brackets indicates their original binding
+
+					;(keymap-global-set "H-x" 'kill-region)    ;cut (C-w)
+
+(keymap-global-set "H-c" 'kill-ring-save) ;copy (M-w)
+(keymap-global-set "H-v" 'yank)           ;paste (C-y)
+(keymap-global-set "H-s" 'save-buffer)    ;save (C-x C-s)
+(keymap-global-set "H-n" #'my/org-agenda-n-in-frame) ;new frame (C-x 5 2)
+(keymap-global-set "H-o" 'find-file)          ;open file (C-x C-f)
+(keymap-global-set "H-f" 'isearch-forward)    ;search (C-s)
+(keymap-global-set "H-z" 'undo)    ;undo (C-x u)
+(keymap-global-set "H-S-z" 'undo-redo) ;redo (C-M-_ (control alt shift plus))
+
+;; non typical keys that I use for my own purposes
+(keymap-global-set "H-x" #'my/scold)
+(keymap-global-set "H-S-f" 'find-file) ;; occasionally I only have one hand and H-o uses opposite ends of the keyboard
+
+
+;; prefer poping out a "frame" (application window) instead of a
+;; "window" (split buffer view in same app window) TODO read the docs
+;; about these variables, the decision process for opening new
+;; window/frames is complicated and worth taking some time to
+;; understand
+;(setq pop-up-windows nil)
+;(setq pop-up-frames t)
+
+
 (require 'org-caldav)
 (setq org-caldav-url "http://localhost:8080/user/calendars")
 (setq org-caldav-calendar-id "calendar")

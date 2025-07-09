@@ -14,6 +14,7 @@
  (guix gexp)
  (guix transformations)
  ((guix packages) #:select (package origin base32 modify-inputs package-arguments package-native-inputs))
+ ((guix git-download) #:select(git-reference git-fetch git-file-name))
  ((guix utils) #:select ( substitute-keyword-arguments))
  ;((guix git-download) #:select (git-fetch git-reference git-file-name))
  ;((guix platforms arm) #:select(armv7-linux))
@@ -24,7 +25,6 @@
  ((gnu packages ssh) #:select(openssh))
  ((gnu packages scanner) #:select (sane-backends))
  ((gnu packages syncthing) #:select (syncthing))
- ;((gnu packages autotools) #:select(automake autoconf))
 
  ((gnu services networking) #:select(dhcp-client-service-type dhcp-client-configuration))
  ((gnu services ssh) #:select(openssh-service-type openssh-configuration))
@@ -38,7 +38,37 @@
  ((gnu services shepherd) #:select(shepherd-root-service-type shepherd-service))
  ((srfi srfi-1) #:select(lset-difference))
  ((nongnu packages linux) #:select(atheros-firmware))
+
+ ((guix store) #:select(run-with-store with-store))
+ ((guix packages) #:select(%current-system))
  )
+
+
+(define (force-native-compiled pkg)
+  (with-store store (run-with-store store (lower-object pkg "armhf-linux"))))
+(define (force-cross-compiled pkg)
+  (with-store store (run-with-store store (lower-object pkg (%current-system) #:target "arm-linux-gnueabihf"))))
+
+(define baikal
+  (let ((name "Baikal")
+	(version "0.10.1")
+	(commit "bcaee23"))
+    (origin
+      (method git-fetch)
+      (uri (git-reference
+            (url "https://github.com/sabre-io/Baikal.git")
+            (commit commit)))
+      (file-name (git-file-name name version))
+      (sha256 (base32 "0klkyvy8wivr4d7kpvay5brnbw4gkjs1vf8ka9fhc78zvi6k0131")))))
+
+(define baikal-ini-file (mixed-text-file "baikal.ini"
+"[baikal]
+user = nginx
+group = nginx
+listen = /run/php-fpm-baikal.sock
+pm = ondemand
+chdir = " baikal "/html
+"))
 
 (define syncthing-able-to-cross-compile
   (package
@@ -68,39 +98,50 @@
                  (for-each (cut install-file <> (string-append #$output:utils "/bin/"))
                            '("ursrv" "stupgrades" "strelaypoolsrv" "stcrashreceiver" "stdiscosrv" "strelaysrv")))))))))))
 
-(use-modules
-  (guix store)
-  (guix monads)
-  (guix derivations)
-  ;(guix utils)
-  ;(guix diagnostics)
-  ;(guix i18n)
-  (rnrs bytevectors)
-  (srfi srfi-26)
-  (ice-9 match)
-  (srfi srfi-1)
-  (srfi srfi-9))
-;; wrapper for gexp that ignores the system and target and instead compiles for arm system
-(define-record-type <force-arm-compiled>
-  (force-arm-compiled obj)
-  force-arm-compiled?
-  (obj  force-arm-compiled-object))              ;lowerable object
 
-(define-gexp-compiler force-arm-compiled-compiler <force-arm-compiled>
-  compiler => (lambda (obj system target)
-                (mlet %store-monad ((obj (lower-object
-                                          (force-arm-compiled-object obj)
-                                          "armhf-linux" #:target 'current)))
-                  ;; Returning the .drv file name instead of the <derivation>
-                  ;; record ensures that 'lower-gexp' will classify it as a
-                  ;; "source" and not as an "input".
-                  (return (if (derivation? obj)
-                              (derivation-file-name obj)
-                              obj))))
-  expander => (lambda (obj lowered output)
-                (if (derivation? lowered)
-                    (derivation-file-name lowered)
-                    lowered)))
+(use-modules 
+	     ;(guix packages)
+             ((gnu packages bittorrent) #:select(transmission))
+	     ((gnu packages bash) #:select(bash-minimal))
+	     ((gnu packages curl) #:select(curl))
+	     ((gnu packages libevent) #:select(libevent))
+	     ((gnu packages tls) #:select(openssl))
+	     ((gnu packages python) #:select(python))
+	     ((gnu packages compression) #:select(zlib))
+	     ;(guix utils)
+					;(guix gexp)
+)
+(define transmission-headless
+  (package
+    (inherit transmission)
+    (name "transmission-headless")
+    (outputs '("out"))
+    (arguments
+     (substitute-keyword-arguments (package-arguments transmission)
+       
+       ((#:configure-flags flags)
+        #~(append
+           #$flags
+           '("-DENABLE_GTK=OFF" "-DENABLE_MAC=OFF" "-DENABLE_QT=OFF")))
+	
+       ((#:phases phases)
+        #~(modify-phases #$phases
+	    (replace 'move-gui
+	      (lambda* (#:key outputs #:allow-other-keys)
+               (mkdir-p (string-append #$output:gui "/bin"))))
+	    (delete 'wrap-program)))))
+    (inputs (list bash-minimal
+                  curl
+                  ;(list glib "bin")
+                  ;gtkmm
+                  ;libappindicator
+                  libevent
+                  openssl
+                  python
+                  zlib))
+    ))
+
+
 
 ;; (define-record-type* <startupscript-configuration>
 ;;   startupscript-configuration make-startupscript-configuration
@@ -178,6 +219,7 @@
                                 ("CONFIG_ATH9K" . m)
                                 ("CONFIG_ATH10K" . m)
                                 ("CONFIG_ATH10K_PCI" . m)
+				
                                 ;("CONFIG_HAVE_GCC_PLUGINS" . #t)
                                 ;("CONFIG_GCC_PLUGINS" . #t)
                                 ;("CONFIG_GCC_PLUGIN_LATENT_ENTROPY" . #t)
@@ -217,12 +259,6 @@
                                        "virtio_console" ;; we are not in a vm
                                        "virtio-rng" ;; we are not a vm
                                        "btrfs" ;; baked into kernel
-
-
-                                       ;; TODO: FIGURE OUT WHY THIS WAS DESIRED
-                                                       ;;; !!!!!!!!!!
-					; !!!!!!!!!!
-					;"pata_acpi" "pata_atiixp" "isci" "virtio_pci" "virtio_bal?"
                                        )))
     (kernel-arguments (list
                        "earlyprintk"
@@ -256,7 +292,7 @@
       ;; Add udev rules for scanners.
 					;(service sane-service-type sane-backends)
       
-   (service syncthing-service-type
+      (service syncthing-service-type
 	    (syncthing-configuration
 	     (syncthing syncthing-able-to-cross-compile)
 	     (user "root")
@@ -273,28 +309,28 @@
 		)) ;; end list of folders
 	      
 	      )))) ;;end syncthing configuration and service
-      ;; (service transmission-daemon-service-type
-      ;;          (transmission-daemon-configuration
-      ;; 		(transmission (force-arm-compiled transmission))
-      ;;     ;; Restrict access to the RPC ("control") interface
-      ;;     (rpc-authentication-required? #t)
-      ;;     (rpc-username "torrenting")
-      ;;     (rpc-password
-      ;;      (transmission-password-hash
-      ;;       "torrenting" ; desired password
-      ;;       "uKd1uMs9"))   ; arbitrary salt value
+      (service transmission-daemon-service-type
+               (transmission-daemon-configuration
+		(transmission transmission-headless)
+          ;; Restrict access to the RPC ("control") interface
+          (rpc-authentication-required? #t)
+          (rpc-username "torrenting")
+          (rpc-password
+           (transmission-password-hash
+            "torrenting" ; desired password
+            "uKd1uMs9"))   ; arbitrary salt value
 
-      ;;     ;; Accept requests from this and other hosts on the
-      ;;     ;; local network
-      ;;     (rpc-whitelist-enabled? #t)
-      ;;     (rpc-whitelist '("::1" "127.0.0.1" "192.168.2.*")) ;; allow local connections (if done while ssh'd into router) or on local network
+          ;; Accept requests from this and other hosts on the
+          ;; local network
+          (rpc-whitelist-enabled? #t)
+          (rpc-whitelist '("::1" "127.0.0.1" "192.168.2.*")) ;; allow local connections (if done while ssh'd into router) or on local network
 
-      ;; 	  (download-dir "/home/torrents")
-      ;; 	  (incomplete-dir-enabled? #t)
-      ;; 	  (incomplete-dir "/var/lib/transmission-daemon/downloads/")
-      ;; 	  (lpd-enabled? #t) ;; try to find peers on local network so copying torrent from a laptop to turris is fast
-      ;; 	  (ratio-limit-enabled? #t)
-      ;; 	  (ratio-limit 10.0)))
+	  (download-dir "/home/torrents")
+	  (incomplete-dir-enabled? #t)
+	  (incomplete-dir "/var/lib/transmission-daemon/downloads/")
+	  (lpd-enabled? #t) ;; try to find peers on local network so copying torrent from a laptop to turris is fast
+	  (ratio-limit-enabled? #t)
+	  (ratio-limit 10.0)))
 
       ;; automatically aquire ip address
       (service dhcp-client-service-type
@@ -324,6 +360,8 @@
       (modify-services
           %base-services
         (guix-service-type config => (substitutes config)))))))
+
+
 ;;;; helper to debug configuration, when building this package it intentionally crashes after configuration so
 ;;;; with --keep-failed the confuration used can be inspected
 ;;;; probably not useful anymore now that I am using the customize linux script which fails if the configuration doesn't match
@@ -340,7 +378,7 @@
 ;;            (lambda _ (error "this is intentional"))))))))
 
 ;kernel-to-use
-my-system
+;my-system
 
 ;; (image
 ;;  (format 'disk-image)
@@ -357,16 +395,23 @@ my-system
 ;;     (flags '(boot))
 ;;     (initializer (gexp initialize-root-partition))))))
 
+;;; TODO: figure out what module makes 'machine' a thing and import it so I can leave this uncommented when using this file for non deploy commands
+(define turris-to-deploy-to (list (machine
+       (operating-system my-system)
+       (environment managed-host-environment-type)
+       (configuration (machine-ssh-configuration
+                       (host-name "192.168.2.176")
+                       (system "armhf-linux")
+                       (target "arm-linux-gnueabihf")
+                       (user "root")
+                       (identity "~/.ssh/id_ed25519")
+                       (host-key "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBPLIU+lgpp4eOZOqDtm5t94DbuRODG/rWEmCSXVY9wa root@(none)")
+                       (port sshport)
+                       )))))
+(define COMMAND_BEING_RUN (cadr (command-line)))
 
-;; (list (machine
-;;        (operating-system my-system)
-;;        (environment managed-host-environment-type)
-;;        (configuration (machine-ssh-configuration
-;;                        (host-name "192.168.2.176")
-;;                        (system "armhf-linux")
-;;                        ;(target "arm-linux-gnueabihf")
-;;                        (user "root")
-;;                        (identity "./deploy_id.key")
-;;                        (host-key "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBPLIU+lgpp4eOZOqDtm5t94DbuRODG/rWEmCSXVY9wa root@(none)")
-;;                        (port sshport)
-;;                        ))))
+(case COMMAND_BEING_RUN
+  (("deploy") turris-to-deploy-to)
+  (("system") my-system)
+  (("build") kernel-to-use)
+  (else turris-to-deploy-to))

@@ -20,9 +20,8 @@
 (define xorg ;; packages needed for dwm or xorg config
   (list
    "xorg-server" ;; the server, probably 
-   "alacritty" ;; terminal, not exactly needed just for xorg but ties in with keybindings in dwm so putting it here
    "xf86-video-fbdev" ;; TODO is this needed?
-   "setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
+   ;"setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
    "xinput" ;; TODO: remove this once config is used to configure mouse instead of doing it in xinitrc
    ;; "xrdb" "xinit" ;; can get away with both of these uninstalled and referenced directly in the profile
    "xdg-utils" ;; not sure exactly what this provides, might just be command line tools or could be necssary for the xdg default applications stuff to work properly.
@@ -34,6 +33,7 @@
    ))
 (define productivity
   (list
+   "alacritty" ;; terminal, note that this is hard coded into dwm as the terminal command
    "emacs"
    "emacs-oauth2" ;; for emacs to log into oauth servers
    "emacs-org-caldav" ;; for syncing emacs calendars
@@ -44,17 +44,19 @@
     ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
     "git"
     "tup" ;; build system
+    "vscodium" ;; community driven clone of vscode, available on nonguix because compiling is hard
     ))
 (define communication
   (list
    "icedove" ;; email
    "dino" ;; jabber
+   "signal-desktop" ;; signal
    )) 
 (define entertainment
   (list
    "mpv" ;; video / audio
    "steam" ;; most of games
-   "wine" ;; sims3
+   "wine64" ;; sims3
    "dolphin-emu" ;; TODO: maybe remove this?
    ))
 

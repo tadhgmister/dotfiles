@@ -33,9 +33,9 @@
 (define-public (substitutes guixconfig)
   (guix-configuration
    (inherit guixconfig)
-   (substitute-urls (cons*
-		     "https://substitutes.nonguix.org"
-		     %default-substitute-urls))
+   ;(substitute-urls (cons*
+   ;"https://substitutes.nonguix.org"
+   ;%default-substitute-urls))
    (authorized-keys
     (cons*
      (origin (method url-fetch)
