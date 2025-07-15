@@ -21,10 +21,9 @@
   (list
    "xorg-server" ;; the server, probably 
    "xf86-video-fbdev" ;; TODO is this needed?
-   ;"setxkbmap" ;; TODO: remove this once xinitrc is fixed to use config instead of this to disable caps
    "xinput" ;; TODO: remove this once config is used to configure mouse instead of doing it in xinitrc
    ;; "xrdb" "xinit" ;; can get away with both of these uninstalled and referenced directly in the profile
-   "xdg-utils" ;; not sure exactly what this provides, might just be command line tools or could be necssary for the xdg default applications stuff to work properly.
+   "xdg-utils" ;; provides xdg-open and xdg-mime commands 
    "xf86-input-libinput" ;; drivers, mainly the one for the trackpad with the quirk patch I submitted
    "dmenu" ;; since dmenu has a script dmenu_path which references it's stest utility by name this needs to be installed for the list of autocomplete programs to work properly.
    "font-apple-color-emoji" ;; because I finally got tired of not knowing what emojis people were sending me
@@ -37,13 +36,14 @@
    "emacs"
    "emacs-oauth2" ;; for emacs to log into oauth servers
    "emacs-org-caldav" ;; for syncing emacs calendars
-   "mu" ;; for reading emails, comes with mu4e to use emacs to view emails
+   ;;"mu" ;; for reading emails, comes with mu4e to use emacs to view emails
     "festival" ;; for speech synthesis:
     "alsa-utils" ;; needed for volume controls used by dwm
     "xclip" ;; used by dwm command to use festival
     ;; TODO: write script that does the xclip and festival and then get dwm to reference that instead of installing both?
     "git"
     "tup" ;; build system
+    ;; TODO remove vscodium once I get LSP working in emacs and am comfortable with it
     "vscodium" ;; community driven clone of vscode, available on nonguix because compiling is hard
     ))
 (define communication

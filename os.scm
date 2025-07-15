@@ -20,7 +20,7 @@
 (use-modules
  (gnu)
  
- ((nongnu packages linux) #:select(linux linux-firmware))
+ ((nongnu packages linux) #:select(linux iwlwifi-firmware i915-firmware))
  ((nongnu system linux-initrd) #:select(microcode-initrd))
  ((guix packages) #:select (origin base32 modify-inputs package-source package-inputs package))
  ((guix download) #:select (url-fetch))
@@ -41,7 +41,8 @@
  ((gnu services syncthing) #:select (syncthing-service-type syncthing-configuration))
  ((gnu services sound) #:select (pulseaudio-service-type pulseaudio-configuration))
  ((gnu services audio) #:select (mpd-service-type mpd-configuration))
- ((gnu services xorg) #:select (xorg-server-service-type gdm-service-type screen-locker-service screen-locker-service-type xorg-configuration set-xorg-configuration))
+ ((gnu services xorg) #:select (xorg-server-service-type gdm-service-type localed-service-type localed-configuration))
+ ;;((gnu services sddm) #:select(sddm-service-type))
  ;;((gnu services authentication) #:select (fprintd-service-type))
  ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration))
  ((gnu services pm) #:select (tlp-service-type tlp-configuration thermald-service-type))
@@ -124,12 +125,12 @@
 
   (locale "en_CA.utf8")
   (timezone "America/Toronto")
-  (keyboard-layout (keyboard-layout "us"))
+  (keyboard-layout (keyboard-layout "us" #:options '("ctrl:rctrl_hyper" "caps:backspace")))
 
   ;; COMMENT OUT THESE LINES TO REMOVE DEPENDENCY ON NON GUIX
   (kernel linux)
   (initrd microcode-initrd)
-  (firmware (list linux-firmware))
+  (firmware (list iwlwifi-firmware i915-firmware))
   
   (kernel-arguments (cons*
 		     ;; https://wiki.archlinux.org/title/Intel_graphics#Screen_flickering
@@ -143,7 +144,12 @@
 		     %default-kernel-arguments))
 
   ;; The list of user accounts ('root' is implicit).
-  (users (cons* 
+  (users (cons*
+	  (user-account
+	   (name "mike")
+	   (comment "test user")
+	   (group "users")
+	   (home-directory "/home/test"))
 	  (user-account
                   (name username)
                   (comment username)
@@ -181,6 +187,9 @@
     ;;          (state-file "~/.config/mpd/state")
     ;;          (sticker-file "~/.config/mpd/sticker.sql")))
     (service xorg-server-service-type) ;; needed for display (kind of important)
+    (service localed-service-type
+                    (localed-configuration 
+                      (keyboard-layout keyboard-layout)))
     (service sane-service-type)
     (service cups-service-type ;; for printing
 	     (cups-configuration
@@ -231,6 +240,7 @@
           (handle-lid-switch 'hybrid-sleep)
 	  ))
 	(delete gdm-service-type)
+	;;(delete sddm-service-type)
 	)))
   ;; allow using .local with mdns resolution, used for printer in particular
   (name-service-switch %mdns-host-lookup-nss)

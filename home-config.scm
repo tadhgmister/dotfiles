@@ -376,7 +376,15 @@ export XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share")
     
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
-		    `(("EDITOR" . "vim")
+		    `(;; edit stuff in emacs, mainly used for guix edit
+		      ("EDITOR" . "emacsclient --reuse-frame -a vim --no-wait")
+		      ;; git waits on emacs and opens a new frame so don't need to switch tabs in dwm
+		      ("GIT_EDITOR" . "emacsclient --create-frame -a vim")
+		      ;; used by xdg-open to open stuff in emacs if nothing else seems viable
+		      ;; -a brave is used to launch stuff in brave if emacs server is not running
+		      ("BROWSER" . "emacsclient --reuse-frame --no-wait -a brave")
+		       ;; short circuits a bunch of logic in xdg-open that tries to detect the desktop environment, probably unnecessary
+		      ("XDG_CURRENT_DESKTOP" . "X-Generic")
 		      ;("SASL_PATH" . ,(file-append cyrus-sasl-xoauth2 "/lib/sasl2/"))
 		      ;;("GUIX_BUILD_OPTIONS" . "--max-jobs=6")
 		      ;;("GTK_THEME" . "Adwaita-dark")
@@ -393,11 +401,15 @@ export XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share")
 		       (host-key-algorithms '("+ssh-rsa"))
 		       (extra-content "  StrictHostKeyChecking no"))))))
     (simple-service 'configfiles home-xdg-configuration-files-service-type `(
-      ("mpv.conf" ,(plain-file "mpv.conf"
+      ("mpv/mpv.conf" ,(plain-file "mpv.conf"
 "#align video to top of window so if there is extra room subtitles will use black space
 video-align-y=-1
-save-position-on-quit=y
-"))											      
+save-position-on-quit=yes
+"))
+      ("mpv/script-opts/osc.conf" ,(plain-file "mpv-osc.conf"
+"title=${!playlist-count==1:[${playlist-pos-1}/${playlist-count}] }${media-title} ${chapter}
+"))
+      ;; TODO: figure out how to get dino to go back to dark theme
       ("gtk-3.0/settings.ini" ,(plain-file "settings.ini"
 "[Settings]
 gtk-application-prefer-dark-theme = true
@@ -415,9 +427,9 @@ window.dino-main .dino-conversation {
         font-size: 40px;
 }
 "))
+      ;; TODO: remove this if I can confirm that I rather alacritty over kitty.
       ("kitty/kitty.conf" ,(plain-file "kitty.conf" "
-## TODO: maybe enable this?
- focus_follows_mouse yes
+focus_follows_mouse yes
 
 window_alert_on_bell yes
 enable_audio_bell no
@@ -431,6 +443,7 @@ map ctrl+shift+v send_text all \\x16
 map ctrl+c copy_to_clipboard
 map ctrl+v paste_from_clipboard
 "))
+      ;; foot is terminal for wayland, may use this if I ever switch
       ("foot/foot.ini" ,(plain-file "foot.ini" "
 [ bell ]
 urgent=yes
