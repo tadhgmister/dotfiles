@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 # the hostname we want to use, by my own convension I use this
 # appended with "drive" as the mapper name since the mapper name is
 # arbitrary but must be distinct for multiple drives loaded at the

@@ -38,6 +38,7 @@
 	     (tadhg dozfont)
 	     ((tadhg channels-and-subs) #:select(channels) #:prefix tadhgs: )
 	     (tadhg cyrus-sasl-xoauth)
+	     (tadhg emacs)
 )
 
 
@@ -127,7 +128,6 @@ case $1 in
    cat $(which $0);;
 esac
 ")))
-
 (define packages-for-home
   (append
    ;; standard packages from module
@@ -138,6 +138,13 @@ esac
     guix-manager-package
     dozfont
     ;;cyrus-sasl-xoauth2
+    ;; few packages for invoking emacsclient with a few arguments
+    (single-script-package "editor"
+			   "#!/bin/sh
+emacsclient --no-wait --reuse-frame -a vim $@")
+    (single-script-package "browser"
+			   "#!/bin/sh
+emacsclient --no-wait --reuse-frame -a brave $@")
    ;; and other scripts that I want to use
    (single-script-package "screenshot"
     "#!/bin/sh
@@ -377,12 +384,12 @@ export XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share")
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
 		    `(;; edit stuff in emacs, mainly used for guix edit
-		      ("EDITOR" . "emacsclient --reuse-frame -a vim --no-wait")
+		      ("EDITOR" . "editor")
 		      ;; git waits on emacs and opens a new frame so don't need to switch tabs in dwm
 		      ("GIT_EDITOR" . "emacsclient --create-frame -a vim")
 		      ;; used by xdg-open to open stuff in emacs if nothing else seems viable
 		      ;; -a brave is used to launch stuff in brave if emacs server is not running
-		      ("BROWSER" . "emacsclient --reuse-frame --no-wait -a brave")
+		      ("BROWSER" . "browser")
 		       ;; short circuits a bunch of logic in xdg-open that tries to detect the desktop environment, probably unnecessary
 		      ("XDG_CURRENT_DESKTOP" . "X-Generic")
 		      ;("SASL_PATH" . ,(file-append cyrus-sasl-xoauth2 "/lib/sasl2/"))
@@ -400,6 +407,9 @@ export XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share")
 		       (user "root")
 		       (host-key-algorithms '("+ssh-rsa"))
 		       (extra-content "  StrictHostKeyChecking no"))))))
+    (service home-emacs-service-type
+	     (home-emacs-configuration
+	      (init.el (org-tangle-file "init.el" (local-file "./emacsconfig.org")))))
     (simple-service 'configfiles home-xdg-configuration-files-service-type `(
       ("mpv/mpv.conf" ,(plain-file "mpv.conf"
 "#align video to top of window so if there is extra room subtitles will use black space
@@ -450,7 +460,7 @@ urgent=yes
 "))
        ))
     (simple-service 'dotfiles home-files-service-type `(
-      (".emacs.d/init.el" ,(local-file "./init.el"))
+      ;;(".emacs.d/init.el" ,(local-file "./init.el"))
       (".gitconfig" ,(plain-file "gitconfig"
 "[user]
 	email = tadhgmister@gmail.com

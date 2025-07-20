@@ -1,0 +1,639 @@
+
+
+This file serves several purposes:
+- it documents my workflows and configurations regarding emacs for my own reference
+- the configuration elisp code is compiled to an init.el file that is loaded by emacs
+- it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
+
+* TASK [#C] [0/5] Tech gripes
+:PROPERTIES:
+:CUSTOM_ID: TechGripes
+:END:
+
+list of small gripes that I could improve on, mostly related to emacs but other guix configuration is fair game
+
+working on this task means refiling these to proper places, not necessarily working on these items.
+
+- [ ] side scrolling / line wrapping behaviour
+- [ ] autosaving - on buffer changing or short inactivity? worth it at all, default is 30 seconds regardless of activity
+- [ ] what do I want to set the column width for formatting to? 
+- [ ] dwm make tags narrower and unconditionally display all of them (will require pulling out one of the patches I use to only show the active ones)
+- [ ] setup coloured parens
+
+
+* Notes about this file
+#+PROPERTY: header-args :tangle yes
+all code blocks will be output with tangle unless explicitly labeled ~:tangle no~.
+** todo tags
+#+TODO: TASK TODO REFILE | DOC DONE
+- REFILE means the location of the code in that heading is probably in
+  the wrong spot and should be moved to a more appropriate section.
+- DOC means the human documentation could be updated, I.E. links to
+  relevant sections. It does *not* denote sections that only contain
+  documentation.
+** window vs frame
+In the context of window managers or desktop environments, the word
+"window" typically means the thing that you can move around or resize
+and has a toolbar or exit button that is styled by your desktop
+environment. This is not the same terminology used in emacs.
+
+In emacs a "frame" is the object that is usually called "window"
+elsewhere and when the frame is split to show multiple buffers each
+view is called a "window". This document keeps consistent with the
+emacs terminology not the desktop environment terminology as the
+configuration code has to match.
+
+** markup used in this file
+emacs variables or functions use the "code" markup like
+~display-buffer~, generally any term surrounded by tilda (=~=) should
+hit a emacs help entry by doing =C-h v= or =C-h f= with your cursor on
+the variable name.
+
+Key codes and other partial code or symbols will use the "verbatim"
+marker surrounded by equal signs as seen above.
+
+* keybindings
+** Using hyper modifier
+in [[./home-config.scm::(Xmodmap][xinit profile setup]] the right control key is rebound to the hyper
+modifier, then in emacs we swap the control and hyper modifiers.
+#+begin_src emacs-lisp
+  (setopt x-hyper-keysym 'ctrl)
+  (setopt x-ctrl-keysym 'hyper)
+#+end_src
+
+This means that in emacs the left control key produces the =H-= prefix
+giving us full control over which bindings we put on the normally used
+control key while existing emacs bindings are still accessible with
+the left control key.
+
+** Custom functions to bind to keys
+*** new frame
+  
+By default the command to open a new frame in emacs shows the same
+buffer as the current one which is a very reasonable default but not
+as useful as I would like.
+
+Some helper functions are here to support [[*my/new-frame]] as the main
+keybinding to open a new frae, see its description for what it does.
+
+**** my/try-switch-to-prev-buffer                                      :func:
+~switch-to-prev-buffer~ can throw errors in cases like if the minibuffer is selected so write a little wrapper to suppress any errors.
+#+begin_src emacs-lisp
+  (defun my/try-switch-to-prev-buffer (&optional window bury-or-kill)
+  "tries to call `switch-to-prev-buffer' but catches errors if it can't switch and returns nil in those cases"
+  (condition-case nil
+      (switch-to-prev-buffer window bury-or-kill)
+    (error nil)))
+#+end_src
+**** my/pop-buffer-into-frame :func:
+#+NAME: doc/pop-buffer-into-frame
+This function will switch the current selected window to show the previous buffer, makes a new frame, and has the new frame display the buffer that was being displayed before switching or if it couldn't switch to a previous buffer it switches to the buffer returned by `initial-buffer-choice'.
+
+Note that the way this function uses ~initial-buffer-choice~ depends
+on it being a function and not any of the other formats it is allowed
+to be, see [[*Initial Buffer]].
+
+#+begin_src emacs-lisp
+  (defun my/pop-buffer-into-frame ()
+    "see emacsconfig.org:my/pop-buffer-into-frame"
+    (interactive)
+    (let* ((buf (current-buffer))
+  	(buffer-for-new-frame (if (try-switch-to-prev-buffer)
+  				  buf (funcall initial-buffer-choice)))
+  	(frame (make-frame)))
+      (select-frame-set-input-focus frame)
+      (switch-to-buffer buffer-for-new-frame nil t)))
+#+end_src
+**** my/new-frame :func:
+Since the main usage of opening a new frame is to view 2 buffers in
+split screen there are 2 expected cases:
+- I just opened a buffer over the previous one that I want to view in
+  parallel with the previous one
+- I just opened a buffer that split the frame into multiple windows
+  and want to keep the newly opened window around
+
+The function [[*my/pop-buffer-into-frame]] performs the first task, so
+this function checks which case is relevant and either calls that
+helper or does the copying window state into new frame logic for other
+case.
+
+
+#+begin_src emacs-lisp
+  (defun my/new-frame ()
+    "
+If the current frame has more than one window pop the selected one
+into a new frame, otherwise call `my/pop-buffer-into-frame'"
+    (interactive)
+    (if (cdr (window-list)) ;; if window list has more than one entry
+        (let* ((cur-win (selected-window))
+  	     (win-state (window-state-get cur-win))
+  	     (frame (make-frame)))
+  	(delete-window cur-win)
+  	(select-frame-set-input-focus frame)
+  	(window-state-put win-state (selected-window)))
+      (my/pop-buffer-into-frame)))
+#+end_src
+
+** Key Bindings
+This is the table of commands I bind globally, note that bindings for
+mode specific tasks may be present elsewhere in this document.
+
+The columns are as follows:
+- Key, the key as interpreted by emacs ~kbd~ function.
+- Command, the emacs function to run on the keystroke. Note that typos
+  in the function name throw errors when processing the init file not
+  at compile time.
+- Orig, denotes the default binding emacs uses for the same
+  function, note that if the function starts with =my/= this denotes
+  the binding for a built in command that my function mimics.
+- Type, denotes why I have the binding, one of:
+  - CUA - for consistency with other apps, not necessarily defined in
+    [[https://en.wikipedia.org/wiki/IBM_Common_User_Access][CUA standards]] but _Common User Access_ is the right meaning to me.
+  - Emacs - binding is similar to default binding for functionality I
+    use enough to want a quicker access to it.
+  - Code - used for programming and maps to functionality common across languages
+  - Mine - runs a function I wrote myself and doesn't have a clear equivelent
+- Description, a description of the command, for CUA this is the label
+  usually used in menu bars of other apps.
+  
+#+NAME: keybindings
+| Key       | Command                     | Orig        | Type  | Description       |
+|-----------+-----------------------------+-------------+-------+-------------------|
+| H-g       | keyboard-quit               | C-g         | Emacs | Abort             |
+| H-x       | kill-region                 | C-w         | CUA   | Cut               |
+| H-c       | kill-ring-save              | M-w         | CUA   | Copy              |
+| H-v       | yank                        | C-y         | CUA   | Paste             |
+| H-s       | save-buffer                 | C-x C-s     | CUA   | Save              |
+| H-a       | mark-whole-buffer           | C-x h       | CUA   | Select All        |
+| H-z       | undo                        | C-x u       | CUA   | Undo              |
+| H-S-z     | undo-redo                   | C-M-_       | CUA   | Redo              |
+| H-f       | isearch-forward             | C-s         | CUA   | Find              |
+| H-o       | find-file                   | C-x C-f     | CUA   | Open File         |
+| H-S-f     | find-file                   | C-x C-f     |       | H-o with one hand |
+| H-n       | my/new-frame                | C-x 5 2     | CUA   | New Window        |
+| H-/       | comment-or-uncomment-region |             | Code  | (un)comment       |
+| H-<left>  | previous-buffer             | C-x <left>  | Emacs | Go Back (buffer)  |
+| H-<right> | next-buffer                 | C-x <right> | Emacs | next buffer       |
+
+#+BEGIN_SRC emacs-lisp :var table=keybindings
+  (dolist (row table)
+    (let ((key (car row))
+          (cmd (intern (cadr row))))
+      (unless (fboundp cmd)
+          (error "Function '%s' is not defined (used in keybinding for '%s')" cmd-name key))
+      (global-set-key (kbd key) cmd)))
+#+END_SRC
+
+** Default emacs bindings that I use often
+*** Programming
+- M-. goes to the definition of the symbol under the cursor, like alt+click in vscode
+- M-, goes back to point you were at before doing M-.
+*** Org
+- M-<return> adds a new item, if cursor is in a list it makes a new bullet point otherwise a new heading
+- M-S-<return> same as M-<return> but labels it as a todo or inserts a checkbox
+
+*** TASK C-g since H-g doesn't abort minibuffers
+there is conditional binding on C-g when in the middle of running a
+command in the minibuffer, this also means if you navigate away from
+that minibuffer C-g doesn't cancel it and if it is on a frame outside
+your view this can be extremely annoying so letting H-g abort
+minibuffer globally would be very useful.
+
+*** TASK C-s since H-f doesn't repeat search
+C-s has conditional binding when performing a search to look for the
+next occurance of text, should do the same with H-f and maybe add some
+behaviour where it tries to search for text from the clipboard by
+default
+
+* Initial Buffer
+The [[help:initial-buffer-choice][initial buffer choice]] is used when a frame is opened with [[info:emacs#Invoking
+ emacsclient][emacsclient]] shell command without specifying a file to visit.  It can
+be given different forms but I will use a function to refresh the org
+agenda and then return it so new frames will be opened to the org
+agenda.
+** my/get-org/agenda :func:
+#+begin_src emacs-lisp
+  (defun my/get-org-agenda ()
+    "generates the org agenda if it doesn't yet exist, refreshes it if
+  it does and returns the buffer for the agenda without modifying
+  any window configuration"
+    (if-let ((buf (get-buffer org-agenda-buffer-name)))
+        ;; if the org agenda buffer exists reload it and return as is
+        (with-current-buffer buf
+  	(org-agenda-redo t) ;;true for `all' parameter, not clear on what it changes
+  	buf)
+      ;; otherwise run org-agenda which sets the view to the hardcoded value here
+      (save-window-excursion
+        (org-agenda nil "n")
+        (get-buffer org-agenda-buffer-name))))
+  
+#+end_src
+
+*** TASK make the initially selected org view less hard coded
+in ~my/get-org-agenda~ the "n" is hard coded as the initial org agenda
+view, should probably make it less buried.
+** initial buffer choice
+use the function to load the org agenda as the initial buffer choice.
+
+Note: [[*my/pop-buffer-into-frame]] depends on ~initial-buffer-choice~
+being a function and not any other supported form as the handling of
+its options is not reusable in the emacs source.
+
+#+begin_src emacs-lisp
+  (setopt initial-buffer-choice #'my/get-org-agenda)
+#+end_src
+** REFILE org agenda window setup
+as we mainly make use of ~my/get-org-agenda~ to load the org agenda, and it reverts edits to the window layout tell org to not bother trying to edit window layout if it is called from elsewhere.
+#+begin_src emacs-lisp
+(setopt org-agenda-window-setup 'current-window)
+#+end_src
+
+* Graphics / display
+** DOC Theme
+this is a dark theme that morgan recommended as being well designed to have very high contrast. I suspect this is true and suspect the =t= is to enable dark mode but have no idea.
+#+begin_src emacs-lisp
+(load-theme 'modus-vivendi t)
+#+end_src
+** TASK make modeline more visible
+When multiple windows are open on a frame it is very hard to easily notice, would be nice to set modeline to be light theme so it provides a more obvious split.
+
+* Backups and Auto-saves
+** backups
+see [[info:emacs#Backup][emacs#Backup]], it mentions that ~vc-make-backup-files~ defaults to
+~nil~ to not make backups of files under version control but this
+applies based on files being checked in to the version control and
+thus adding new files to a git repo has backups you need to avoid and
+then delete and once it is checked into version control the backups
+stop getting made.
+
+I override the predicate to disable backups if there is a git root,
+meaning untracked files in a git repo will not have backups made for
+them.
+
+#+begin_src emacs-lisp
+  (setopt backup-enable-predicate
+      (lambda (filename)
+        (and (normal-backup-enable-predicate filename)
+	     (not (vc-git-root filename)))))
+#+end_src
+** autosaves
+the default logic to make autosaves and record lists of autosaved
+files is great, the default user experience of making use of those
+files is horrible. Instead I want to just load all autosave files we
+can find on startup.
+*** REFILE load cl-lib to allow patching prompt function
+this is needed for ~cl-letf~ function used by ~my/try-recover-file~,
+should probably set it to auto load or something as we only actually
+need it if there are autosave lists to process which if all goes well
+won't happen often.
+#+begin_src emacs-lisp
+  (require 'cl-lib)
+#+end_src
+*** my/try-recover-file :func:
+#+begin_src emacs-lisp
+  (defun my/try-recover-file (file)
+    "Attempt to recover FILE from its autosave non-interactively.
+  Returns t if recovery succeeds,
+  Returns nil if recover-file signals an error, I.E. the file doesn't exist,
+    the auto-save doesn't exist, or the auto-save is older than the file
+  Note that if the file is currently open and modified any current changes to the file are unrecoverably lost."
+    (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t)))
+      (condition-case nil
+          (recover-file file)
+        (:success
+         (message "recovered file: %s" file)
+         t)
+        (error nil)
+        (user-error nil))))
+#+end_src
+*** my/recover-from-autosave-list                                      :func:
+
+#+NAME: doc/recover-from-autosave-list
+Recover all real files listed in LIST-FILE. Skips entries that look
+like autosave files themselves.  Returns t if any file was recovered
+(opened and buffer set to auto-save content), or returns nil if none
+of the files had valid autosave data.
+  
+
+#+begin_src emacs-lisp
+  (defun my/recover-from-autosave-list (list-file)
+    "see emacsconfig.org:my/recover-from-autosave-list (this functions is from literate org file)"
+    (let ((recovered nil))
+      (when (file-readable-p list-file)
+        (with-temp-buffer
+          (insert-file-contents list-file)
+          (dolist (line (split-string (buffer-string) "\n" t))
+            (let ((path (string-trim line)))
+              (unless (auto-save-file-name-p (file-name-nondirectory path))
+                (when (my/try-recover-file path)
+                  (setq recovered t)))))))
+      recovered))
+#+end_src
+**** DOC note about limitation of this function
+Note that autosave lists always contain pairs of the original file and
+the auto-save to be robust against changing the handling of
+auto-save files this function *should* try to recover from the
+explicitly listed auto-save files instead of determining where the
+autosave should be based on the current configuration. This function
+*doesn't* do that because the underlying recover-file function
+doesn't support that.
+
+*** DOC my/process-all-autosave-lists                                  :func:
+#+begin_src emacs-lisp
+  (defun my/process-all-autosave-lists ()
+    "Process all autosave list files in the auto-save-list directory.
+  all files found with auto-save data (that is newer than file) are
+  opened and recovered. All auto-save lists that do not reference
+  any file that requires recovery are deleted.
+
+  returns t if there was at least one autosave-list that was processed, nil otherwise.
+
+  A message is generated for each file recovered and each stale
+  autosave list deleted so it may be desirable to show the messages
+  buffer if this returns true to show the user the list of
+  operations."
+    (let* ((prefix auto-save-list-file-prefix)
+           (dir (file-name-directory prefix))
+           (file-prefix (file-name-nondirectory prefix))
+           (pattern (concat "^" (regexp-quote file-prefix)))
+           (matches (directory-files dir t pattern)))
+      (when matches
+        (dolist (file matches)
+          (unless (my/recover-from-autosave-list file)
+            (delete-file file)
+            (message "Deleted stale autosave list: %s" file)))
+        t)))
+#+end_src
+*** process all autosaves on startup
+~my/process-all-autosave-lists~ only deletes autosave list files that
+don't contain any useful/current info and just opens buffers for files
+with autosave data, I consider this a totally safe operation to run on
+startup and the behaviour to re-open all buffers that were not saved
+when closing last session is very useful behaviour.
+
+#+begin_src emacs-lisp
+  (add-hook 'emacs-startup-hook #'my/process-all-autosave-lists)
+#+end_src
+
+** TASK save on close frame
+rebind `handle-delete-frame` special binding [[https://superuser.com/a/328356/550312][SE answer]] which is called
+when win+del is called.  probably prompt always for saving modified
+buffers, if it gets annoying it would be easy to switch to only when
+closing last frame but probably not the reverse.
+
+Should pull up the buffer list menu filtered or sorted to show
+modified buffers that have corresponding files and probably buffers
+that contain a running process. Then can use (save-some-buffers) to go
+through list of buffers, using save-some-buffers-action-alist to
+specify extra operations:
+- view buffer - ideally gets called automatically before prompt instead of having to do it manually, is not expensive
+- view changes - (diff-buffer-with-file) ideally setup to not hide list of buffers to be saved
+- revert buffer - (revert-buffer t t) reverts to disk ignoring autosave without prompt
+
+if there is a way to run a bit of code between each prompt I'd love to
+update the list of buffers and display the next one
+automatically. Also will want to figure out how to ensure displaying
+stuff during prompt doesn't hide the buffer list, maybe with setting
+it to dedicated?
+
+Once save-some-buffers returns if it was not aborted close the frame
+as the desire to do that is what prompted this whole process.  If
+save-some-buffers was aborted then obviously don't close the frame,
+not sure how to handle that from lisp
+  
+*** establish how to deal with running processes
+- LSP server probably should just be shut down when a frame gets
+  closed, maybe when the last frame is closed but even then... There
+  should probably be a clearer "close project" which closes all files
+  associated with a project.
+- terminal programs? no idea how this would actually work and should
+  at least look into the existing logic for exiting emacs and what
+  prompts it can generate.
+
+
+
+
+
+* display buffer logic
+Display "actions" take the form of ~(FUNC . ALIST)~ where
+- =FUNC= is a function or list of functions to be called to displaly a
+  buffer.
+- =ALIST= is a list of perameters used by the display functions to
+  decide what to do.
+
+see [[help:display-buffer][display-buffer help]] for extensive documentation on all the
+settings, the main thing I want to mention is that given how lists are
+stored and how ~cons~ cells work, a sequence of ~(COND . (FUNC . ALIST))~ is equivelent to just a plain list of ~(COND FUNC . ALIST)~ (and the entries of the ALIST can be written out without seperation by the period)
+
+*** is-buffer-easily-quittable :func:localvar:
+helper function for determining modes that should be allowed to open
+in split window.
+
+#+begin_src emacs-lisp
+  (setq my/quit-functions (list #'quit-window #'calendar-exit))
+  (defun is-buffer-easily-quittable (buffer arg)
+    "returns true if the given buffer has 'q' assigned to close the window"
+    (with-current-buffer buffer
+      (memq (lookup-key (current-local-map) (kbd "q")) my/quit-functions)))
+#+end_src
+** display-buffer-base-action
+Assuming no applicable overrides, this describes the logic for
+handling displaying a buffer. The basic logic is to follow these
+(implied "else check the next one")
+- if there is already a window showing the buffer use that (if it is
+  in a non selected frame bring focus to the frame) 
+- if there are multiple frames open, show the buffer in another frame
+  (enable split view workflow) 
+- otherwise (there is only one frame open) get the new buffer to take
+  up the full frame closing any other windows.
+
+There is some complications from the implicit virtual frame created by
+the daemon, =reuse-window= does seem to ignore it but
+=use-some-frame='s default predicate includes the virtual frame so we
+need to override it to filter to only frames on the graphical display.
+
+#+begin_src emacs-lisp
+  (setopt display-buffer-base-action
+  	`((display-buffer-reuse-window
+  	   display-buffer-use-some-frame
+  	   display-buffer-full-frame)
+  	;; rest of elements are items in the ALIST
+  	  (inhibit-same-window . nil)
+  	  ;; used by reuse-window to check windows already open
+  	  (reusable-frames . visible)
+  	  ;; used by use-some-frame
+  	  (frame-predicate . ,(lambda (frame)
+  				(and
+  				 (not (eq frame (selected-frame)))
+  				 (frame-parameter frame 'display))))
+  	  ))
+#+end_src
+** TASK display-buffer-alist
+Overrides for display logic:
+- right clicking on todo item in org agenda prevents it from overriding the agenda window which is very dumb and annoying. I set a rule to reset =inhibit-same-window= to nil for any file that doesn't have asterixs, I.E. normal files.
+- buffers that are "easy to quit" should split the frame to show the buffer in a new window.
+
+I would like to improve this though, opening normal files should
+prioritize putting in the top window if there are multiple and opening
+special buffers should prioritize bottom one. The goal being to less
+often end up with a not easily quitable buffer open on the bottom and
+need to manually close it to get back to full screen and also prevent
+opening info and help from splitting into 3 windows.
+
+Also the validation that ~setopt~ does on the condition says it has to be a regexp or a function and doesn't support the other structures that [[help:buffer-match-p][buffer-match-p]] indicates it supports. (and [[help:display-buffer-alist][this variables docs]] directly says the condition gets passed to that function) So we use ~setq~ for this one instead of setopt to suppress the warning we would otherwise get.
+
+#+begin_src emacs-lisp
+  (setq display-buffer-alist
+  	'(
+  	  ;;let normal files reuse the same window always
+  	  ((not "^\\*.+\\*$") nil (inhibit-same-window . nil))
+  	  ;; easily closable or temporary buffers split window
+  	  ((or is-buffer-easily-quittable
+  	       "^\\*Org Select\\*$"
+  	       "^\\*Org Links\\*$"
+  	       )
+  	   (display-buffer-reuse-window
+  	    display-buffer-below-selected))
+  	  ))
+#+end_src
+
+* Org
+** keywords
+My main workflow with org agenda is to label lots of possible tasks as things I could work on, then every day move some to TODO to work on them.
+
+I also define DEFERRED to mean "I don't intend to work on this" but still describes an actionable thing, potentially it is something I want to do but need more evidence/information about it to actually make any progress on it.
+
+#+begin_src emacs-lisp
+  (setopt org-todo-keywords
+	'((sequence "TASK(t)" "TODO(n!)" "|" "DONE" "DEFERRED(d@)")))
+#+end_src
+** capture
+see [[help:org-capture-templates][org-capture-templates]] for format, this file contains [[#TechGripes][Tech gripes]],
+another file (preferably an inbox) will need a section with the ID
+[[#RandomThoughts][RandomThoughts]].
+#+begin_src emacs-lisp
+  (setopt org-capture-templates
+  	'(("c" "clocked task note" plain (clock) "")
+  	  ("z" "quick thought to revisit at some point" item (id "RandomThoughts") "")
+  	  ("e" "emacs/tech gripe" checkitem (id "TechGripes") "")
+  	  ))
+#+end_src
+**** DEFERRED look into templates and variables
+** agenda files
+set this file under src/dotfiles to the org agenda so emacs config
+shows as a category of tasks, and use all files in the org directory.
+#+begin_src emacs-lisp
+  (setopt org-directory "~/org")
+  (setopt org-agenda-files
+  	(list org-directory
+  	      "~/src/dotfiles/emacsconfig.org"
+  	  ))			   
+#+end_src
+** DEFERRED caldav
+this is outdated code from old init file, tangle is disabled so it is
+not output to new init file. Syncing the org agenda with my phone is
+very much on my mind so I will naturally try to come back to this.
+#+begin_src emacs-lisp :tangle no
+(require 'org-caldav)
+(setopt org-caldav-url "http://localhost:8080/user/calendars")
+(setopt org-caldav-calendar-id "calendar")
+
+;;; TODO: set the inbox and files based on agenda files, it may
+;;; honestly default to read the first/last value from agenda files if
+;;; not set
+
+;; Org filename where new entries from calendar stored
+(setopt org-caldav-inbox "~/Sync/cal.org")
+
+;; Additional Org files to check for calendar events
+(setopt org-caldav-files '("~/Sync/work.org"))
+;; and set the org agenda to also have those files
+(setopt org-agenda-files '("~/Sync/work.org"
+                         "~/Sync/cal.org"))
+
+;; Usually a good idea to set the timezone manually
+(setopt org-icalendar-timezone "America/Toronto")
+
+;; sync todos as well.
+(setopt org-icalendar-include-todo 'all
+      org-caldav-sync-todo t)
+;; creates SCHEDULED timestamp from DEADLINE
+;; (setq org-caldav-todo-deadline-schedule-warning-days t)
+#+end_src
+
+** TASK org agenda views
+setup views to show all non blocked tasks, then switch to only show TODOs
+
+
+* Misc
+
+** DEFERRED encryption passphrase cache
+Don't actually know what this does, copied from morgan's config and haven't used gpg stuff in emacs in ages so unsure what specifically it does.
+#+begin_src emacs-lisp :tangle no
+(setopt plstore-cache-passphrase-for-symmetric-encryption t)
+#+end_src
+
+** safe-local-variable-values
+this is a bunch of local variables that guix uses that are not considered implcitly safe, I trust all of them.
+
+The way I generated this is by making the init.el editable and when opening a file under guix and it prompts about local variables there is an option to add them which sets a field for =custom= to set them to safe. If guix changes their variables I should probably let this use the custom syntax and copy it back here instead of rewriting it into setopt.
+
+#+begin_src emacs-lisp
+(setopt
+ safe-local-variable-values
+   '((geiser-insert-actual-lambda)
+     (eval with-eval-after-load 'tempel
+	   (if
+	       (stringp tempel-path)
+	       (setq tempel-path
+		     (list tempel-path)))
+	   (let
+	       ((guix-tempel-snippets
+		 (concat
+		  (expand-file-name "etc/snippets/tempel"
+				    (locate-dominating-file default-directory ".dir-locals.el"))
+		  "/*.eld")))
+	     (unless
+		 (member guix-tempel-snippets tempel-path)
+	       (add-to-list 'tempel-path guix-tempel-snippets))))
+     (eval with-eval-after-load 'git-commit
+	   (add-to-list 'git-commit-trailers "Change-Id"))
+     (eval add-to-list 'completion-ignored-extensions ".go")
+     (eval setq-local guix-directory
+	   (locate-dominating-file default-directory ".dir-locals.el"))
+     (eval with-eval-after-load 'yasnippet
+	   (let
+	       ((guix-yasnippets
+		 (expand-file-name "etc/snippets/yas"
+				   (locate-dominating-file default-directory ".dir-locals.el"))))
+	     (unless
+		 (member guix-yasnippets yas-snippet-dirs)
+	       (add-to-list 'yas-snippet-dirs guix-yasnippets)
+	       (yas-reload-all))))
+     (geiser-repl-per-project-p . t)
+     (eval modify-syntax-entry 126 "'")
+     (eval modify-syntax-entry 36 "'")
+     (eval modify-syntax-entry 43 "'")
+     (eval progn
+	   (require 'lisp-mode)
+	   (defun emacs27-lisp-fill-paragraph
+	       (&optional justify)
+	     (interactive "P")
+	     (or
+	      (fill-comment-paragraph justify)
+	      (let
+		  ((paragraph-start
+		    (concat paragraph-start "\\|\\s-*\\([(;\"]\\|\\s-:\\|`(\\|#'(\\)"))
+		   (paragraph-separate
+		    (concat paragraph-separate "\\|\\s-*\".*[,\\.]$"))
+		   (fill-column
+		    (if
+			(and
+			 (integerp emacs-lisp-docstring-fill-column)
+			 (derived-mode-p 'emacs-lisp-mode))
+			emacs-lisp-docstring-fill-column fill-column)))
+		(fill-paragraph justify))
+	      t))
+	   (setq-local fill-paragraph-function #'emacs27-lisp-fill-paragraph))))
+
+#+end_src
