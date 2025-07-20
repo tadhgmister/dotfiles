@@ -5,10 +5,10 @@ This file serves several purposes:
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [0/5] Tech gripes
+* TASK [#C] [1/5] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
-:ID: TechGripes
+:ID:       TechGripes
 :END:
 
 list of small gripes that I could improve on, mostly related to emacs but other guix configuration is fair game
@@ -19,7 +19,7 @@ working on this task means refiling these to proper places, not necessarily work
 - [ ] autosaving - on buffer changing or short inactivity? worth it at all, default is 30 seconds regardless of activity
 - [ ] what do I want to set the column width for formatting to? 
 - [ ] dwm make tags narrower and unconditionally display all of them (will require pulling out one of the patches I use to only show the active ones)
-- [ ] setup coloured parens
+- [X] [[*coloured parenthases][setup coloured parens]]
 
 
 * Notes about this file
@@ -257,7 +257,7 @@ this is a dark theme that morgan recommended as being well designed to have very
 #+end_src
 ** TASK make modeline more visible
 When multiple windows are open on a frame it is very hard to easily notice, would be nice to set modeline to be light theme so it provides a more obvious split.
-
+** TASK coloured parenthases
 * Backups and Auto-saves
 ** backups
 see [[info:emacs#Backup][emacs#Backup]], it mentions that ~vc-make-backup-files~ defaults to
