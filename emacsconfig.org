@@ -8,6 +8,7 @@ This file serves several purposes:
 * TASK [#C] [0/5] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
+:ID: TechGripes
 :END:
 
 list of small gripes that I could improve on, mostly related to emacs but other guix configuration is fair game
