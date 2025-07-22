@@ -224,7 +224,9 @@ The columns are as follows:
           (error "Function '%s' is not defined (used in keybinding for '%s')" cmd-name key))
       (global-set-key (kbd key) cmd)))
 #+END_SRC
-
+*** TASK get H-S to work
+wtf? emacs automatically maps H-S-z to just H-z so I don't have a redo
+command... this is most frustrating. need to figure out why it is doing that and how to disable it.
 ** DEFERRED [0/1] mode specific bindings
 - [ ] rebind C-c & in org mode ~(org-mark-ring-goto)~ to M-, may have an
   equivelent to go forward but probably not as it is to navigate back
@@ -496,7 +498,7 @@ want to save my work regularly.
   which is fine for my usage with a server."
     (interactive "e")
     ;; posn-window returning a frame conditionally on details of the
-    ;; event seems extremely fragile in this context but it is what the 
+    ;; event seems extremely fragile in this context but it is what the original uses.
     (let* ((frame (posn-window (event-start event))))
       (save-some-buffers)
       ;; if save-some-buffers errors from aborting this won't get run
@@ -649,6 +651,11 @@ to switch the view. there is already logic setup to pass a prefix to
 the 'r' key when viewing the agenda but this messes up the week view,
 changing the number of days etc and the number associated with
 different todo keywords is very confusing.
+
+So insteaed see [[*org capture + org agenda][org capture + org agenda]] for the function and find its
+entry in the keybinding table, I use a keybind to give a prompt like
+org-capture but also shows agenda views so I can switch between them
+easily.
 
 #+begin_src emacs-lisp
   (setopt org-agenda-custom-commands
