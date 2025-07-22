@@ -8,12 +8,19 @@
 	    home-emacs-configuration
 	    org-tangle-file))
 
+
 (define (emacs-code-to-tangle-file infile outfile)
   (object->string
    `(let ((results (org-babel-tangle-file ,infile)))
      (when (cdr results)
        (error "tangle output multiple files"))
      (copy-file (car results) ,outfile))))
+;; TODO get this to somehow verify the init file, probably by
+;; byte-compiling it.  will also need to include a way to get extra
+;; emacs packages into that process which are provided by the emacs
+;; service config which means the org file would need to be passed to
+;; the service directly instead of using this wrapper to pass the
+;; generated init.el file to the service.
 (define* (org-tangle-file outfile orgfile #:optional lang-regex (emacs-package emacs))
   (computed-file
    outfile
@@ -62,7 +69,11 @@
    (name 'reload)
    (documentation "reloads the init.el file")
    (procedure
-    #~(lambda (details)
+    #~(lambda* (details . args)
+	(when args
+	  (display "received unexpected arguments:")
+	  (display args)
+	  (newline))
 	(if
 	 (zero?
 	  (system*
@@ -92,17 +103,19 @@
 			   "--fg-daemon"
 			   "--display" (getenv "DISPLAY")))))
 	 (stop #~(make-kill-destructor))
-	 (actions (cons
+	 (actions (list
+		   (reload-init-shepherd-action config)
 		   (shepherd-action
 		     (name 'rescue)
 		     (documentation
 		      "sends SIGUSR2 to the emacs daemon to interrupt any process that may be stuck")
-		     (procedure #~(lambda (details)
+		     (procedure #~(lambda* (details . args)
+				    (when args
+				      (display "received unexpected arguments:")
+				      (display args)
+				      (newline))
 				    (kill (process-id details) SIGUSR2)
-				    #t)))
-		   (if (maybe-value-set? (home-emacs-configuration-init.el config))
-		       (list (reload-init-shepherd-action config))
-		       (list)))))))
+				    #t))))))))
 (define (emacs-packages-for-config config)
   (cons
    (home-emacs-configuration-emacs config)
@@ -110,15 +123,17 @@
 	(home-emacs-configuration-extra-packages config))))
 
 (define (emacs-reload-init-activation config)
-  (let ((init.el (home-emacs-configuration-init.el config)))
-    (if (maybe-value-set? init.el)
-	#~(let* ((old-init-path (string-append (getenv "GUIX_OLD_HOME") "/files/"
-					       #$(user-emacs-directory config) "/init.el"))
-		 (old-init-file (and (file-exists? old-init-path) (readlink old-init-path)))
-		 (new-init-file #$init.el))
-	    (when (and old-init-file (not (string=? old-init-file new-init-file)))
-	      (unless (zero? (system* #$@(emacsclient-command-to-reload-init config init.el)))
-		(warn "emacs failed to reload config")))))))
+  (list
+   (list (string-append "files/" (user-emacs-directory config) "/init.el") #~(system* "herd" "reload" "emacs"))))
+  ;; (let ((init.el (home-emacs-configuration-init.el config)))
+  ;;   (if (maybe-value-set? init.el)
+  ;; 	#~(let* ((old-init-path (string-append (getenv "GUIX_OLD_HOME") "/files/"
+  ;; 					       #$(user-emacs-directory config) "/init.el"))
+  ;; 		 (old-init-file (and (file-exists? old-init-path) (readlink old-init-path)))
+  ;; 		 (new-init-file #$init.el))
+  ;; 	    (when (and old-init-file (not (string=? old-init-file new-init-file)))
+  ;; 	      (unless (zero? (system* #$@(emacsclient-command-to-reload-init config init.el)))
+  ;; 		(warn "emacs failed to reload config")))))))
   
 (define home-emacs-service-type
   (service-type
@@ -128,7 +143,7 @@
      (service-extension home-files-service-type emacs-init-files)
      (service-extension home-shepherd-service-type emacs-shepherd-service)
      (service-extension home-profile-service-type emacs-packages-for-config)
-     (service-extension home-activation-service-type emacs-reload-init-activation)))
+     (service-extension home-run-on-change-service-type emacs-reload-init-activation)))
    (default-value (home-emacs-configuration))
    ;; TODO emacs has support for named servers, we could potentially allow multiple servers that explicitly give their own names and could potentially manage their own init files
    (compose identity)

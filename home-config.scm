@@ -354,12 +354,6 @@ fi")))
 		))))
     (simple-service 'profile home-shell-profile-service-type
 		    (list
-		     ;; source nix profile to make apps installed with nix available
-		     ;; also add the nix-profile's /share folder visible to xdg-open
-		     (plain-file "nixprofile"
-				 "
-source /run/current-system/profile/etc/profile.d/nix.sh
-export XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share")
 		     profile-script))
     ;; run nix-env to reinstall nix packages when the channels change
     ;; TODO: how do I ensure this runs after symlink manager? doesn't that also just use activation service type?
@@ -397,7 +391,18 @@ export XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share")
 		      ;;("GTK_THEME" . "Adwaita-dark")
 		      ;;("XCURSOR_SIZE" . "64") ;; TODO: don't think this has any affect, larger cursor would be really nice.
 		      ("CC" . "gcc")
-		      ("CFLAGS" . "-Wall")))
+		      ("CFLAGS" . "-Wall")
+		      ;; Terrible hack to get nix variables to source
+		      ;; everywhere internal code says if you bind a
+		      ;; key to #t it just writes 'export #$key'
+		      ;; without quoting anything so use a newline to
+		      ;; abuse this to shove a 'source' command into
+		      ;; there.  this puts brave on the PATH for home
+		      ;; shepherd services which I rely on for emacs
+		      ;; daemon to be able to open urls in brave.
+		      ("XDG_DATA_DIRS=${XDG_DATA_DIRS}:$HOME/.nix-profile/share
+source /run/current-system/profile/etc/profile.d/nix.sh" . #t)
+		      ))
     (service home-openssh-service-type
 	     (home-openssh-configuration
 	      (hosts (list
@@ -498,3 +503,7 @@ alias grep='grep --color=auto'
                                         )))))
 
 ;;;;;;; END OF HOME ENVIRONMENT AND SERVICES
+
+;; Local Variables:
+;; compile-command: "guix home build home-config.scm -L packages"
+;; End:

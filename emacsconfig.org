@@ -1,11 +1,9 @@
-
-
 This file serves several purposes:
 - it documents my workflows and configurations regarding emacs for my own reference
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [1/5] Tech gripes
+* TASK [#C] [1/6] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
 :ID:       TechGripes
@@ -20,13 +18,14 @@ working on this task means refiling these to proper places, not necessarily work
 - [ ] what do I want to set the column width for formatting to? 
 - [ ] dwm make tags narrower and unconditionally display all of them (will require pulling out one of the patches I use to only show the active ones)
 - [X] [[*coloured parenthases][setup coloured parens]]
+- [ ] set EMAIL variable in [[./home-config.scm]] to contain my email 
 
 
 * Notes about this file
 #+PROPERTY: header-args :tangle yes
 all code blocks will be output with tangle unless explicitly labeled ~:tangle no~.
 ** todo tags
-#+TODO: TASK TODO REFILE | DOC DONE
+#+TODO: TASK(t) SOON(s) TODO(n) REFILE(r) | DOC DONE(~) DEFERRED(d)
 - REFILE means the location of the code in that heading is probably in
   the wrong spot and should be moved to a more appropriate section.
 - DOC means the human documentation could be updated, I.E. links to
@@ -99,7 +98,7 @@ to be, see [[*Initial Buffer]].
     "see emacsconfig.org:my/pop-buffer-into-frame"
     (interactive)
     (let* ((buf (current-buffer))
-  	(buffer-for-new-frame (if (try-switch-to-prev-buffer)
+  	(buffer-for-new-frame (if (my/try-switch-to-prev-buffer)
   				  buf (funcall initial-buffer-choice)))
   	(frame (make-frame)))
       (select-frame-set-input-focus frame)
@@ -134,7 +133,46 @@ into a new frame, otherwise call `my/pop-buffer-into-frame'"
   	(window-state-put win-state (selected-window)))
       (my/pop-buffer-into-frame)))
 #+end_src
+*** org capture + org agenda
+idk why this functionality doesn't exist already, I'd like to bind a
+key to org-capture but also want a quick way to view the org agenda -
+specifically the 2 views I actually use (see [[agenda view][here]]).
 
+So I will write my own version of [[help:org-capture-select-template][org-capture-select-template]] to
+select a template passing some extra options for agenda views I want
+easily accessible, then forwarding the info to ~org-agenda~ or ~org-capture~ respectively.
+
+Note that this completely bypasses contextual logic, using this does
+*not* respect [[help:org-capture-templates-contexts][org-capture-templates-contexts]] since I don't use that
+myself and also skips a call to ~org-capture-upgrade-templates~ which
+applies backward compatibility checks which I shouldn't need as I am
+using recent template specifications.
+
+#+begin_src emacs-lisp
+  (defun my/org-capture-or-agenda-wrapper ()
+    "see description in emacsconfig.org"
+    (interactive)
+    ;; note we are relying on org-capture seeing this variable name to prevent it from giving its own prompt
+    (let ((org-capture-entry
+  	 (org-mks org-capture-templates
+  		  "Select a capture template or agenda view\n========================="
+  		  "Template or view key: "
+  		  ;; note that 't' is a key defined internally
+  		  ;; by the agenda, n is rebindable and could
+  		  ;; make an alias for 't' but would probably
+  		  ;; want to think about the best way to
+  		  ;; actually do that
+  		  '(("t" "Global task list")
+  		    ("n" "Agenda and TODO list")
+  		    ("q" "Abort")))))
+      (cond
+       ((equal org-capture-entry "q")
+        (user-error "Abort"))
+       ((stringp org-capture-entry)
+        (org-agenda nil org-capture-entry))
+       (t
+        (org-capture)))))
+#+end_src
 ** Key Bindings
 This is the table of commands I bind globally, note that bindings for
 mode specific tasks may be present elsewhere in this document.
@@ -158,23 +196,25 @@ The columns are as follows:
   usually used in menu bars of other apps.
   
 #+NAME: keybindings
-| Key       | Command                     | Orig        | Type  | Description       |
-|-----------+-----------------------------+-------------+-------+-------------------|
-| H-g       | keyboard-quit               | C-g         | Emacs | Abort             |
-| H-x       | kill-region                 | C-w         | CUA   | Cut               |
-| H-c       | kill-ring-save              | M-w         | CUA   | Copy              |
-| H-v       | yank                        | C-y         | CUA   | Paste             |
-| H-s       | save-buffer                 | C-x C-s     | CUA   | Save              |
-| H-a       | mark-whole-buffer           | C-x h       | CUA   | Select All        |
-| H-z       | undo                        | C-x u       | CUA   | Undo              |
-| H-S-z     | undo-redo                   | C-M-_       | CUA   | Redo              |
-| H-f       | isearch-forward             | C-s         | CUA   | Find              |
-| H-o       | find-file                   | C-x C-f     | CUA   | Open File         |
-| H-S-f     | find-file                   | C-x C-f     |       | H-o with one hand |
-| H-n       | my/new-frame                | C-x 5 2     | CUA   | New Window        |
-| H-/       | comment-or-uncomment-region |             | Code  | (un)comment       |
-| H-<left>  | previous-buffer             | C-x <left>  | Emacs | Go Back (buffer)  |
-| H-<right> | next-buffer                 | C-x <right> | Emacs | next buffer       |
+| Key           | Command                          | Orig        | Type  | Description        |
+|---------------+----------------------------------+-------------+-------+--------------------|
+| H-<backspace> | kill-buffer                      | C-x k       | Mine  | close buffer       |
+| H-g           | keyboard-quit                    | C-g         | Emacs | Abort              |
+| H-x           | kill-region                      | C-w         | CUA   | Cut                |
+| H-c           | kill-ring-save                   | M-w         | CUA   | Copy               |
+| H-v           | yank                             | C-y         | CUA   | Paste              |
+| H-s           | save-buffer                      | C-x C-s     | CUA   | Save               |
+| H-a           | mark-whole-buffer                | C-x h       | CUA   | Select All         |
+| H-z           | undo                             | C-x u       | CUA   | Undo               |
+| H-S-z         | undo-redo                        | C-M-_       | CUA   | Redo               |
+| H-f           | isearch-forward                  | C-s         | CUA   | Find               |
+| H-o           | find-file                        | C-x C-f     | CUA   | Open File          |
+| H-S-f         | find-file                        | C-x C-f     |       | H-o with one hand  |
+| H-n           | my/new-frame                     | C-x 5 2     | CUA   | New Window         |
+| H-/           | comment-or-uncomment-region      |             | Code  | (un)comment        |
+| H-<left>      | previous-buffer                  | C-x <left>  | Emacs | Go Back (buffer)   |
+| H-<right>     | next-buffer                      | C-x <right> | Emacs | next buffer        |
+| H-`           | my/org-capture-or-agenda-wrapper |             | Mine  | org agenda/capture |
 
 #+BEGIN_SRC emacs-lisp :var table=keybindings
   (dolist (row table)
@@ -185,10 +225,16 @@ The columns are as follows:
       (global-set-key (kbd key) cmd)))
 #+END_SRC
 
+** DEFERRED [0/1] mode specific bindings
+- [ ] rebind C-c & in org mode ~(org-mark-ring-goto)~ to M-, may have an
+  equivelent to go forward but probably not as it is to navigate back
+  from a hyperlink
+
 ** Default emacs bindings that I use often
 *** Programming
 - M-. goes to the definition of the symbol under the cursor, like alt+click in vscode
 - M-, goes back to point you were at before doing M-.
+- M-<tab> complete-symbol
 *** Org
 - M-<return> adds a new item, if cursor is in a list it makes a new bullet point otherwise a new heading
 - M-S-<return> same as M-<return> but labels it as a todo or inserts a checkbox
@@ -212,8 +258,9 @@ The [[help:initial-buffer-choice][initial buffer choice]] is used when a frame i
 be given different forms but I will use a function to refresh the org
 agenda and then return it so new frames will be opened to the org
 agenda.
-** my/get-org/agenda :func:
+** my/get-org-agenda                                                   :func:
 #+begin_src emacs-lisp
+  (require 'org-agenda)
   (defun my/get-org-agenda ()
     "generates the org agenda if it doesn't yet exist, refreshes it if
   it does and returns the buffer for the agenda without modifying
@@ -227,7 +274,7 @@ agenda.
       (save-window-excursion
         (org-agenda nil "n")
         (get-buffer org-agenda-buffer-name))))
-  
+
 #+end_src
 
 *** TASK make the initially selected org view less hard coded
@@ -255,6 +302,15 @@ this is a dark theme that morgan recommended as being well designed to have very
 #+begin_src emacs-lisp
 (load-theme 'modus-vivendi t)
 #+end_src
+** use modeline for selection not dialogue boxes
+I may want to reconsider this at some point but certainly for
+[[my/close-frame][my/close-frame]] the menu options are highly confusing (quit=cancel
+closing window) and the dialogue blocks viewing the buffer.
+
+#+begin_src emacs-lisp
+  (setopt use-dialog-box nil)
+#+end_src
+
 ** TASK make modeline more visible
 When multiple windows are open on a frame it is very hard to easily notice, would be nice to set modeline to be light theme so it provides a more obvious split.
 ** TASK coloured parenthases
@@ -272,10 +328,11 @@ meaning untracked files in a git repo will not have backups made for
 them.
 
 #+begin_src emacs-lisp
+  (require 'vc-git)
   (setopt backup-enable-predicate
       (lambda (filename)
         (and (normal-backup-enable-predicate filename)
-	     (not (vc-git-root filename)))))
+  	     (not (vc-git-root filename)))))
 #+end_src
 ** autosaves
 the default logic to make autosaves and record lists of autosaved
@@ -290,45 +347,62 @@ won't happen often.
 #+begin_src emacs-lisp
   (require 'cl-lib)
 #+end_src
-*** my/try-recover-file :func:
+*** my/try-recover-file                                                :func:
 #+begin_src emacs-lisp
-  (defun my/try-recover-file (file)
-    "Attempt to recover FILE from its autosave non-interactively.
+(defun my/try-recover-file (file)
+  "Attempt to recover FILE from its autosave non-interactively.
   Returns t if recovery succeeds,
   Returns nil if recover-file signals an error, I.E. the file doesn't exist,
     the auto-save doesn't exist, or the auto-save is older than the file
   Note that if the file is currently open and modified any current changes to the file are unrecoverably lost."
-    (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t)))
-      (condition-case nil
-          (recover-file file)
-        (:success
-         (message "recovered file: %s" file)
-         t)
-        (error nil)
-        (user-error nil))))
+  (interactive "FRecover File:")
+  (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t)))
+    (condition-case nil
+        (recover-file file)
+      (:success
+       (message "recovered file: %s" file)
+       t)
+      ;; how is the auto save file not existing an error but it being out of date a user-error?
+      ;; why are they not both user-errors, I'd really rather not catch all possible errors here.
+      (error nil)
+      (user-error nil))))
 #+end_src
 *** my/recover-from-autosave-list                                      :func:
-
-#+NAME: doc/recover-from-autosave-list
-Recover all real files listed in LIST-FILE. Skips entries that look
-like autosave files themselves.  Returns t if any file was recovered
-(opened and buffer set to auto-save content), or returns nil if none
-of the files had valid autosave data.
-  
-
 #+begin_src emacs-lisp
-  (defun my/recover-from-autosave-list (list-file)
-    "see emacsconfig.org:my/recover-from-autosave-list (this functions is from literate org file)"
-    (let ((recovered nil))
-      (when (file-readable-p list-file)
-        (with-temp-buffer
-          (insert-file-contents list-file)
-          (dolist (line (split-string (buffer-string) "\n" t))
-            (let ((path (string-trim line)))
-              (unless (auto-save-file-name-p (file-name-nondirectory path))
-                (when (my/try-recover-file path)
-                  (setq recovered t)))))))
-      recovered))
+(defun my/recover-from-autosave-list (list-file)
+  "Recover all real files listed in LIST-FILE.
+Skips entries that look like autosave files themselves.  Returns
+t if any file was recovered (opened and buffer set to auto-save
+content), or returns nil if none of the files had valid autosave
+data.
+
+Note that autosave lists always contain pairs of the original
+file and the auto-save file. To be robust against changing the handling
+of auto-save files this function *should* try to recover from the
+explicitly listed auto-save files instead of determining where
+the autosave should be based on the current configuration. This
+function *doesn't* do that because the underlying recover-file
+function doesn't support that."
+  (interactive (list (read-file-name
+              "Autosave List: "
+              (file-name-directory auto-save-list-file-prefix)
+              nil t ;; don't give default but require matching a file
+              (file-name-nondirectory auto-save-list-file-prefix))))
+  (unless (file-readable-p list-file)
+    (error "file %s does not exist" list-file))
+  (let ((recovered nil)
+    (files-to-recover
+     (with-temp-buffer
+           (insert-file-contents list-file)
+       (split-string (buffer-string) "\n" t))))
+    
+    (dolist (line files-to-recover)
+      (let ((path (string-trim line)))
+    (unless (auto-save-file-name-p
+         (file-name-nondirectory path))
+      (when (my/try-recover-file path)
+        (setq recovered t)))))
+    recovered))
 #+end_src
 **** DOC note about limitation of this function
 Note that autosave lists always contain pairs of the original file and
@@ -339,7 +413,7 @@ autosave should be based on the current configuration. This function
 *doesn't* do that because the underlying recover-file function
 doesn't support that.
 
-*** DOC my/process-all-autosave-lists                                  :func:
+*** my/process-all-autosave-lists                                      :func:
 #+begin_src emacs-lisp
   (defun my/process-all-autosave-lists ()
     "Process all autosave list files in the auto-save-list directory.
@@ -376,42 +450,63 @@ when closing last session is very useful behaviour.
   (add-hook 'emacs-startup-hook #'my/process-all-autosave-lists)
 #+end_src
 
-** TASK save on close frame
-rebind `handle-delete-frame` special binding [[https://superuser.com/a/328356/550312][SE answer]] which is called
-when win+del is called.  probably prompt always for saving modified
-buffers, if it gets annoying it would be easy to switch to only when
-closing last frame but probably not the reverse.
+** keep autosave lists on exit                                         :func:
 
-Should pull up the buffer list menu filtered or sorted to show
-modified buffers that have corresponding files and probably buffers
-that contain a running process. Then can use (save-some-buffers) to go
-through list of buffers, using save-some-buffers-action-alist to
-specify extra operations:
-- view buffer - ideally gets called automatically before prompt instead of having to do it manually, is not expensive
-- view changes - (diff-buffer-with-file) ideally setup to not hide list of buffers to be saved
-- revert buffer - (revert-buffer t t) reverts to disk ignoring autosave without prompt
+Stupid emacs stupid uneditable C code that runs after any hook I can
+configure [[https://github.com/emacs-mirror/emacs/blob/5485bda52399a23d95ab593dcb748975ee0654d0/src/emacs.c#L2977][deletes the auto-save list]]! The comment is "we are exiting
+emacs deliberately" but doesn't actually check that the exit_code
+signals a success, I am so mad at this.
 
-if there is a way to run a bit of code between each prompt I'd love to
-update the list of buffers and display the next one
-automatically. Also will want to figure out how to ensure displaying
-stuff during prompt doesn't hide the buffer list, maybe with setting
-it to dedicated?
+As a work around I will put a hook to unset the autosave list filename
+so it can't remove it, very much depending on the C code not breaking
+from me dropping the filename mid execution and just seeing it isn't a
+string anymore so it won't try to delete and also that nothing tries
+to add entries to it after my hook runs.
 
-Once save-some-buffers returns if it was not aborted close the frame
-as the desire to do that is what prompted this whole process.  If
-save-some-buffers was aborted then obviously don't close the frame,
-not sure how to handle that from lisp
-  
-*** establish how to deal with running processes
-- LSP server probably should just be shut down when a frame gets
-  closed, maybe when the last frame is closed but even then... There
-  should probably be a clearer "close project" which closes all files
-  associated with a project.
-- terminal programs? no idea how this would actually work and should
-  at least look into the existing logic for exiting emacs and what
-  prompts it can generate.
+#+begin_src emacs-lisp
+  (defun my/auto-save-then-stop-deletion-of-autosave-list-file ()
+    "does an autosave then unsets `auto-save-list-file-name' to prevent emacs from deleting it on exit
+    this is not the safest fix, a patch to the c code to remove the lines that delete the file would be preferable"
+    (do-auto-save t)
+    (setq auto-save-list-file-name nil))
+  (add-hook 'kill-emacs-hook #'my/auto-save-then-stop-deletion-of-autosave-list-file 90)
+#+end_src
 
+*** TASK write emacs patch to not delete autosave list
+at some point I want to write a patch that just stops it from deleting
+the autosave list instead of stripping the variable.
 
+this urks me so much
+
+** DONE save on close frame                                            :func:
+
+rebind `handle-delete-frame` special binding [[https://superuser.com/a/328356/550312][SE answer reference]] which
+is called when win+del is called.
+
+Every time I close any frame I want to be prompted to save all
+modified buffers, I don't care if another frame is open or not I just
+want to save my work regularly.
+
+#+NAME: my/close-frame
+#+begin_src emacs-lisp
+  (defun my/close-frame (event)
+    "replacement for `handle-delete-frame' to prompt to save all modified buffers before killing the frame.
+  This also always tries to delete the frame and does not try to
+  exit emacs if it is the last frame, instead it will just fail
+  which is fine for my usage with a server."
+    (interactive "e")
+    ;; posn-window returning a frame conditionally on details of the
+    ;; event seems extremely fragile in this context but it is what the 
+    (let* ((frame (posn-window (event-start event))))
+      (save-some-buffers)
+      ;; if save-some-buffers errors from aborting this won't get run
+      ;; also if the virtual frame was deleted or emacs was opened not
+      ;; in the daemon this will just fail to delete the frame and
+      ;; prevent using window manager to remove the frame.
+      (delete-frame frame t)
+      ))
+  (define-key special-event-map [delete-frame] #'my/close-frame)
+#+end_src
 
 
 
@@ -441,11 +536,11 @@ in split window.
 Assuming no applicable overrides, this describes the logic for
 handling displaying a buffer. The basic logic is to follow these
 (implied "else check the next one")
-- if there is already a window showing the buffer use that (if it is
+- [[(reuse-window)]] if there is already a window showing the buffer use that (if it is
   in a non selected frame bring focus to the frame) 
-- if there are multiple frames open, show the buffer in another frame
+- [[(use-some-window)]] if there are multiple frames open, show the buffer in another frame
   (enable split view workflow) 
-- otherwise (there is only one frame open) get the new buffer to take
+- [[(full-frame)]] otherwise (there is only one frame open) get the new buffer to take
   up the full frame closing any other windows.
 
 There is some complications from the implicit virtual frame created by
@@ -453,11 +548,11 @@ the daemon, =reuse-window= does seem to ignore it but
 =use-some-frame='s default predicate includes the virtual frame so we
 need to override it to filter to only frames on the graphical display.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp -r
   (setopt display-buffer-base-action
-  	`((display-buffer-reuse-window
-  	   display-buffer-use-some-frame
-  	   display-buffer-full-frame)
+  	`((display-buffer-reuse-window   ;(ref:reuse-window)
+  	   display-buffer-use-some-frame ;(ref:use-some-window)
+  	   display-buffer-full-frame)    ;(ref:full-frame)
   	;; rest of elements are items in the ALIST
   	  (inhibit-same-window . nil)
   	  ;; used by reuse-window to check windows already open
@@ -499,27 +594,68 @@ Also the validation that ~setopt~ does on the condition says it has to be a rege
 #+end_src
 
 * Org
-** keywords
-My main workflow with org agenda is to label lots of possible tasks as things I could work on, then every day move some to TODO to work on them.
+** keywords and todo behaviour
+My main workflow with org agenda is to label lots of possible tasks as
+things I could work on, then every day move some to TODO to work on
+them. Also added SOON which has same meaning as task but label as good
+idea for next step or otherwise worth working on soon independent of
+it being important or high priority.
 
-I also define DEFERRED to mean "I don't intend to work on this" but still describes an actionable thing, potentially it is something I want to do but need more evidence/information about it to actually make any progress on it.
+I also define DEFERRED to mean "I don't intend to work on this" but
+still describes an actionable thing, potentially it is something I
+want to do but need more evidence/information about it to actually
+make any progress on it.
 
 #+begin_src emacs-lisp
   (setopt org-todo-keywords
-	'((sequence "TASK(t)" "TODO(n!)" "|" "DONE" "DEFERRED(d@)")))
+  	'((sequence "TASK(t)" "SOON(s)" "TODO(n!)"
+  		    "|"
+  		    "DONE(~@/@)" "DEFERRED(d@)")))
 #+end_src
+
+Prevent marking items as done if they have unfinished children (either
+sub tasks or checkboxes) as accidentally marking something as
+completed is highly undesirable.
+
+#+begin_src emacs-lisp
+  (setopt org-enforce-todo-dependencies t)
+  (setopt org-enforce-todo-checkbox-dependencies t)
+#+end_src
+*** TASK add colours to todo keywords
+[[help:org-todo-keyword-faces]]
 ** capture
 see [[help:org-capture-templates][org-capture-templates]] for format, this file contains [[#TechGripes][Tech gripes]],
 another file (preferably an inbox) will need a section with the ID
-[[#RandomThoughts][RandomThoughts]].
+[[id:RandomThoughts][RandomThoughts]].
 #+begin_src emacs-lisp
   (setopt org-capture-templates
   	'(("c" "clocked task note" plain (clock) "")
   	  ("z" "quick thought to revisit at some point" item (id "RandomThoughts") "")
   	  ("e" "emacs/tech gripe" checkitem (id "TechGripes") "")
+  	  ("j" "Journal entry" entry (file+olp+datetree "journal.org") "")
   	  ))
 #+end_src
 **** DEFERRED look into templates and variables
+** agenda view
+I primarily want a view that shows the agenda and a list of tasks,
+where I want the ability to switch between showing all tasks to only
+showing TODOs.
+
+Using the default "t" view for global list of all todos is sufficient
+and then switching to my custom view that shows both agenda and TODO
+items is mostly fine, the issue is that I kind of need a keybinding to
+switch between them and I don't particularly want to bind a key just
+to switch the view. there is already logic setup to pass a prefix to
+the 'r' key when viewing the agenda but this messes up the week view,
+changing the number of days etc and the number associated with
+different todo keywords is very confusing.
+
+#+begin_src emacs-lisp
+  (setopt org-agenda-custom-commands
+  	       '(("n" "Agenda and todos"
+  		 ((agenda "")
+  		  (todo "TODO")))))
+#+end_src
 ** agenda files
 set this file under src/dotfiles to the org agenda so emacs config
 shows as a category of tasks, and use all files in the org directory.
@@ -528,46 +664,79 @@ shows as a category of tasks, and use all files in the org directory.
   (setopt org-agenda-files
   	(list org-directory
   	      "~/src/dotfiles/emacsconfig.org"
-  	  ))			   
+  	  ))
+  ;; probably not used as I specify a file for all capture targets but useful to have in case.
+  (setopt org-default-notes-file "~/org/inbox.org")
 #+end_src
-** DEFERRED caldav
+
+** TASK get state change notes to go to journal
+see [[help:org-after-note-stored-hook]], I suspect I can introspect data
+about task state changes and record it to my journal as that is where
+I'd really like those notes. I'd really like for actions like
+TASK->TODO and TODO->DONE to be logged in the day's info and possibly
+clocking info and get into the habit of looking at the journal entry
+and writing up a bit about my day every day.
+
+**  caldav
+Few options for icalendar export, to do full sync with phone I will
+need to setup import logic as well.
+#+begin_src emacs-lisp
+  ;;; could use 'all but I'd like to suppress TASK items
+  (setopt org-icalendar-include-todo '("TODO" "DONE"))
+
+  (setopt org-icalendar-categories '(all-tags))
+
+  (setopt org-icalendar-store-UID t)
+#+end_src
+
+See [[info:org#iCalendar Export][org#iCalendar Export]], relevant org properties are LOCATION,
+TIMEZONE, CLASS. If SUMMARY or DESCRIPTION are present in property
+drawer they are used instead of node body and headline.
+
+I don't think the default exporter retains parent/child relations
+which tasks.org app does make use of.
+
+Also it would be nice to have it export checkbox lists as subtasks
+that can be checked off but dealing with unique IDs for those would be
+complicated if they can be rearranged or deleted.
+
+*** DEFERRED old code for caldav, import ical data
 this is outdated code from old init file, tangle is disabled so it is
 not output to new init file. Syncing the org agenda with my phone is
 very much on my mind so I will naturally try to come back to this.
+
 #+begin_src emacs-lisp :tangle no
-(require 'org-caldav)
-(setopt org-caldav-url "http://localhost:8080/user/calendars")
-(setopt org-caldav-calendar-id "calendar")
+  ;(require 'org-caldav)
+  ;(setopt org-caldav-url "http://localhost:8080/user/calendars")
+  ;(setopt org-caldav-calendar-id "calendar")
 
-;;; TODO: set the inbox and files based on agenda files, it may
-;;; honestly default to read the first/last value from agenda files if
-;;; not set
+  ;;; TODO: set the inbox and files based on agenda files, it may
+  ;;; honestly default to read the first/last value from agenda files if
+  ;;; not set
 
-;; Org filename where new entries from calendar stored
-(setopt org-caldav-inbox "~/Sync/cal.org")
+  ;; Org filename where new entries from calendar stored
+  ;(setopt org-caldav-inbox "~/Sync/cal.org")
 
-;; Additional Org files to check for calendar events
-(setopt org-caldav-files '("~/Sync/work.org"))
-;; and set the org agenda to also have those files
-(setopt org-agenda-files '("~/Sync/work.org"
-                         "~/Sync/cal.org"))
+  ;; Additional Org files to check for calendar events
+  ;(setopt org-caldav-files '("~/Sync/work.org"))
+  ;; and set the org agenda to also have those files
+  (setopt org-agenda-files '("~/Sync/work.org"
+                           "~/Sync/cal.org"))
 
-;; Usually a good idea to set the timezone manually
-(setopt org-icalendar-timezone "America/Toronto")
+  ;; Usually a good idea to set the timezone manually
+  (setopt org-icalendar-timezone "America/Toronto")
 
-;; sync todos as well.
-(setopt org-icalendar-include-todo 'all
-      org-caldav-sync-todo t)
-;; creates SCHEDULED timestamp from DEADLINE
-;; (setq org-caldav-todo-deadline-schedule-warning-days t)
+  ;; sync todos as well.
+  (setopt org-icalendar-include-todo 'all)
+       ; org-caldav-sync-todo t)
+  ;; creates SCHEDULED timestamp from DEADLINE
+  ;; (setq org-caldav-todo-deadline-schedule-warning-days t)
 #+end_src
 
-** TASK org agenda views
-setup views to show all non blocked tasks, then switch to only show TODOs
+
 
 
 * Misc
-
 ** DEFERRED encryption passphrase cache
 Don't actually know what this does, copied from morgan's config and haven't used gpg stuff in emacs in ages so unsure what specifically it does.
 #+begin_src emacs-lisp :tangle no
