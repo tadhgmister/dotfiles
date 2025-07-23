@@ -1,268 +1,6 @@
-diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/#config.def.h# /home/tadhg/src/dwm/#config.def.h#
---- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/#config.def.h#	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/#config.def.h#	2025-07-18 16:11:54.389030568 -0400
-@@ -0,0 +1,258 @@
-+/* See LICENSE file for copyright and license details. */
-+#include <X11/XF86keysym.h>
-+/* appearance */
-+static const unsigned int borderpx  = 1;        /* border pixel of windows */
-+static const unsigned int snap      = 32;       /* snap pixel */
-+// showbar=2 means it starts in the state like you are holding down the mod key, so showing but will go away when you do anything
-+static const int showbar            = 2;        /* 0 means no bar */
-+static const int topbar             = 1;        /* 0 means bottom bar */
-+static const char font[]            = "monospace 16";
-+static const char dmenufont[]       = "monospace:size=16";
-+static const char col_gray1[]       = "#222222";
-+static const char col_gray2[]       = "#444444";
-+static const char col_gray3[]       = "#bbbbbb";
-+static const char col_gray4[]       = "#eeeeee";
-+static const char col_cyan[]        = "#005577";
-+static const char *colors[][3]      = {
-+	/*               fg         bg         border   */
-+	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
-+	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
-+};
-+
-+/* tagging */
-+// these are intended to be the dozonal characters I define with my custom font.
-+// without the custom font they are the unicode characters for "Ideographic Telegraph Symbol For Hour X" where X goes from 0 to 11.
-+// so in theory a font that supports this range would display reasonable graphics for the tags.
-+static const char *tags[] = { "\u3358", "\u3359", "\u335a", "\u335b", "\u335c", "\u335d", "\u335e", "\u335f", "\u3360", "\u3361", "\u3362", "\u3363" };
-+
-+// rules to apply to new windows, can force them to start on a particular tag or to be floating or a monitor etc.
-+// currently if a program is launched while the auto-start programs are still being opened it breaks the sequence
-+// putting all the windows to the wrong spots, we could use rules to fix that but it would mean that if we, say,
-+// opened emacs at any point like to view a file it would always open on tag 3 if we specified it here.
-+// so I think the current system where the auto-start specifies the tag and this is used only to fix issues with splash screen
-+// that is the best bet.
-+// also use `guix shell xprop -- xprop` then click on a window to print the details,
-+static const Rule rules[] = {
-+	/* xprop(1):
-+	 *	WM_CLASS(STRING) = instance, class
-+	 *	WM_NAME(STRING) = title
-+	 */
-+	/* class      instance    title       tags mask     isfloating   monitor */
-+        // force discord to open on tag 1 since it has the annoying splash screen
-+	{ "discord",  "discord",  NULL,       1 << 1,       0,           -1 },
-+};
-+
-+/* layout(s) */
-+static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
-+static const int nmaster     = 1;    /* number of clients in master area */
-+static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
-+static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
-+
-+/* w/h ratio  */
-+static const float MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY = 1.0;
-+void mytile(Monitor *m){
-+  unsigned int x = m->wx;
-+  unsigned int y = m->wy;
-+  unsigned int w = m->ww;
-+  unsigned int h = m->wh;
-+  float mfact = m->mfact;
-+  Client *c = nexttiled(m->clients);
-+  if(c==NULL){
-+    return;
-+  }
-+  while(1){ // broken by nextc==NULL in the middle of the loop
-+    Client *nextc = nexttiled(c->next);
-+    if(nextc == NULL || (c->mina != 0 && c->maxa != 0)){
-+      // last one to tile or desired aspect ratio, use up all the available space
-+      resize(c, x,y,w,h,0);
-+    } else if(w > h*MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY){
-+      // tile horizontally
-+      resize(c, x,y, w*mfact, h, 0);
-+    } else {
-+      // tile vertically
-+      resize(c, x,y, w, h*mfact, 0);
-+    }
-+    if(nextc == NULL){
-+      return;
-+    }
-+    // because of aspect ratio and border widths just check whether there is more space vertically or horizontally to tile next elements.
-+    // TODO: casting these to ints fixes the issue if one ends up negative but is it the correct way to handle this?
-+    if((int)(w - c->w) > (int)(h - c->h)){
-+      // more space to the side
-+      w -= c->w;
-+      x += c->w;
-+    } else {
-+      // more space below
-+      h -= c->h;
-+aa      y += c->h;
-+    }
-+    c = nextc;
-+  }
-+}
-+
-+static const Layout layouts[] = {
-+	/* symbol     arrange function */
-+	{ "[]=",      mytile },    /* first entry is default */
-+	{ "><>",      NULL },    /* no layout function means floating behavior */
-+	{ "[M]",      monocle },
-+	{ "TTT",      bstack },
-+	{ "===",      bstackhoriz },
-+};
-+
-+/* key definitions */
-+#define MODKEY Mod4Mask
-+#define TAGKEYS(KEY,TAG) \
-+	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
-+	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
-+	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
-+	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
-+#define HOLDKEY 0xffeb // 0 - disable; 0xffe9 - Mod1Mask; 0xffeb - Mod4Mask
-+#define ALTKEY 0xffe9
-+
-+/* helper for spawning shell commands in the pre dwm-5.0 fashion */
-+#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
-+
-+/* commands */
-+
-+static const char *dmenucmd[] = { "dmenuwithbangs", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
-+static const char *termcmd[]  = { "alacritty", NULL };
-+static const char *chatclientcmd[] = { "dino", NULL };
-+static const char *discord[] = {"discord", NULL};
-+//static const char *fbmessengerbrave[] = {"brave", "--app=https://www.messenger.com/", NULL};
-+//static const char *signalchatcmd[] = {"signal-desktop", NULL};
-+static const char *browsercmd[] = {"brave", NULL};
-+static const char *emailclientcmd[] = {"icedove", NULL};
-+static const char *emacscmd[] = {"emacsclient", "--no-wait", "--create-frame", NULL};
-+
-+Autostarttag autostarttaglist[] = {
-+	// start with apps that consistently only open one window to minimize the chance of messing up sequence
-+  { .tags=1<< 5, .cmd=emailclientcmd },
-+  //{ .tags=1<< 1, .cmd=signalchatcmd },
-+  { .tags=1<< 1, .cmd=chatclientcmd },
-+  // this command consistently opens one window but emacs daemon it depends on can be delayed a bit.
-+  { .tags=1<< 3, .cmd=emacscmd },
-+  // discord opens a splash screen which can mess up sequencing
-+  { .tags=1<< 1, .cmd=discord },
-+  // if multiple windows were open and it shut down properly (uncommon with my setup) it can reopen several windows
-+  { .tags=1<< 2, .cmd=browsercmd },
-+
-+    {.cmd = NULL, .tags = 0 }
-+};
-+
-+
-+static const Key keys[] = {
-+	/* modifier                     key        function        argument */
-+        // win+space opens dmenu for quicklook like behaviour
-+	{ MODKEY,                       XK_space,             spawn, {.v = dmenucmd } },
-+	// win+shift+space opens terminal
-+	{ MODKEY|ShiftMask,             XK_space,             spawn, {.v = termcmd } },
-+	// win+n opens a new emacs frame
-+	{ MODKEY,                       XK_n,                 spawn, {.v = emacscmd } },
-+	// TODO: probably remove this, win+play_pause speaks the selected text
-+	{ MODKEY,                       XF86XK_AudioPlay,           spawn, SHCMD("xclip -o | festival --tts") },
-+	// brightness keys, shift+win goes to extreme value, win goes to major value and without modifier keys goes to typical value
-+	// TODO: implement deltas into brctl and add bindings here instead of always absolute.
-+	// every now and then the brightness keys stop working so map the function keys too as a backup
-+	{ MODKEY|ShiftMask,             XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 0") },
-+	{ MODKEY|ShiftMask,             XK_F7,                      spawn, SHCMD("brctl 0") },
-+	{ MODKEY,                       XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 1") },
-+	{ MODKEY,                       XK_F7,                      spawn, SHCMD("brctl 1") },
-+	{ 0,                            XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 5") },
-+	{ 0,                            XK_F7,                      spawn, SHCMD("brctl 5") },
-+	{ 0,                            XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 10") },
-+	{ 0,                            XK_F8,                      spawn, SHCMD("brctl 10") },
-+	{ MODKEY,                       XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 20") },
-+	{ MODKEY,                       XK_F8,                      spawn, SHCMD("brctl 20") },
-+	{ MODKEY|ShiftMask,             XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 40") },
-+	{ MODKEY|ShiftMask,             XK_F8,                      spawn, SHCMD("brctl 40") },
-+	// mute button: without modkey unconditional unmute, with modkey unconditional mute
-+	{ 0,                            XF86XK_AudioMute,           spawn, SHCMD("amixer set Master mute") },
-+	{ MODKEY,                       XF86XK_AudioMute,           spawn, SHCMD("amixer set Master unmute") },
-+	// volume down: (without modkey decreases volume by 5%, with modkey sets volume to 0
-+	{ 0,                            XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 5%-") },
-+	{ MODKEY,                       XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 0%") },
-+	// volume up: withoutt modkey increases 5%, with modkey increases 5% with pactl so it can go above 100%
-+	{ 0,                            XF86XK_AudioRaiseVolume,    spawn, SHCMD("amixer set Master 5%+") },
-+	{ MODKEY,                       XF86XK_AudioRaiseVolume,    spawn, SHCMD("pactl set-sink-volume 0 +5%") },
-+	// don't allow toggling the bar to always be showing because I don't typically want that.
-+	/*{ MODKEY,                       XK_b,      togglebar,      {0} },*/
-+	// use layouts instead of being able to increment nmaster
-+	/*{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },*/
-+	/*{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },*/
-+	// h and l change the size of the main window when there are more than 1 window open in the tag.
-+	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
-+	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-+	// return key (enter) sets the selected window as the main one (moves to left larger space) only noticable with 3 windows open on a tag.
-+	{ MODKEY,                       XK_Return, zoom,           {0} },
-+	// win+tab will toggle between recently used tags
-+        { MODKEY,                       XK_Tab,    view,           {0} },
-+	// backspace kills the selected window, if no windows are open in any tag this will also close dwm (which is one of my personal edits to the code)
-+	{ MODKEY,                       XK_BackSpace,      killclient,     {0} },
-+	// force quit dwm and all windows.
-+	{ MODKEY|ShiftMask|ControlMask, XK_BackSpace,      quit,           {0} },
-+	// clicking on tile symbol in menu bar switches between the only layouts I care about.
-+	/* { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
-+	/* { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },*/
-+	/* { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },*/
-+	/* { MODKEY,                       XK_u,      setlayout,      {.v = &layouts[3]} },*/
-+	/* { MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },*/
-+	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
-+	{ MODKEY|ShiftMask|ControlMask, XK_f,      togglefloating, {0} },
-+	{ MODKEY,                       XK_f,      togglefullscr,  {0} },
-+	// comma and period change focus between monitors, shift+win+comma moves the window to another monitor etc.
-+	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
-+	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
-+	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
-+	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-+	// tagkeys, starting from grave for 0, 1 to 9 then 0=>10 and minus=>11.
-+	TAGKEYS(                        XK_grave,                   0)
-+	TAGKEYS(                        XK_1,                       1)
-+	TAGKEYS(                        XK_2,                       2)
-+	TAGKEYS(                        XK_3,                       3)
-+	TAGKEYS(                        XK_4,                       4)
-+	TAGKEYS(                        XK_5,                       5)
-+	TAGKEYS(                        XK_6,                       6)
-+	TAGKEYS(                        XK_7,                       7)
-+	TAGKEYS(                        XK_8,                       8)
-+	TAGKEYS(                        XK_9,                       9)
-+	TAGKEYS(                        XK_0,                      10)
-+	TAGKEYS(                        XK_minus,                  11)
-+	// use equal key as 'all tags', so win+equal shows all windows and win+shift+equal sets a window to be visible on all tags
-+	{ MODKEY,                       XK_equal,      view,           {.ui = ~0 } },
-+	{ MODKEY|ShiftMask,             XK_equal,      tag,            {.ui = ~0 } },
-+	// pressing the win key with any other modifiers should show the bar,
-+	// in theory this could be handled as a special case in the code to ignore modifiers if the key is HOLDKEY but this works too.
-+	{ 0,                            HOLDKEY,   holdbar,        {0} },
-+	{ ShiftMask,                    HOLDKEY,   holdbar,        {0} },
-+	{ ControlMask,                  HOLDKEY,   holdbar,        {0} },
-+	{ ShiftMask|ControlMask,        HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask,                     HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ShiftMask,           HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ControlMask,         HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ShiftMask|ControlMask,HOLDKEY,   holdbar,       {0} },
-+	// pressing alt key disables dozonal display, keyrelease function handles reverting this
-+	// I am not thrilled about dealing with holdbar and this as normal keybindings instead of both be special handling that could also
-+	// ignore modifiers but this is definitely easiest way
-+	{ MODKEY,                       ALTKEY,   disabledoz,      {0} },
-+};
-+
-+/* button definitions */
-+/* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
-+/* note all are set to use MODKEY because the bar will only show up when the mod key is held */
-+static const Button buttons[] = {
-+	/* click                event mask      button          function        argument */
-+  // clicking on layout symbol switches to tiling, rightclick switches to list mode
-+	{ ClkLtSymbol,          MODKEY,              Button1,        setlayout,      {.v = &layouts[0]} },
-+        { ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[3]} },
-+	{ ClkWinTitle,          MODKEY,              Button2,        zoom,           {0} },
-+	//{ ClkStatusText,        MODKEY,              Button1,        toggledoz,     {0} },
-+	{ ClkStatusText,        MODKEY,              Button2,        spawn,          {.v = termcmd } },
-+	{ ClkClientWin,         MODKEY|ShiftMask,         Button1,        movemouse,      {0} },
-+	{ ClkClientWin,         MODKEY|ShiftMask,         Button2,        togglefloating, {0} },
-+	{ ClkClientWin,         MODKEY|ShiftMask,         Button3,        resizemouse,    {0} },
-+	{ ClkTagBar,            MODKEY,              Button1,        view,           {0} },
-+	{ ClkTagBar,            MODKEY,              Button3,        toggleview,     {0} },
-+	{ ClkTagBar,            MODKEY|ShiftMask,         Button1,        tag,            {0} },
-+	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
-+};
-+
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2025-07-18 15:26:05.449540998 -0400
++++ /home/tadhg/src/dwm/config.def.h	2025-07-22 21:56:55.851177575 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -281,7 +19,11 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
  static const char col_gray1[]       = "#222222";
  static const char col_gray2[]       = "#444444";
  static const char col_gray3[]       = "#bbbbbb";
-@@ -19,27 +20,79 @@ static const char *colors[][3]      = {
+@@ -16,19 +17,30 @@ static const char *colors[][3]      = {
+ 	/*               fg         bg         border   */
+ 	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
+ 	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
++	[SchemeFade] = { col_gray2, col_gray1, col_gray1 },
  };
  
  /* tagging */
@@ -312,12 +54,10 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
  };
  
  /* layout(s) */
- static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
- static const int nmaster     = 1;    /* number of clients in master area */
+@@ -37,9 +49,51 @@ static const int nmaster     = 1;    /*
  static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
--static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
-+static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
-+
+ static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
+ 
 +/* w/h ratio  */
 +static const float MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY = 1.0;
 +void mytile(Monitor *m){
@@ -359,7 +99,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
 +    c = nextc;
 +  }
 +}
- 
++
  static const Layout layouts[] = {
  	/* symbol     arrange function */
 -	{ "[]=",      tile },    /* first entry is default */
@@ -367,7 +107,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
  	{ "><>",      NULL },    /* no layout function means floating behavior */
  	{ "[M]",      monocle },
  	{ "TTT",      bstack },
-@@ -47,89 +100,159 @@ static const Layout layouts[] = {
+@@ -47,89 +101,159 @@ static const Layout layouts[] = {
  };
  
  /* key definitions */
@@ -580,267 +320,6 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
 +	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
  };
  
-diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h~ /home/tadhg/src/dwm/config.def.h~
---- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h~	1969-12-31 19:00:00.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h~	2025-07-16 23:01:46.345041279 -0400
-@@ -0,0 +1,257 @@
-+/* See LICENSE file for copyright and license details. */
-+#include <X11/XF86keysym.h>
-+/* appearance */
-+static const unsigned int borderpx  = 1;        /* border pixel of windows */
-+static const unsigned int snap      = 32;       /* snap pixel */
-+// showbar=2 means it starts in the state like you are holding down the mod key, so showing but will go away when you do anything
-+static const int showbar            = 2;        /* 0 means no bar */
-+static const int topbar             = 1;        /* 0 means bottom bar */
-+static const char font[]            = "monospace 16";
-+static const char dmenufont[]       = "monospace:size=16";
-+static const char col_gray1[]       = "#222222";
-+static const char col_gray2[]       = "#444444";
-+static const char col_gray3[]       = "#bbbbbb";
-+static const char col_gray4[]       = "#eeeeee";
-+static const char col_cyan[]        = "#005577";
-+static const char *colors[][3]      = {
-+	/*               fg         bg         border   */
-+	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
-+	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
-+};
-+
-+/* tagging */
-+// these are intended to be the dozonal characters I define with my custom font.
-+// without the custom font they are the unicode characters for "Ideographic Telegraph Symbol For Hour X" where X goes from 0 to 11.
-+// so in theory a font that supports this range would display reasonable graphics for the tags.
-+static const char *tags[] = { "\u3358", "\u3359", "\u335a", "\u335b", "\u335c", "\u335d", "\u335e", "\u335f", "\u3360", "\u3361", "\u3362", "\u3363" };
-+
-+// rules to apply to new windows, can force them to start on a particular tag or to be floating or a monitor etc.
-+// currently if a program is launched while the auto-start programs are still being opened it breaks the sequence
-+// putting all the windows to the wrong spots, we could use rules to fix that but it would mean that if we, say,
-+// opened emacs at any point like to view a file it would always open on tag 3 if we specified it here.
-+// so I think the current system where the auto-start specifies the tag and this is used only to fix issues with splash screen
-+// that is the best bet.
-+// also use `guix shell xprop -- xprop` then click on a window to print the details,
-+static const Rule rules[] = {
-+	/* xprop(1):
-+	 *	WM_CLASS(STRING) = instance, class
-+	 *	WM_NAME(STRING) = title
-+	 */
-+	/* class      instance    title       tags mask     isfloating   monitor */
-+        // force discord to open on tag 1 since it has the annoying splash screen
-+	{ "discord",  "discord",  NULL,       1 << 1,       0,           -1 },
-+};
-+
-+/* layout(s) */
-+static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
-+static const int nmaster     = 1;    /* number of clients in master area */
-+static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
-+static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
-+
-+/* w/h ratio  */
-+static const float MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY = 1.0;
-+void mytile(Monitor *m){
-+  unsigned int x = m->wx;
-+  unsigned int y = m->wy;
-+  unsigned int w = m->ww;
-+  unsigned int h = m->wh;
-+  float mfact = m->mfact;
-+  Client *c = nexttiled(m->clients);
-+  if(c==NULL){
-+    return;
-+  }
-+  while(1){ // broken by nextc==NULL in the middle of the loop
-+    Client *nextc = nexttiled(c->next);
-+    if(nextc == NULL || (c->mina != 0 && c->maxa != 0)){
-+      // last one to tile or desired aspect ratio, use up all the available space
-+      resize(c, x,y,w,h,0);
-+    } else if(w > h*MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY){
-+      // tile horizontally
-+      resize(c, x,y, w*mfact, h, 0);
-+    } else {
-+      // tile vertically
-+      resize(c, x,y, w, h*mfact, 0);
-+    }
-+    if(nextc == NULL){
-+      return;
-+    }
-+    // because of aspect ratio and border widths just check whether there is more space vertically or horizontally to tile next elements.
-+    // TODO: casting these to ints fixes the issue if one ends up negative but is it the correct way to handle this?
-+    if((int)(w - c->w) > (int)(h - c->h)){
-+      // more space to the side
-+      w -= c->w;
-+      x += c->w;
-+    } else {
-+      // more space below
-+      h -= c->h;
-+      y += c->h;
-+    }
-+    c = nextc;
-+  }
-+}
-+
-+static const Layout layouts[] = {
-+	/* symbol     arrange function */
-+	{ "[]=",      mytile },    /* first entry is default */
-+	{ "><>",      NULL },    /* no layout function means floating behavior */
-+	{ "[M]",      monocle },
-+	{ "TTT",      bstack },
-+	{ "===",      bstackhoriz },
-+};
-+
-+/* key definitions */
-+#define MODKEY Mod4Mask
-+#define TAGKEYS(KEY,TAG) \
-+	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
-+	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
-+	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
-+	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
-+#define HOLDKEY 0xffeb // 0 - disable; 0xffe9 - Mod1Mask; 0xffeb - Mod4Mask
-+#define ALTKEY 0xffe9
-+
-+/* helper for spawning shell commands in the pre dwm-5.0 fashion */
-+#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
-+
-+/* commands */
-+
-+static const char *dmenucmd[] = { "dmenuwithbangs", "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
-+static const char *termcmd[]  = { "alacritty", NULL };
-+static const char *chatclientcmd[] = { "dino", NULL };
-+static const char *discord[] = {"discord", NULL};
-+//static const char *fbmessengerbrave[] = {"brave", "--app=https://www.messenger.com/", NULL};
-+//static const char *signalchatcmd[] = {"signal-desktop", NULL};
-+static const char *browsercmd[] = {"brave", NULL};
-+static const char *emailclientcmd[] = {"icedove", NULL};
-+static const char *emacscmd[] = {"emacsclient", "--no-wait", "--create-frame", NULL};
-+
-+Autostarttag autostarttaglist[] = {
-+	// start with apps that consistently only open one window to minimize the chance of messing up sequence
-+  { .tags=1<< 3, .cmd=emacscmd },
-+  { .tags=1<< 5, .cmd=emailclientcmd },
-+  //{ .tags=1<< 1, .cmd=signalchatcmd },
-+  { .tags=1<< 1, .cmd=chatclientcmd },
-+  // discord opens a splash screen which can mess up sequencing
-+  { .tags=1<< 1, .cmd=discord },
-+  // if multiple windows were open and it shut down properly (uncommon with my setup) it can reopen several windows
-+  { .tags=1<< 2, .cmd=browsercmd },
-+
-+    {.cmd = NULL, .tags = 0 }
-+};
-+
-+
-+static const Key keys[] = {
-+	/* modifier                     key        function        argument */
-+        // win+space opens dmenu for quicklook like behaviour
-+	{ MODKEY,                       XK_space,             spawn, {.v = dmenucmd } },
-+	// win+shift+space opens terminal
-+	{ MODKEY|ShiftMask,             XK_space,             spawn, {.v = termcmd } },
-+	// win+n opens a new emacs frame
-+	{ MODKEY,                       XK_n,                 spawn, {.v = emacscmd } },
-+	// TODO: probably remove this, win+play_pause speaks the selected text
-+	{ MODKEY,                       XF86XK_AudioPlay,           spawn, SHCMD("xclip -o | festival --tts") },
-+	// brightness keys, shift+win goes to extreme value, win goes to major value and without modifier keys goes to typical value
-+	// TODO: implement deltas into brctl and add bindings here instead of always absolute.
-+	// every now and then the brightness keys stop working so map the function keys too as a backup
-+	{ MODKEY|ShiftMask,             XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 0") },
-+	{ MODKEY|ShiftMask,             XK_F7,                      spawn, SHCMD("brctl 0") },
-+	{ MODKEY,                       XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 1") },
-+	{ MODKEY,                       XK_F7,                      spawn, SHCMD("brctl 1") },
-+	{ 0,                            XF86XK_MonBrightnessDown,   spawn, SHCMD("brctl 5") },
-+	{ 0,                            XK_F7,                      spawn, SHCMD("brctl 5") },
-+	{ 0,                            XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 10") },
-+	{ 0,                            XK_F8,                      spawn, SHCMD("brctl 10") },
-+	{ MODKEY,                       XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 20") },
-+	{ MODKEY,                       XK_F8,                      spawn, SHCMD("brctl 20") },
-+	{ MODKEY|ShiftMask,             XF86XK_MonBrightnessUp,     spawn, SHCMD("brctl 40") },
-+	{ MODKEY|ShiftMask,             XK_F8,                      spawn, SHCMD("brctl 40") },
-+	// mute button: without modkey unconditional unmute, with modkey unconditional mute
-+	{ 0,                            XF86XK_AudioMute,           spawn, SHCMD("amixer set Master mute") },
-+	{ MODKEY,                       XF86XK_AudioMute,           spawn, SHCMD("amixer set Master unmute") },
-+	// volume down: (without modkey decreases volume by 5%, with modkey sets volume to 0
-+	{ 0,                            XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 5%-") },
-+	{ MODKEY,                       XF86XK_AudioLowerVolume,    spawn, SHCMD("amixer set Master 0%") },
-+	// volume up: withoutt modkey increases 5%, with modkey increases 5% with pactl so it can go above 100%
-+	{ 0,                            XF86XK_AudioRaiseVolume,    spawn, SHCMD("amixer set Master 5%+") },
-+	{ MODKEY,                       XF86XK_AudioRaiseVolume,    spawn, SHCMD("pactl set-sink-volume 0 +5%") },
-+	// don't allow toggling the bar to always be showing because I don't typically want that.
-+	/*{ MODKEY,                       XK_b,      togglebar,      {0} },*/
-+	// use layouts instead of being able to increment nmaster
-+	/*{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },*/
-+	/*{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },*/
-+	// h and l change the size of the main window when there are more than 1 window open in the tag.
-+	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
-+	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-+	// return key (enter) sets the selected window as the main one (moves to left larger space) only noticable with 3 windows open on a tag.
-+	{ MODKEY,                       XK_Return, zoom,           {0} },
-+	// win+tab will toggle between recently used tags
-+        { MODKEY,                       XK_Tab,    view,           {0} },
-+	// backspace kills the selected window, if no windows are open in any tag this will also close dwm (which is one of my personal edits to the code)
-+	{ MODKEY,                       XK_BackSpace,      killclient,     {0} },
-+	// force quit dwm and all windows.
-+	{ MODKEY|ShiftMask|ControlMask, XK_BackSpace,      quit,           {0} },
-+	// clicking on tile symbol in menu bar switches between the only layouts I care about.
-+	/* { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
-+	/* { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },*/
-+	/* { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },*/
-+	/* { MODKEY,                       XK_u,      setlayout,      {.v = &layouts[3]} },*/
-+	/* { MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },*/
-+	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
-+	{ MODKEY|ShiftMask|ControlMask, XK_f,      togglefloating, {0} },
-+	{ MODKEY,                       XK_f,      togglefullscr,  {0} },
-+	// comma and period change focus between monitors, shift+win+comma moves the window to another monitor etc.
-+	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
-+	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
-+	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
-+	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-+	// tagkeys, starting from grave for 0, 1 to 9 then 0=>10 and minus=>11.
-+	TAGKEYS(                        XK_grave,                   0)
-+	TAGKEYS(                        XK_1,                       1)
-+	TAGKEYS(                        XK_2,                       2)
-+	TAGKEYS(                        XK_3,                       3)
-+	TAGKEYS(                        XK_4,                       4)
-+	TAGKEYS(                        XK_5,                       5)
-+	TAGKEYS(                        XK_6,                       6)
-+	TAGKEYS(                        XK_7,                       7)
-+	TAGKEYS(                        XK_8,                       8)
-+	TAGKEYS(                        XK_9,                       9)
-+	TAGKEYS(                        XK_0,                      10)
-+	TAGKEYS(                        XK_minus,                  11)
-+	// use equal key as 'all tags', so win+equal shows all windows and win+shift+equal sets a window to be visible on all tags
-+	{ MODKEY,                       XK_equal,      view,           {.ui = ~0 } },
-+	{ MODKEY|ShiftMask,             XK_equal,      tag,            {.ui = ~0 } },
-+	// pressing the win key with any other modifiers should show the bar,
-+	// in theory this could be handled as a special case in the code to ignore modifiers if the key is HOLDKEY but this works too.
-+	{ 0,                            HOLDKEY,   holdbar,        {0} },
-+	{ ShiftMask,                    HOLDKEY,   holdbar,        {0} },
-+	{ ControlMask,                  HOLDKEY,   holdbar,        {0} },
-+	{ ShiftMask|ControlMask,        HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask,                     HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ShiftMask,           HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ControlMask,         HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ShiftMask|ControlMask,HOLDKEY,   holdbar,       {0} },
-+	// pressing alt key disables dozonal display, keyrelease function handles reverting this
-+	// I am not thrilled about dealing with holdbar and this as normal keybindings instead of both be special handling that could also
-+	// ignore modifiers but this is definitely easiest way
-+	{ MODKEY,                       ALTKEY,   disabledoz,      {0} },
-+};
-+
-+/* button definitions */
-+/* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
-+/* note all are set to use MODKEY because the bar will only show up when the mod key is held */
-+static const Button buttons[] = {
-+	/* click                event mask      button          function        argument */
-+  // clicking on layout symbol switches to tiling, rightclick switches to list mode
-+	{ ClkLtSymbol,          MODKEY,              Button1,        setlayout,      {.v = &layouts[0]} },
-+        { ClkLtSymbol,          MODKEY,              Button3,        setlayout,      {.v = &layouts[3]} },
-+	{ ClkWinTitle,          MODKEY,              Button2,        zoom,           {0} },
-+	//{ ClkStatusText,        MODKEY,              Button1,        toggledoz,     {0} },
-+	{ ClkStatusText,        MODKEY,              Button2,        spawn,          {.v = termcmd } },
-+	{ ClkClientWin,         MODKEY|ShiftMask,         Button1,        movemouse,      {0} },
-+	{ ClkClientWin,         MODKEY|ShiftMask,         Button2,        togglefloating, {0} },
-+	{ ClkClientWin,         MODKEY|ShiftMask,         Button3,        resizemouse,    {0} },
-+	{ ClkTagBar,            MODKEY,              Button1,        view,           {0} },
-+	{ ClkTagBar,            MODKEY,              Button3,        toggleview,     {0} },
-+	{ ClkTagBar,            MODKEY|ShiftMask,         Button1,        tag,            {0} },
-+	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
-+};
-+
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.mk	2025-06-23 17:26:38.303124679 -0400
@@ -852,7 +331,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
 +CC = gcc
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2025-07-09 18:33:18.057864886 -0400
++++ /home/tadhg/src/dwm/dwm.c	2025-07-22 22:02:25.729084884 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -869,6 +348,15 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  
  /* macros */
  #define BUTTONMASK              (ButtonPressMask|ButtonReleaseMask)
+@@ -61,7 +63,7 @@
+ 
+ /* enums */
+ enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
+-enum { SchemeNorm, SchemeSel }; /* color schemes */
++enum { SchemeNorm, SchemeSel, SchemeFade }; /* color schemes */
+ enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
+        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
+        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
 @@ -69,6 +71,10 @@ enum { WMProtocols, WMDelete, WMState, W
  enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
         ClkClientWin, ClkRootWin, ClkLast }; /* clicks */
@@ -912,35 +400,27 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  	if (ev->window == selmon->barwin) {
  		i = x = 0;
 -		do
-+		unsigned int occ = 0;
-+		for(c = m->clients; c; c=c->next)
-+			occ |= c->tags == TAGMASK ? 0 : c->tags;
++		/* unsigned int occ = 0; */
++		/* for(c = m->clients; c; c=c->next) */
++		/* 	occ |= c->tags == TAGMASK ? 0 : c->tags; */
 +		do {
-+			/* Do not reserve space for vacant tags */
-+			if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
-+				continue;
++			/* /\* Do not reserve space for vacant tags *\/ */
++			/* if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i)) */
++			/* 	continue; */
  			x += TEXTW(tags[i]);
 -		while (ev->x >= x && ++i < LENGTH(tags));
 +		} while (ev->x >= x && ++i < LENGTH(tags));
  		if (i < LENGTH(tags)) {
  			click = ClkTagBar;
  			arg.ui = 1 << i;
-@@ -802,19 +821,18 @@ drawbar(Monitor *m)
- 	}
- 
- 	for (c = m->clients; c; c = c->next) {
--		occ |= c->tags;
-+		occ |= c->tags == TAGMASK ? 0 : c->tags;
- 		if (c->isurgent)
- 			urg |= c->tags;
- 	}
+@@ -809,17 +828,16 @@ drawbar(Monitor *m)
  	x = 0;
  	for (i = 0; i < LENGTH(tags); i++) {
-+		/* Do not draw vacant tags */
-+		if(!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
-+			continue;
  		w = TEXTW(tags[i]);
- 		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
+-		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
++		// by default tags with content get a box by them to indicate content
++		// I'd rather fade the numbers that are not in use
++		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : occ & 1 << i ? SchemeNorm : SchemeFade]);
  		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i, False);
 -		if (occ & 1 << i)
 -			drw_rect(drw, x + boxs, boxs, boxw, boxw,
@@ -948,7 +428,16 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
 -				urg & 1 << i);
  		x += w;
  	}
- 	w = TEXTW(m->ltsymbol);
+-	w = TEXTW(m->ltsymbol);
+-	drw_setscheme(drw, scheme[SchemeNorm]);
+-	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0, False);
++	// don't draw layout symbol, I've been happily using the same layout for ages.
++	/* w = TEXTW(m->ltsymbol); */
++	/* drw_setscheme(drw, scheme[SchemeNorm]); */
++	/* x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0, False); */
+ 
+ 	if ((w = m->ww - tw - x) > bh) {
+ 		if (m->sel) {
 @@ -1089,11 +1107,25 @@ keypress(XEvent *e)
  			keys[i].func(&(keys[i].arg));
  }
@@ -1049,6 +538,15 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  		if (!(autostartcomplete || autostarttags))
  			autostarttagsspawner();
  		if (handler[ev.type])
+@@ -1638,7 +1726,7 @@ setup(void)
+ 	drw = drw_create(dpy, screen, root, sw, sh);
+ 	if (!drw_font_create(drw, font))
+ 		die("no fonts could be loaded.");
+-	lrpad = drw->font->h;
++	lrpad = 4;//drw->font->h;
+ 	bh = drw->font->h + 2;
+ 	updategeom();
+ 	/* init atoms */
 @@ -1666,6 +1754,7 @@ setup(void)
  		scheme[i] = drw_scm_create(drw, colors[i], 3);
  	/* init bars */

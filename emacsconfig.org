@@ -20,18 +20,30 @@ working on this task means refiling these to proper places, not necessarily work
 - [X] [[*coloured parenthases][setup coloured parens]]
 - [ ] set EMAIL variable in [[./home-config.scm]] to contain my email 
 
+* guix / non emacs dotfiles
+these are things that are related to guix or dwm or other technical aspects of my personal setup
+
+** TASK look into adding guix manifests/profiles to home config
+for things like language servers to use in emacs it will be highly
+desirable to not require installing certain packages but instead have
+a `guix shell` profile with the relevant software ready to go and
+referenced by emacs commands. This could similarly setup python
+environments that aren't installed by default but are available when
+needed.
 
 * Notes about this file
 #+PROPERTY: header-args :tangle yes
 all code blocks will be output with tangle unless explicitly labeled ~:tangle no~.
 ** todo tags
 #+TODO: TASK(t) SOON(s) TODO(n) REFILE(r) | DOC DONE(~) DEFERRED(d)
+See [[*keywords and todo behaviour][keywords and todo behaviour]] for
+meaning of most of these tags, the ones added to this file are:
 - REFILE means the location of the code in that heading is probably in
   the wrong spot and should be moved to a more appropriate section.
 - DOC means the human documentation could be updated, I.E. links to
   relevant sections. It does *not* denote sections that only contain
   documentation.
-** window vs frame
+** window vs frame terminology
 In the context of window managers or desktop environments, the word
 "window" typically means the thing that you can move around or resize
 and has a toolbar or exit button that is styled by your desktop
@@ -658,11 +670,26 @@ org-capture but also shows agenda views so I can switch between them
 easily.
 
 #+begin_src emacs-lisp
+  ;; start on sunday
+  (setopt org-agenda-start-on-weekday 0)
+  ;; show 2 weeks by default
+  (setopt org-agenda-span 14)
   (setopt org-agenda-custom-commands
-  	       '(("n" "Agenda and todos"
-  		 ((agenda "")
-  		  (todo "TODO")))))
+  	'(("n" "Agenda and todos"
+  	   ((todo "TODO")
+  	    (agenda "")))))
 #+end_src
+
+Also a key part about this system is being able to push off tasks so
+they won't appear in the global list for a while, my current working
+plan is to schedule TASK items to push them off, this is maybe not the
+best plan but I will come back to edit this text with different config
+if I come to that conclusion.
+
+#+begin_src emacs-lisp
+  (setopt org-agenda-todo-ignore-scheduled 'future)
+#+end_src
+
 ** agenda files
 set this file under src/dotfiles to the org agenda so emacs config
 shows as a category of tasks, and use all files in the org directory.
