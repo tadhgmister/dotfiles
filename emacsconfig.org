@@ -690,6 +690,11 @@ if I come to that conclusion.
   (setopt org-agenda-todo-ignore-scheduled 'future)
 #+end_src
 
+*** TASK hide tasks scheduled for future from agenda view (but not TODOs)
+once I have enough tasks that I want to reschedule them just to delay
+me thinking about working on them and not as 'i will work on them at
+this date' I will probably want to ensure that tasks don't show up in
+the agenda view but TODOs still should probably.
 ** agenda files
 set this file under src/dotfiles to the org agenda so emacs config
 shows as a category of tasks, and use all files in the org directory.

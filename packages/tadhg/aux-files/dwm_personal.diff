@@ -331,7 +331,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
 +CC = gcc
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2025-07-22 22:02:25.729084884 -0400
++++ /home/tadhg/src/dwm/dwm.c	2025-07-23 23:11:40.578901471 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -438,7 +438,15 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  
  	if ((w = m->ww - tw - x) > bh) {
  		if (m->sel) {
-@@ -1089,11 +1107,25 @@ keypress(XEvent *e)
+@@ -833,6 +851,7 @@ drawbar(Monitor *m)
+ 		}
+ 	}
+ 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
++	XRaiseWindow(dpy, m->barwin);
+ }
+ 
+ void
+@@ -1089,11 +1108,25 @@ keypress(XEvent *e)
  			keys[i].func(&(keys[i].arg));
  }
  
@@ -466,7 +474,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  	if (!sendevent(selmon->sel, wmatom[WMDelete])) {
  		XGrabServer(dpy);
  		XSetErrorHandler(xerrordummy);
-@@ -1459,14 +1491,70 @@ restack(Monitor *m)
+@@ -1459,14 +1492,70 @@ restack(Monitor *m)
  	XSync(dpy, False);
  	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
  }
@@ -538,7 +546,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  		if (!(autostartcomplete || autostarttags))
  			autostarttagsspawner();
  		if (handler[ev.type])
-@@ -1638,7 +1726,7 @@ setup(void)
+@@ -1638,7 +1727,7 @@ setup(void)
  	drw = drw_create(dpy, screen, root, sw, sh);
  	if (!drw_font_create(drw, font))
  		die("no fonts could be loaded.");
@@ -547,7 +555,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  	bh = drw->font->h + 2;
  	updategeom();
  	/* init atoms */
-@@ -1666,6 +1754,7 @@ setup(void)
+@@ -1666,6 +1755,7 @@ setup(void)
  		scheme[i] = drw_scm_create(drw, colors[i], 3);
  	/* init bars */
  	updatebars();
@@ -555,7 +563,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  	updatestatus();
  	/* supporting window for NetWMCheck */
  	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
-@@ -1696,6 +1785,13 @@ seturgent(Client *c, int urg)
+@@ -1696,6 +1786,13 @@ seturgent(Client *c, int urg)
  	XWMHints *wmh;
  
  	c->isurgent = urg;
@@ -569,7 +577,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  	if (!(wmh = XGetWMHints(dpy, c->win)))
  		return;
  	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
-@@ -1824,6 +1920,13 @@ togglebar(const Arg *arg)
+@@ -1824,6 +1921,13 @@ togglebar(const Arg *arg)
  }
  
  void
@@ -583,7 +591,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  togglefloating(const Arg *arg)
  {
  	if (!selmon->sel)
-@@ -2135,9 +2238,19 @@ updatesizehints(Client *c)
+@@ -2135,9 +2239,19 @@ updatesizehints(Client *c)
  void
  updatestatus(void)
  {
@@ -606,7 +614,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2145,8 +2258,23 @@ updatetitle(Client *c)
+@@ -2145,8 +2259,23 @@ updatetitle(Client *c)
  {
  	if (!gettextprop(c->win, netatom[NetWMName], c->name, sizeof c->name))
  		gettextprop(c->win, XA_WM_NAME, c->name, sizeof c->name);
@@ -631,7 +639,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2165,19 +2293,27 @@ void
+@@ -2165,19 +2294,27 @@ void
  updatewmhints(Client *c)
  {
  	XWMHints *wmh;
@@ -661,7 +669,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2340,6 +2476,11 @@ bstack(Monitor *m) {
+@@ -2340,6 +2477,11 @@ bstack(Monitor *m) {
  			w = (m->ww - mx) / (MIN(n, m->nmaster) - i);
  			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0);
  			mx += WIDTH(c);
