@@ -3,7 +3,7 @@ This file serves several purposes:
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [1/6] Tech gripes
+* TASK [#C] [2/6] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
 :ID:       TechGripes
@@ -14,14 +14,28 @@ list of small gripes that I could improve on, mostly related to emacs but other 
 working on this task means refiling these to proper places, not necessarily working on these items.
 
 - [ ] side scrolling / line wrapping behaviour
-- [ ] autosaving - on buffer changing or short inactivity? worth it at all, default is 30 seconds regardless of activity
+- [ ] autosaving - on buffer changing or short inactivity? worth it at
+  all, default is 30 seconds regardless of activity
 - [ ] what do I want to set the column width for formatting to? 
-- [ ] dwm make tags narrower and unconditionally display all of them (will require pulling out one of the patches I use to only show the active ones)
+- [X] dwm make tags narrower and unconditionally display all of them
+  (will require pulling out one of the patches I use to only show the
+  active ones)
 - [X] [[*coloured parenthases][setup coloured parens]]
 - [ ] set EMAIL variable in [[./home-config.scm]] to contain my email 
 
 * guix / non emacs dotfiles
 these are things that are related to guix or dwm or other technical aspects of my personal setup
+** DONE get dwm to switch focus when window raises in same space
+When emacs tries to raise a frame into focus it sends an urgency flag
+to dwm which is invaluable when the frame is in a different space, but
+when it is in the same space it is annoying to open the top bar to
+indicate there is activity in the selected space.
+
+Instead it would be nice to identify specifically the window raising
+event (not necessarily the urgency bell) to switch focus to that frame
+instead of setting urgency flag.
+
+see [[~/src/dwm/dwm.c::window was raised for focus][clientmessage in dwm.c]] for fix.
 
 ** TASK look into adding guix manifests/profiles to home config
 for things like language servers to use in emacs it will be highly
@@ -546,12 +560,16 @@ in split window.
     (with-current-buffer buffer
       (memq (lookup-key (current-local-map) (kbd "q")) my/quit-functions)))
 #+end_src
-** display-buffer-base-action
+** display-buffer-base-action and display-buffer-overriding-action
 Assuming no applicable overrides, this describes the logic for
 handling displaying a buffer. The basic logic is to follow these
 (implied "else check the next one")
-- [[(reuse-window)]] if there is already a window showing the buffer use that (if it is
-  in a non selected frame bring focus to the frame) 
+- [[(reuse-window)]] if there is already a window showing the buffer use
+  that (if it is in a non selected frame bring focus to the frame)
+  - [[help:org-agenda-prepare-window][org display logic]] doesn't have an option to just show the agenda
+    according to generic display buffer configurations, it always
+    provides its own display function so I have to put this in the
+    =overriding= option to get around it.
 - [[(use-some-window)]] if there are multiple frames open, show the buffer in another frame
   (enable split view workflow) 
 - [[(full-frame)]] otherwise (there is only one frame open) get the new buffer to take
@@ -563,11 +581,12 @@ the daemon, =reuse-window= does seem to ignore it but
 need to override it to filter to only frames on the graphical display.
 
 #+begin_src emacs-lisp -r
+  (setopt display-buffer-overriding-action
+  	'((display-buffer-reuse-window))) ;(ref:reuse-window)
   (setopt display-buffer-base-action
-  	`((display-buffer-reuse-window   ;(ref:reuse-window)
-  	   display-buffer-use-some-frame ;(ref:use-some-window)
+  	`((display-buffer-use-some-frame ;(ref:use-some-window)
   	   display-buffer-full-frame)    ;(ref:full-frame)
-  	;; rest of elements are items in the ALIST
+  	  ;; rest of elements are items in the ALIST
   	  (inhibit-same-window . nil)
   	  ;; used by reuse-window to check windows already open
   	  (reusable-frames . visible)
@@ -602,8 +621,7 @@ Also the validation that ~setopt~ does on the condition says it has to be a rege
   	       "^\\*Org Select\\*$"
   	       "^\\*Org Links\\*$"
   	       )
-  	   (display-buffer-reuse-window
-  	    display-buffer-below-selected))
+  	   (display-buffer-below-selected))
   	  ))
 #+end_src
 
