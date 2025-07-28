@@ -414,6 +414,10 @@ source /run/current-system/profile/etc/profile.d/nix.sh" . #t)
 		       (extra-content "  StrictHostKeyChecking no"))))))
     (service home-emacs-service-type
 	     (home-emacs-configuration
+	      (extra-packages (list
+			       "geiser"
+			       "geiser-guile"
+			       "guix"))
 	      (init.el (org-tangle-file "init.el" (local-file "./emacsconfig.org")))))
     (simple-service 'configfiles home-xdg-configuration-files-service-type `(
       ("mpv/mpv.conf" ,(plain-file "mpv.conf"

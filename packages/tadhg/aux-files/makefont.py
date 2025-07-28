@@ -10,6 +10,7 @@ BORDER_SIZE = 40
 EM = MARGIN_HEIGHT+BOX_SIZE*4 + BORDER_SIZE*3
 
 class MyFont:
+    "wrapper around fontforge font to use MyGlyph wrapper"
     def __init__(self, name, familyname, fullname=None,comment=None):
         f = fontforge.font()
         f.fontname = name

@@ -4,6 +4,7 @@
   #:use-module (gnu home services shepherd)
   #:use-module (gnu services configuration)
   #:use-module (gnu packages emacs)
+  #:use-module ((gnu packages) #:select(specification->package))
   #:export (home-emacs-service-type
 	    home-emacs-configuration
 	    org-tangle-file))

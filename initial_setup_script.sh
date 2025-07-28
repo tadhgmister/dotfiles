@@ -17,7 +17,12 @@ SWAP_SPACE=12G
 USERNAME_TO_USE_IF_RUNNING_FROM_INSTALL_MEDIA=tadhg
 
 
+
 set -e
+# TODO: figure out how to early on chroot into the formatted drive
+# instead of relying on cow-store to put everything in tmp directory
+# and then copy over to gnu/store as a seperate step. Should also be
+# able to get away with one guix pull in whole process.
 
 if [[ ! $USER =~ ^root$ ]]; then
     echo "run this script like 'guix shell parted cryptsetup -- sudo ./initial_setup_script.sh /dev/??'"
@@ -30,7 +35,7 @@ else
 	ON_INSTALL_MEDIA=t
 	SUDO_USER=${USERNAME_TO_USE_IF_RUNNING_FROM_INSTALL_MEDIA}
     else
-	# running in sudo, will
+	# running in sudo, will skip the cow-store step which would fail and is unnecessary on normal guix system
 	ON_INSTALL_MEDIA=f
     fi
 fi
@@ -106,6 +111,7 @@ cryptsetup luksAddKey ${ROOT_PART} --new-key-slot=0 --key-file=/keyfile.bin
 # note that technically we maybe should do the udev settle again since the UUID changes when the drive gets encrypted
 # but because of the delay of user typing in password it is almost certainly fine.
 ROOT_UUID="$(lsblk -o UUID ${ROOT_PART} -n)"
+## TODO figure out how to catch errors and inform user how to unmount drives if something in the script goes wrong
 # opens the drive, this will put it under /dev/mapper
 cryptsetup open ${ROOT_PART} ${NEW_HOSTNAME}_drive --key-file=/keyfile.bin
 echo "- drive opened to /dev/mapper/${NEW_HOSTNAME}_drive, Formatting as btrfs and mounting"
@@ -134,7 +140,7 @@ if [[ $ON_INSTALL_MEDIA =~ t ]]; then
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! STARTED COWSTORE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     #guix pull --url="https://codeberg.org/guix/guix-mirror" --max-jobs=8
 fi
-
+# TODO: since cpio will likely need to be downloaded and this doesn't need to block other operations figure out how to do this in parallel with next steps, maybe with fork.
 echo "/keyfile.bin" | guix shell cpio -- cpio -oH newc > /mnt/swap/keyfile.cpio
 # now that the keyfile is encoded in the cpio archive it can be recaptured by running `cpio -iv < /swap/keyfile.cpio` (assuming the drive we are setting up is mounted as the root, otherwise add /mnt to the path) which will put the bin file back in the root directory.
 # so we don't need the keyfile itself now
@@ -149,7 +155,8 @@ echo "- partition is ready, writing system-info.scm"
 # read some variables that will go into our config
 RESUME_OFFSET="$(btrfs inspect-internal map-swapfile -r /mnt/swap/swapfile)"
 EFI_UUID="$(lsblk -o UUID ${EFI_PART} -n)"
-
+## TODO: these files are created by root user, figure out how to switch them back to be owned by user of new system.
+## or at least copy to a place that is globally readable and get the after first boot script to copy them as the new user.
 # copy this folder (assuming this is being run from the dotfiles folder) to the mount
 # in order to setup system-info module there without touching the one in this folder
 mkdir -p /mnt/home/$SUDO_USER/src/dotfiles/
@@ -186,6 +193,7 @@ echo "- building system"
 guix system build -L /mnt/home/$SUDO_USER/src/dotfiles/packages os.scm --max-jobs=8
 
 echo "- system is built, copying over and building home config"
+## TODO: doing the home building in parallel with system copying caused problems with fg not consistently waiting until both were done, figure out how to properly do parallel operations and re-enable this optimization
 # NOTE: I would love to crank max-jobs as high as possible for the home build
 # but if it is the one to start before the system init it is VITAL it doesn't use up ALL the job slots
 # as that would force it to finish before the system init can begin which would totally defeat the purpose

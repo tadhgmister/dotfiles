@@ -3,7 +3,7 @@ This file serves several purposes:
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [2/6] Tech gripes
+* TASK [#C] [2/14] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
 :ID:       TechGripes
@@ -22,6 +22,14 @@ working on this task means refiling these to proper places, not necessarily work
   active ones)
 - [X] [[*coloured parenthases][setup coloured parens]]
 - [ ] set EMAIL variable in [[./home-config.scm]] to contain my email 
+- [ ] quick way to view buffers filename, ideally tooltip on 'buffername' in modeline
+- [ ] setup org file src insert to offer sub-modes and open narrowed buffer instead of edit special
+- [ ] get org blocked logic to not consider checkbox items
+- [ ] add org capture template for new task to inbox
+- [ ] emacs smooth scrolling
+- [ ] get playtimer to show dunst alert
+- [ ] report bug of use of save-window-excursion in [[help:org-capture-fill-template]] is extremely stupid and should just use with-current-buffer.
+- [ ] guix home, better handling of nix profiles so that the profile can be rebuilt when channels are changed
 
 * guix / non emacs dotfiles
 these are things that are related to guix or dwm or other technical aspects of my personal setup
@@ -58,16 +66,16 @@ meaning of most of these tags, the ones added to this file are:
   relevant sections. It does *not* denote sections that only contain
   documentation.
 ** window vs frame terminology
-In the context of window managers or desktop environments, the word
-"window" typically means the thing that you can move around or resize
-and has a toolbar or exit button that is styled by your desktop
-environment. This is not the same terminology used in emacs.
+The use of the terms =window= and =frame= in this document match emacs
+terminology. Quote from [[info:emacs#Screen][emacs#Screen]]:
 
-In emacs a "frame" is the object that is usually called "window"
-elsewhere and when the frame is split to show multiple buffers each
-view is called a "window". This document keeps consistent with the
-emacs terminology not the desktop environment terminology as the
-configuration code has to match.
+#+begin_quote
+The main area of the frame, below the tool bar (if one exists) and
+above the echo area, is called “the window”.  Henceforth in this manual,
+we will use the word “window” in this sense.  Graphical display systems
+commonly use the word “window” with a different meaning; but, as stated
+above, we refer to those graphical windows as “frames”.
+#+end_quote
 
 ** markup used in this file
 emacs variables or functions use the "code" markup like
@@ -232,10 +240,10 @@ The columns are as follows:
 | H-s           | save-buffer                      | C-x C-s     | CUA   | Save               |
 | H-a           | mark-whole-buffer                | C-x h       | CUA   | Select All         |
 | H-z           | undo                             | C-x u       | CUA   | Undo               |
-| H-S-z         | undo-redo                        | C-M-_       | CUA   | Redo               |
+| H-Z           | undo-redo                        | C-M-_       | CUA   | Redo               |
 | H-f           | isearch-forward                  | C-s         | CUA   | Find               |
 | H-o           | find-file                        | C-x C-f     | CUA   | Open File          |
-| H-S-f         | find-file                        | C-x C-f     |       | H-o with one hand  |
+| H-F           | find-file                        | C-x C-f     |       | H-o with one hand  |
 | H-n           | my/new-frame                     | C-x 5 2     | CUA   | New Window         |
 | H-/           | comment-or-uncomment-region      |             | Code  | (un)comment        |
 | H-<left>      | previous-buffer                  | C-x <left>  | Emacs | Go Back (buffer)   |
@@ -250,9 +258,14 @@ The columns are as follows:
           (error "Function '%s' is not defined (used in keybinding for '%s')" cmd-name key))
       (global-set-key (kbd key) cmd)))
 #+END_SRC
-*** TASK get H-S to work
+*** DONE get H-S to work
 wtf? emacs automatically maps H-S-z to just H-z so I don't have a redo
-command... this is most frustrating. need to figure out why it is doing that and how to disable it.
+command... this is most frustrating. need to figure out why it is
+doing that and how to disable it.
+
+Had to specify as capital letters instead of adding shift prefix, I am
+totally unclear how it can create a binding for H-S-z seperate from
+H-Z but ok fine.
 ** DEFERRED [0/1] mode specific bindings
 - [ ] rebind C-c & in org mode ~(org-mark-ring-goto)~ to M-, may have an
   equivelent to go forward but probably not as it is to navigate back
@@ -535,7 +548,24 @@ want to save my work regularly.
       ))
   (define-key special-event-map [delete-frame] #'my/close-frame)
 #+end_src
+** save some buffers revert option
+When closing a frame save-some-buffers gets called and I often want a
+quick way to revert the buffer if I run a diff and it contains a
+character I accidentally typed.
 
+#+begin_src emacs-lisp
+  (add-to-list 'save-some-buffers-action-alist
+  		(list ?r ;; not clear on what exactly this does but ? prefix is how the source code denotes the characters
+  		      ;; second is function to call when the action is taken
+  		      (lambda (buf) (with-current-buffer buf (revert-buffer nil t)))
+  		      (purecopy "revert buffer"))
+  		;; add to list takes append (nil to put at front) and
+  		;; a compare function which we set to only compare the
+  		;; first element of the list as if this script is run
+  		;; multiple times we want to override the previous
+  		;; value associated with the same key.
+  		nil (lambda (a b) (equal (car a) (car b))))
+#+end_src
 
 
 * display buffer logic
@@ -558,7 +588,7 @@ in split window.
   (defun is-buffer-easily-quittable (buffer arg)
     "returns true if the given buffer has 'q' assigned to close the window"
     (with-current-buffer buffer
-      (memq (lookup-key (current-local-map) (kbd "q")) my/quit-functions)))
+      (memq (key-binding "q" t) my/quit-functions)))
 #+end_src
 ** display-buffer-base-action and display-buffer-overriding-action
 Assuming no applicable overrides, this describes the logic for
@@ -665,6 +695,7 @@ another file (preferably an inbox) will need a section with the ID
   	  ("z" "quick thought to revisit at some point" item (id "RandomThoughts") "")
   	  ("e" "emacs/tech gripe" checkitem (id "TechGripes") "")
   	  ("j" "Journal entry" entry (file+olp+datetree "journal.org") "")
+  	  ("i" "Inbox Task" entry (file "inbox.org") "* TASK ")
   	  ))
 #+end_src
 **** DEFERRED look into templates and variables
@@ -792,6 +823,53 @@ very much on my mind so I will naturally try to come back to this.
 
 
 
+* Programming
+** describe symbol at point                                            :func:
+binding H-? to describe symbol at point, either using eglot's hover
+logic or elisps ~describe-symbol~.  Heavily inspired by [[https://github.com/joaotavora/eglot/discussions/1034#discussioncomment-3653005][this]] which in
+turn is inspired by [[help:eglot-hover-eldoc-function][eglot-hover-eldoc-function]]. I implemented this
+version to reuse the function instead of restating basically all of
+its logic.
+#+begin_src emacs-lisp
+  (defun eglot-describe-thing-at-point ()
+    "calls lsp hover provider and writes details to help buffer"
+    (interactive)
+    (eglot-hover-eldoc-function (lambda (info &rest stuff)
+  				(with-help-window (help-buffer)
+  				  (with-current-buffer (help-buffer)
+  				    (insert info))))))
+  (keymap-set eglot-mode-map "H-?" #'eglot-describe-thing-at-point)
+  (keymap-set lisp-mode-shared-map "H-?"
+  	    ;; in lisp files call describe-symbol directly with symbol at point
+  	      (lambda (symbol) (interactive (list (symbol-at-point))) (describe-symbol symbol)))
+#+end_src
+** eglot documentation logic
+Apparently users of eglot seem to think that displaying hover tooltip
+is useful in the middle of function signature details instead of
+exposing that similar to help utility.
+
+This is rediculous, eldoc is setup well for signature details and the
+emacs help buffer is useful for documentation strings. Why shove both in eldoc??
+
+#+begin_src emacs-lisp
+  (add-hook 'eglot-managed-mode-hook
+          (lambda ()
+            (setq eldoc-documentation-functions
+  		(remove #'eglot-hover-eldoc-function
+  			eldoc-documentation-functions))))
+#+end_src
+
+** eldoc echo behaviour
+When an LSP server is setup, [[help:eldoc-mode][eldoc-mode]] shows documentation in the
+echo area, by default it spreads the window way too large so configure it to show much less detail.
+
+See [[info:emacs#Programming Language Doc][emacs#Programming Language Doc]]
+#+begin_src emacs-lisp
+  ;; don't give instructions message in echo area if truncated
+  (setopt eldoc-echo-area-display-truncation-message nil)
+  ;; limit to 2 lines in echo area
+  (setopt eldoc-echo-area-use-multiline-p 2)
+#+end_src
 
 * Misc
 ** DEFERRED encryption passphrase cache
