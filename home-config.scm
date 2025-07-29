@@ -164,6 +164,7 @@ echo 0 > /sys/class/leds/input2\\:\\:capslock/brightness
    (single-script-package "playtimer"
     "#!/bin/sh
 worktimer $1
+" dunst "/bin/dunstify playtimer \"${@:2}\" --timeout=100000
 if [ $# -gt 1 ]; then
     echo \"timer is done,\" ${@:2} | festival --tts
 else

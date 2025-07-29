@@ -1,6 +1,6 @@
 diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2025-07-22 21:56:55.851177575 -0400
++++ /home/tadhg/src/dwm/config.def.h	2025-07-28 22:33:07.427465132 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -141,7 +141,7 @@ diff -up -N /gnu/store/a17c957rqvzqcw2mp0dchmkpk7gj8zin-dwm-6.4-checkout/config.
 +//static const char *signalchatcmd[] = {"signal-desktop", NULL};
 +static const char *browsercmd[] = {"brave", NULL};
 +static const char *emailclientcmd[] = {"icedove", NULL};
-+static const char *emacscmd[] = {"emacsclient", "--no-wait", "--create-frame", NULL};
++static const char *emacscmd[] = {"emacsclient", "--no-wait", "--create-frame", "--timeout=1", NULL};
  
  Autostarttag autostarttaglist[] = {
 -	{.cmd = browsercmd, .tags = 1 << 0 },

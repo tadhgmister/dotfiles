@@ -3,7 +3,7 @@ This file serves several purposes:
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [2/14] Tech gripes
+* TASK [#C] [8/13] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
 :ID:       TechGripes
@@ -13,23 +13,21 @@ list of small gripes that I could improve on, mostly related to emacs but other 
 
 working on this task means refiling these to proper places, not necessarily working on these items.
 
-- [ ] side scrolling / line wrapping behaviour
-- [ ] autosaving - on buffer changing or short inactivity? worth it at
-  all, default is 30 seconds regardless of activity
-- [ ] what do I want to set the column width for formatting to? 
+- [X] side scrolling / line wrapping behaviour
 - [X] dwm make tags narrower and unconditionally display all of them
   (will require pulling out one of the patches I use to only show the
   active ones)
 - [X] [[*coloured parenthases][setup coloured parens]]
-- [ ] set EMAIL variable in [[./home-config.scm]] to contain my email 
+- [X] set EMAIL variable in [[./home-config.scm]] to contain my email 
 - [ ] quick way to view buffers filename, ideally tooltip on 'buffername' in modeline
 - [ ] setup org file src insert to offer sub-modes and open narrowed buffer instead of edit special
 - [ ] get org blocked logic to not consider checkbox items
-- [ ] add org capture template for new task to inbox
-- [ ] emacs smooth scrolling
-- [ ] get playtimer to show dunst alert
-- [ ] report bug of use of save-window-excursion in [[help:org-capture-fill-template]] is extremely stupid and should just use with-current-buffer.
-- [ ] guix home, better handling of nix profiles so that the profile can be rebuilt when channels are changed
+- [X] add org capture template for new task to inbox
+- [X] emacs smooth scrolling
+- [X] get playtimer to show dunst alert
+- [X] guix home, better handling of nix profiles so that the profile can be rebuilt when channels are changed
+- [ ] org agenda sort categories
+- [ ] dwm hug emoji binding (or possibly whole emoji selection with dmenu)
 
 * guix / non emacs dotfiles
 these are things that are related to guix or dwm or other technical aspects of my personal setup
@@ -52,6 +50,16 @@ a `guix shell` profile with the relevant software ready to go and
 referenced by emacs commands. This could similarly setup python
 environments that aren't installed by default but are available when
 needed.
+
+** TASK [#C] set EMAIL variable
+:PROPERTIES:
+:Effort:   1min
+:END:
+
+** TASK [0/3] extract nix logic into home service
+- [ ] nix channels, packages possibly as children of each channel
+- [ ] list of nix packages (with some way to specify options for "allow non free stuff" that would be allowable to push to guix)
+- [ ] way to split out the nix pull behaviour? 
 
 * Notes about this file
 #+PROPERTY: header-args :tangle yes
@@ -355,6 +363,13 @@ closing window) and the dialogue blocks viewing the buffer.
 ** TASK make modeline more visible
 When multiple windows are open on a frame it is very hard to easily notice, would be nice to set modeline to be light theme so it provides a more obvious split.
 ** TASK coloured parenthases
+
+** TASK scrolling and line wrapping
+- get smooth scrolling, probably external package?
+- set default to visual line wrap so it stops scrolling horizontally
+  without giving me a consistent way to scroll back
+  
+
 * Backups and Auto-saves
 ** backups
 see [[info:emacs#Backup][emacs#Backup]], it mentions that ~vc-make-backup-files~ defaults to
@@ -514,6 +529,9 @@ to add entries to it after my hook runs.
 #+end_src
 
 *** TASK write emacs patch to not delete autosave list
+:PROPERTIES:
+:Effort:   2h
+:END:
 at some point I want to write a patch that just stops it from deleting
 the autosave list instead of stripping the variable.
 
@@ -656,6 +674,18 @@ Also the validation that ~setopt~ does on the condition says it has to be a rege
 #+end_src
 
 * Org
+- org-agenda-skip-scheduled-repeats-after-deadline
+- org-agenda-prefix-format
+  - breadcrumbs?? shows headers?
+
+** load habit module
+See [[info:org#Tracking your habits][org#Tracking your habits]], effectively having a scheduled with a
+repeater and a property =:STYLE: habit= makes it only show up in the
+agenda for today and not in the future. For that to happen though we
+have to load the habit module.
+#+begin_src emacs-lisp
+  (add-to-list 'org-modules 'habit)
+#+end_src
 ** keywords and todo behaviour
 My main workflow with org agenda is to label lots of possible tasks as
 things I could work on, then every day move some to TODO to work on
@@ -674,15 +704,34 @@ make any progress on it.
   		    "|"
   		    "DONE(~@/@)" "DEFERRED(d@)")))
 #+end_src
-
+*** dependencies
 Prevent marking items as done if they have unfinished children (either
 sub tasks or checkboxes) as accidentally marking something as
 completed is highly undesirable.
 
+However, this also controls the agenda view logic to mark "blocked"
+tasks so I need to not dim tasks that just have checkboxes as those
+mostly use to mean "task is to make progress with these steps" I would
+really like to prevent switching to done if there are incomplete
+checkboxes but not consider blocked in the agenda view but unsure how
+to do that.
+
 #+begin_src emacs-lisp
   (setopt org-enforce-todo-dependencies t)
-  (setopt org-enforce-todo-checkbox-dependencies t)
+  ;; low priority TODO: see if there is a not awful way to set this to t
+  ;; when generating agenda view and nil when the user operation
+  ;; matters.
+  (setopt org-enforce-todo-checkbox-dependencies nil)
 #+end_src
+*** repeat tasks go to TODO state
+tasks that have a repeat deadline/scheduled are marked as done should
+go back to the state they were in before. the [[help:org-todo-repeat-to-state][help on this variable]]
+indicates it supports this behaviour but doesn't explain how, a foot
+note in [[info:org#Repeated tasks][this info page]] indicates setting it to ~t~ is how this is done.
+#+begin_src emacs-lisp
+  (setopt org-todo-repeat-to-state t)
+#+end_src
+
 *** TASK add colours to todo keywords
 [[help:org-todo-keyword-faces]]
 ** capture
@@ -698,7 +747,30 @@ another file (preferably an inbox) will need a section with the ID
   	  ("i" "Inbox Task" entry (file "inbox.org") "* TASK ")
   	  ))
 #+end_src
-**** DEFERRED look into templates and variables
+
+*** DEFERRED look into templates and variables
+*** TASK report bug for [[help:org-capture-fill-template]]
+use of save-window-excursion is extremely stupid and should just use
+with-current-buffer. As written with my display buffer logic it opens
+the template in a different frame bringing focus there, then closes it
+and opens a differnet buffer for user editing.
+
+The docs of save-window-excursion directly indicate that it can
+introduce bugs like this, and if the goal is to just fill out the
+template there is no reason to play with window configs at all. At
+minimum it should be trying to open in the same window then resetting
+it, not opening in a different window.
+*** TASK capture prefix/open location
+need a mechanism to open location of capture, either from the capture
+buffer or to do equivelent of =C-u C-u M-x org-capture= to open last
+recorded capture.
+*** TASK setup template for appointments / events
+file to journal with timestamp, prompt for date and time range
+** TASK refile
+need to add logic to offer more useful refile targets:
+- [ ] emacs gripe should ideally be able to go as subtask of any subheading like org/capture etc
+- [ ] journal entry should be able to be refiled to previous date
+- [ ] 
 ** agenda view
 I primarily want a view that shows the agenda and a list of tasks,
 where I want the ability to switch between showing all tasks to only
@@ -738,23 +810,120 @@ if I come to that conclusion.
 #+begin_src emacs-lisp
   (setopt org-agenda-todo-ignore-scheduled 'future)
 #+end_src
+*** add seperator to todolist categories :func:
+this function was written with the help of chatgpt, takes a string
+with properties and inserts seperators between groups with common
+prefix. To be used as advice on ~org-agenda-finalize-entries~ to insert seperators between categories
 
+I'd somewhat prefer to put the actual wrapper in a lambda but adding
+advice to a symbol seems more likely to prevent adding the advice
+multiple times.
+#+begin_src emacs-lisp
+  (defun my/group-lines-by-prefix-with-separator (text)
+    "Insert separators between groups of lines with same prefix before colon in TEXT.
+  Preserves text properties. Returns a new propertized string."
+    (let* ((lines (split-string text "\n"))
+           (result '())
+           (last-prefix nil))
+      (dolist (line lines)
+        (let ((prefix (when (string-match "^\\([^:\n]+\\):" line)
+                        (match-string 1 line))))
+          ;; Insert separator if prefix changes
+          (when (and last-prefix prefix (not (string= prefix last-prefix)))
+            (push (propertize "---\n") result))
+          ;; Push the current line and newline
+          (push line result)
+          (push "\n" result)
+          (setq last-prefix prefix)))
+      ;; Join and preserve properties via concat
+      (apply #'concat (nreverse result))))
+
+  (defun my/org-agenda-finalize-entries-around (orig-fn entries type &rest _args)
+    "Wrap `org-agenda-finalize-entries`, modifying result if TYPE is 'todo."
+    (let ((result (apply orig-fn entries type _args)))
+      (if (eq type 'todo)
+          (my/group-lines-by-prefix-with-separator result)
+        result)))
+
+  (advice-add #'org-agenda-finalize-entries :around #'my/org-agenda-finalize-entries-around)
+#+end_src
 *** TASK hide tasks scheduled for future from agenda view (but not TODOs)
 once I have enough tasks that I want to reschedule them just to delay
 me thinking about working on them and not as 'i will work on them at
 this date' I will probably want to ensure that tasks don't show up in
 the agenda view but TODOs still should probably.
 ** agenda files
-set this file under src/dotfiles to the org agenda so emacs config
-shows as a category of tasks, and use all files in the org directory.
+All files under =~/org= will hold all of the agenda files, as well as this file under dotfiles.
+
+In the sorting algorithm, =category-keep= preserves the order as
+specified in the list of agenda files. As such this list redundantly
+lists a number of files in the org directory to override their order
+in the list of todo items. the directory itself specifies all other
+files in the folder that aren't listed by name (at least I hope that
+is how it is interpreted, if not I will write code to grab all the
+files but would rather not if I can help it).
 #+begin_src emacs-lisp
   (setopt org-directory "~/org")
-  (setopt org-agenda-files
-  	(list org-directory
-  	      "~/src/dotfiles/emacsconfig.org"
-  	  ))
   ;; probably not used as I specify a file for all capture targets but useful to have in case.
   (setopt org-default-notes-file "~/org/inbox.org")
+  (setopt org-agenda-files
+  	(list
+  	 org-default-notes-file
+  	 "work.org"
+  	 "journal.org"
+  	 "upkeep.org"
+  	 org-directory
+  	 "projects.org"
+  	 "turris.org"
+  	 "backups.org"
+  	 "~/src/dotfiles/emacsconfig.org"
+  	 ))
+#+end_src
+*** DONE [#A] edit agenda files list for category order
+[[help:org-agenda-sorting-strategy]] defines an option for "category-keep"
+which preserves the order of files in the agenda files list, so
+specifying the files explicitly in the order they should show up in
+the global todo list would be helpful here.
+** sorting strategy
+
+See [[help:org-agenda-sorting-strategy]]
+
+Intention is to strictly seperate tasks by category, then by state
+(TASK/SOON/TODO) then by other criteria. This is to help me try to
+choose items from each category to work on. specifically the sorting is:
+- habit-up puts all the habit items at the very top of the list no matter which file they come from
+- category-keep sorts by category according to the order defined by [[*Agenda Files]]
+- todo-state-down puts later todo states first (TODO), followed by SOON followed by TASK etc. this makes it easy to see which tasks I already have assigned
+- priority-down shows high priority tasks first
+- deadline-up shows sooner deadlines before others
+- effort-up shows tasks with explicitly marked low effort first, up to high explicit effort then no effort after according to [[help:org-agenda-sort-noeffort-is-high]]
+
+Agenda entries are sorted using the default order which matters as I agree with this sorting:
+- habit-down to push habit entries in the agenda view to the bottom
+- time-up so entries with explicit times are sorted as desired in an agenda view
+- urgency-down which uses a not particularly thoroughly documented
+  process with priority and scheduled and deadlines. [[info:org#Sorting of agenda items][org#Sorting of
+  agenda items]] is the best description I can find for it but in the
+  agenda view I don't particularly care. Is largely priority-down + some deadline and scheduling tie breakers.
+- category-keep, in case of agenda items that are totally equal they
+  can be sorted by category but this is much less important in the
+  agenda view.
+
+the other views =tags= and =search= which I don't typically use I also
+restate the default value as the agenda but because it is easier than
+any alternative not because I care about it.
+
+Also note that the custom value checking requires the order be
+agenda,todo,tags,search. I am unsure if it actually relies on the
+order or it just couldn't be bothered to type it as an "every key is
+required" alist.
+#+begin_src emacs-lisp
+    (setopt org-agenda-sorting-strategy
+    	  '((agenda time-up urgency-down category-keep)
+  	  (todo habit-up category-keep todo-state-down priority-down deadline-up effort-up)
+    	    (tags urgency-down category-keep)
+    	    (search category-keep)))
+    	  
 #+end_src
 
 ** TASK get state change notes to go to journal
@@ -823,7 +992,25 @@ very much on my mind so I will naturally try to come back to this.
 
 
 
+** TASK checkbox vs task refile and indent config
+~org-do-premote~ and ~org-do-demote~ should maybe have dedicated
+bindings instead of relying on M-<left> to do it or possibly
+navigation.
+
+Ideally demoting a heading that is already a child of the lowest rank
+could convert it to a list item and premoting a list item could
+convert it to a child subheading, I'd want the functionality to move
+the item around so premoting a list item in the middle of a list moves
+it to the bottom of the list and demoting a subheading moves it to a
+list at its parent's root before any siblings.
+
+detection of the content to move with a list item to move with it and
+similarly how to format the content of the subheading (could just fail
+if there is more than just plain text or a list). 
+
 * Programming
+** Guix/guile development
+*** TASK read [[info:emacs-guix#Top][emacs-guix#Top]]
 ** describe symbol at point                                            :func:
 binding H-? to describe symbol at point, either using eglot's hover
 logic or elisps ~describe-symbol~.  Heavily inspired by [[https://github.com/joaotavora/eglot/discussions/1034#discussioncomment-3653005][this]] which in
@@ -831,6 +1018,7 @@ turn is inspired by [[help:eglot-hover-eldoc-function][eglot-hover-eldoc-functio
 version to reuse the function instead of restating basically all of
 its logic.
 #+begin_src emacs-lisp
+  (require 'eglot)
   (defun eglot-describe-thing-at-point ()
     "calls lsp hover provider and writes details to help buffer"
     (interactive)

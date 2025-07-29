@@ -11,7 +11,7 @@
 !canadacomputers
 !bestbuyca
 !staplesca
-!weathergc Ottawa (Kanata - Orleans)
+!weathergc Ottawa, ON
 !w
 !walpha
 !dndbeyond
