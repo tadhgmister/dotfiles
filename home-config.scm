@@ -418,7 +418,8 @@ source /run/current-system/profile/etc/profile.d/nix.sh" . #t)
 	      (extra-packages (list
 			       "geiser"
 			       "geiser-guile"
-			       "guix"))
+			       "guix"
+			       "typescript-mode"))
 	      (init.el (org-tangle-file "init.el" (local-file "./emacsconfig.org")))))
     (simple-service 'configfiles home-xdg-configuration-files-service-type `(
       ("mpv/mpv.conf" ,(plain-file "mpv.conf"

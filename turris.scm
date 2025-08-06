@@ -244,7 +244,8 @@ chdir = " baikal "/html
 
 (define tadhg-laptop-syncthing-device
   (syncthing-device
-   (id "JZPS3SH-Y7COQBF-LYJDWLO-UBISGMX-64MJTCD-5PE5HSC-QYQAEZZ-PCBYNAL")))
+   (name "tadhgfrmwrk")
+   (id "26OJPES-FUQFPGY-3FACMAQ-LZLDUCI-JKKUX6J-QHKRK4W-7OXVBA4-E7TG6QF")))
 
 
 (define my-system
@@ -280,7 +281,13 @@ chdir = " baikal "/html
                           (device (uuid disk-uuid))
                           (type "btrfs"))
                         %base-file-systems))
-
+    (users (cons*
+	    (user-account
+	     (name "tadhg")
+	     (comment "Tadhg McDonald-Jensen")
+	     (group "users")
+	     (home-directory "/home/tadhg"))
+	    %base-user-accounts))
     ;; (packages
     ;;  (specifications->packages
     ;;   '("sane-backends")))
@@ -295,20 +302,30 @@ chdir = " baikal "/html
       (service syncthing-service-type
 	    (syncthing-configuration
 	     (syncthing syncthing-able-to-cross-compile)
-	     (user "root")
-	    (config-file
-	     (syncthing-config-file
-	      (gui-address "0.0.0.0:8384")
-	      (folders
-	       (list
-		(syncthing-folder
-		 (label "test_folder")
-		 (path "/home/test")
-		 (devices (list tadhg-laptop-syncthing-device))
-		 ) ; end test folder
-		)) ;; end list of folders
-	      
-	      )))) ;;end syncthing configuration and service
+	     (user "transmission")
+	     (config-file
+	      (syncthing-config-file
+	       (auto-upgrade-interval-hours 0) ;; disable auto upgrade as it can't modify the files in guix store anyway
+	       (gui-address "0.0.0.0:8384")
+	       (gui-user "torrenting")
+	       ;; is the same username and password as transmission, probably not the most secure but better than nothing
+	       (gui-password "$2y$04$Mqejsu/.hPC37YQTo0QB5.iy5mxcOacuu1LBNybb/oGQxyahxIx7O")
+	       (folders
+		(list
+		 (syncthing-folder
+		  (label "org")
+		  (id "zjrm2-36cqv")
+		  (path "/home/tadhg/org")
+		  (devices (list tadhg-laptop-syncthing-device))
+		  ) ; end org folder
+		 (syncthing-folder
+		  (label "huaweibackup")
+		  (path "/home/tadhg/Pictures/huaweibackups")
+		  (devices (list tadhg-laptop-syncthing-device))
+		  (id "frwii-bbaeq"))
+		 )) ;; end list of folders
+		
+	       )))) ;;end syncthing configuration and service
       (service transmission-daemon-service-type
                (transmission-daemon-configuration
 		(transmission transmission-headless)
@@ -400,7 +417,7 @@ chdir = " baikal "/html
        (operating-system my-system)
        (environment managed-host-environment-type)
        (configuration (machine-ssh-configuration
-                       (host-name "192.168.2.176")
+                       (host-name "192.168.2.27")
                        (system "armhf-linux")
                        (target "arm-linux-gnueabihf")
                        (user "root")

@@ -3,7 +3,7 @@ This file serves several purposes:
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [8/13] Tech gripes
+* TASK [#C] [8/14] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
 :ID:       TechGripes
@@ -28,6 +28,7 @@ working on this task means refiling these to proper places, not necessarily work
 - [X] guix home, better handling of nix profiles so that the profile can be rebuilt when channels are changed
 - [ ] org agenda sort categories
 - [ ] dwm hug emoji binding (or possibly whole emoji selection with dmenu)
+- [ ] configure xdg in home-config to use emacsclient instead of emacs when opening files associated with emacs
 
 * guix / non emacs dotfiles
 these are things that are related to guix or dwm or other technical aspects of my personal setup
@@ -360,8 +361,19 @@ closing window) and the dialogue blocks viewing the buffer.
   (setopt use-dialog-box nil)
 #+end_src
 
-** TASK make modeline more visible
-When multiple windows are open on a frame it is very hard to easily notice, would be nice to set modeline to be light theme so it provides a more obvious split.
+** DONE make modeline more visible
+:LOGBOOK:
+CLOCK: [2025-08-06 Wed 14:05]--[2025-08-06 Wed 14:46] =>  0:41
+:END:
+When multiple windows are open on a frame it is very hard to easily
+notice, will set the box to be red to make it stand out more.
+#+begin_src emacs-lisp
+  (let ((box-style '(:line-width (1 . 1) :color "#ff0000")))
+    (set-face-attribute 'mode-line-inactive
+  		      nil :box box-style)
+    (set-face-attribute 'mode-line-active
+  		      nil :box box-style))
+#+end_src
 ** TASK coloured parenthases
 
 ** TASK scrolling and line wrapping
