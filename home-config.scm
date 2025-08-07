@@ -236,6 +236,7 @@ fi
 ;; TODO: probably clean up this definition slightly, is kind of unreadable as is.
 (define profile-script
   (let* (
+	 ;; TODO: there is a xmodmap home service, see if it is viable to replace xmodmap manual invocation
 	 (Xmodmap (plain-file "Xmodmap" "
 clear control
 clear mod3
@@ -375,6 +376,13 @@ fi")))
     ;; (service  home-batsignal-service-type
     ;; 		    (home-batsignal-configuration
     ;; 		     ()))
+    (service home-xdg-mime-applications-service-type
+	     (home-xdg-mime-applications-configuration
+	      (default
+		'((text/plain . emacsclient.desktop)
+		  (x-scheme-handler/org-protocol . emacsclient.desktop)
+		  (inode/directory . emacsclient.desktop)
+		  ))))
     
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type

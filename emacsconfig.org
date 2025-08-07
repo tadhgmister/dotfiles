@@ -3,7 +3,7 @@ This file serves several purposes:
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [8/14] Tech gripes
+* TASK [#C] [9/14] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
 :ID:       TechGripes
@@ -28,7 +28,7 @@ working on this task means refiling these to proper places, not necessarily work
 - [X] guix home, better handling of nix profiles so that the profile can be rebuilt when channels are changed
 - [ ] org agenda sort categories
 - [ ] dwm hug emoji binding (or possibly whole emoji selection with dmenu)
-- [ ] configure xdg in home-config to use emacsclient instead of emacs when opening files associated with emacs
+- [X] configure xdg in home-config to use emacsclient instead of emacs when opening files associated with emacs
 
 * guix / non emacs dotfiles
 these are things that are related to guix or dwm or other technical aspects of my personal setup
