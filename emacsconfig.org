@@ -95,6 +95,24 @@ the variable name.
 Key codes and other partial code or symbols will use the "verbatim"
 marker surrounded by equal signs as seen above.
 
+* misc functions :func:
+** set-alist
+the built in function [[help:add-to-list][add-to-list]] inserts at the beginning of a list
+if the item is not already present, this is sufficient to override an
+item in an alist however it would be preferable to override the entry
+of an alist if present as reloading the init file multiple times would
+bloat config stuff otherwise.
+#+begin_src emacs-lisp
+  (defun equal-car (a b)
+    "returns (equal (car a) (car b)). Used for adding to alists"
+    (equal (car a) (car b)))
+
+  (defun add-to-alist (list-var key value)
+    "like `add-to-list' but overrides existing entry if value is already present."
+    (add-to-list list-var (cons key value) nil #'equal-car))
+#+end_src
+
+
 * keybindings
 ** Using hyper modifier
 in [[./home-config.scm::(Xmodmap][xinit profile setup]] the right control key is rebound to the hyper
@@ -123,7 +141,8 @@ keybinding to open a new frae, see its description for what it does.
 ~switch-to-prev-buffer~ can throw errors in cases like if the minibuffer is selected so write a little wrapper to suppress any errors.
 #+begin_src emacs-lisp
   (defun my/try-switch-to-prev-buffer (&optional window bury-or-kill)
-  "tries to call `switch-to-prev-buffer' but catches errors if it can't switch and returns nil in those cases"
+  "tries to call `switch-to-prev-buffer' but catches errors if it
+  can't switch and returns nil in those cases"
   (condition-case nil
       (switch-to-prev-buffer window bury-or-kill)
     (error nil)))
@@ -162,21 +181,21 @@ case.
 
 
 #+begin_src emacs-lisp
-  (defun my/new-frame ()
-    "
-If the current frame has more than one window pop the selected one
-into a new frame, otherwise call `my/pop-buffer-into-frame'"
-    (interactive)
-    (if (cdr (window-list)) ;; if window list has more than one entry
-        (let* ((cur-win (selected-window))
-  	     (win-state (window-state-get cur-win))
-  	     (frame (make-frame)))
-  	(delete-window cur-win)
-  	(select-frame-set-input-focus frame)
-  	(window-state-put win-state (selected-window)))
-      (my/pop-buffer-into-frame)))
+    (defun my/new-frame ()
+      "
+  If the current frame has more than one window pop the selected
+  one into a new frame, otherwise call `my/pop-buffer-into-frame'"
+      (interactive)
+      (if (cdr (window-list)) ;; if window list has more than one entry
+          (let* ((cur-win (selected-window))
+    	     (win-state (window-state-get cur-win))
+    	     (frame (make-frame)))
+    	(delete-window cur-win)
+    	(select-frame-set-input-focus frame)
+    	(window-state-put win-state (selected-window)))
+        (my/pop-buffer-into-frame)))
 #+end_src
-*** org capture + org agenda
+*** REFILE org capture + org agenda
 idk why this functionality doesn't exist already, I'd like to bind a
 key to org-capture but also want a quick way to view the org agenda -
 specifically the 2 views I actually use (see [[agenda view][here]]).
@@ -192,6 +211,8 @@ applies backward compatibility checks which I shouldn't need as I am
 using recent template specifications.
 
 #+begin_src emacs-lisp
+  (use-package org-capture
+    :defines org-capture-templates)
   (defun my/org-capture-or-agenda-wrapper ()
     "see description in emacsconfig.org"
     (interactive)
@@ -264,7 +285,7 @@ The columns are as follows:
     (let ((key (car row))
           (cmd (intern (cadr row))))
       (unless (fboundp cmd)
-          (error "Function '%s' is not defined (used in keybinding for '%s')" cmd-name key))
+          (error "Function '%s' is not defined (used in keybinding for '%s')" cmd key))
       (global-set-key (kbd key) cmd)))
 #+END_SRC
 *** DONE get H-S to work
@@ -417,23 +438,24 @@ won't happen often.
 #+end_src
 *** my/try-recover-file                                                :func:
 #+begin_src emacs-lisp
-(defun my/try-recover-file (file)
-  "Attempt to recover FILE from its autosave non-interactively.
-  Returns t if recovery succeeds,
-  Returns nil if recover-file signals an error, I.E. the file doesn't exist,
-    the auto-save doesn't exist, or the auto-save is older than the file
-  Note that if the file is currently open and modified any current changes to the file are unrecoverably lost."
-  (interactive "FRecover File:")
-  (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t)))
-    (condition-case nil
-        (recover-file file)
-      (:success
-       (message "recovered file: %s" file)
-       t)
-      ;; how is the auto save file not existing an error but it being out of date a user-error?
-      ;; why are they not both user-errors, I'd really rather not catch all possible errors here.
-      (error nil)
-      (user-error nil))))
+  (defun my/try-recover-file (file)
+    "Attempt to recover FILE from its autosave non-interactively.
+    Returns t if recovery succeeds, Returns nil if recover-file
+    signals an error, I.E. the file doesn't exist, the auto-save
+    doesn't exist, or the auto-save is older than the file Note
+    that if the file is currently open and modified any current
+    changes to the file are unrecoverably lost."
+    (interactive "FRecover File:")
+    (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t)))
+      (condition-case nil
+          (recover-file file)
+        (:success
+         (message "recovered file: %s" file)
+         t)
+        ;; how is the auto save file not existing an error but it being out of date a user-error?
+        ;; why are they not both user-errors, I'd really rather not catch all possible errors here.
+        (error nil)
+        (user-error nil))))
 #+end_src
 *** my/recover-from-autosave-list                                      :func:
 #+begin_src emacs-lisp
@@ -489,7 +511,8 @@ doesn't support that.
   opened and recovered. All auto-save lists that do not reference
   any file that requires recovery are deleted.
 
-  returns t if there was at least one autosave-list that was processed, nil otherwise.
+  returns t if there was at least one autosave-list that was
+  processed, nil otherwise.
 
   A message is generated for each file recovered and each stale
   autosave list deleted so it may be desirable to show the messages
@@ -533,8 +556,10 @@ to add entries to it after my hook runs.
 
 #+begin_src emacs-lisp
   (defun my/auto-save-then-stop-deletion-of-autosave-list-file ()
-    "does an autosave then unsets `auto-save-list-file-name' to prevent emacs from deleting it on exit
-    this is not the safest fix, a patch to the c code to remove the lines that delete the file would be preferable"
+    "does an autosave then unsets `auto-save-list-file-name' to prevent
+     emacs from deleting it on exit this is not the safest fix, a
+    patch to the c code to remove the lines that delete the file
+    would be preferable"
     (do-auto-save t)
     (setq auto-save-list-file-name nil))
   (add-hook 'kill-emacs-hook #'my/auto-save-then-stop-deletion-of-autosave-list-file 90)
@@ -561,7 +586,8 @@ want to save my work regularly.
 #+NAME: my/close-frame
 #+begin_src emacs-lisp
   (defun my/close-frame (event)
-    "replacement for `handle-delete-frame' to prompt to save all modified buffers before killing the frame.
+    "replacement for `handle-delete-frame' to prompt to save all
+  modified buffers before killing the frame.
   This also always tries to delete the frame and does not try to
   exit emacs if it is the last frame, instead it will just fail
   which is fine for my usage with a server."
@@ -584,17 +610,11 @@ quick way to revert the buffer if I run a diff and it contains a
 character I accidentally typed.
 
 #+begin_src emacs-lisp
-  (add-to-list 'save-some-buffers-action-alist
-  		(list ?r ;; not clear on what exactly this does but ? prefix is how the source code denotes the characters
+  (add-to-alist 'save-some-buffers-action-alist
+  		?r ;; not clear on what exactly this does but ? prefix is how the source code denotes the characters
   		      ;; second is function to call when the action is taken
-  		      (lambda (buf) (with-current-buffer buf (revert-buffer nil t)))
-  		      (purecopy "revert buffer"))
-  		;; add to list takes append (nil to put at front) and
-  		;; a compare function which we set to only compare the
-  		;; first element of the list as if this script is run
-  		;; multiple times we want to override the previous
-  		;; value associated with the same key.
-  		nil (lambda (a b) (equal (car a) (car b))))
+  		      (list (lambda (buf) (with-current-buffer buf (revert-buffer nil t)))
+  		      (purecopy "revert buffer")))
 #+end_src
 
 
@@ -614,11 +634,12 @@ helper function for determining modes that should be allowed to open
 in split window.
 
 #+begin_src emacs-lisp
-  (setq my/quit-functions (list #'quit-window #'calendar-exit))
-  (defun is-buffer-easily-quittable (buffer arg)
-    "returns true if the given buffer has 'q' assigned to close the window"
-    (with-current-buffer buffer
-      (memq (key-binding "q" t) my/quit-functions)))
+    (defvar my/quit-functions (list #'quit-window #'calendar-exit)
+      "list of functions that logically represent quit the current window")
+    (defun is-buffer-easily-quittable (buffer arg)
+      "returns true if the given buffer has q assigned to close the window"
+      (with-current-buffer buffer
+        (memq (key-binding "q" t) my/quit-functions)))
 #+end_src
 ** display-buffer-base-action and display-buffer-overriding-action
 Assuming no applicable overrides, this describes the logic for
@@ -851,7 +872,7 @@ multiple times.
       (apply #'concat (nreverse result))))
 
   (defun my/org-agenda-finalize-entries-around (orig-fn entries type &rest _args)
-    "Wrap `org-agenda-finalize-entries`, modifying result if TYPE is 'todo."
+    "Wrap `org-agenda-finalize-entries', modifying result if TYPE is todo."
     (let ((result (apply orig-fn entries type _args)))
       (if (eq type 'todo)
           (my/group-lines-by-prefix-with-separator result)
@@ -1042,6 +1063,42 @@ its logic.
   (keymap-set lisp-mode-shared-map "H-?"
   	    ;; in lisp files call describe-symbol directly with symbol at point
   	      (lambda (symbol) (interactive (list (symbol-at-point))) (describe-symbol symbol)))
+#+end_src
+** eglot server logic
+#+begin_src emacs-lisp
+  (defun my/eglot-server-guix-shell-wrapper (guix-packages command &optional installer)
+    "wrapper around guix shell invokation for eglot, detects
+  manifest.scm in root of project and includes it in the guix shell
+  if found.
+
+  the 3rd argument INSTALLER denotes a command that may be
+  neccesary to use the server but is unused in this implementation."
+    (lambda (&optional _interactive)
+      ;; TODO figure out a way to write this that is DRY, need several
+      ;; variables to detect whether manifest exists and if it does just
+      ;; want to insert some options into command
+      (if-let ((pr (project-current))
+  	     (root (project-root pr))
+  	     (manifest-file (file-name-concat root "manifest.scm"))
+  	     (manifest-exists (file-exists-p manifest-file)))
+  	`("guix" "shell" ,@guix-packages "--manifest" ,manifest-file "--" ,@command)
+        `("guix" "shell" ,@guix-packages "--" ,@command))))
+  (add-to-alist 'eglot-server-programs
+  	      '((js-mode :language-id "javascript")
+                  (js-ts-mode :language-id "javascript")
+                  (tsx-ts-mode :language-id "typescriptreact")
+                  (typescript-ts-mode :language-id "typescript")
+                  (typescript-mode :language-id "typescript"))
+  	      (my/eglot-server-guix-shell-wrapper
+  	       '("node")
+  	       '("npx" "typescript-language-server" "--stdio")
+  	       '("npm" "install" "-g" "typescript-language-server")))
+  (add-to-alist 'eglot-server-programs
+  	      '(python-mode python-ts-mode)
+  	      (my/eglot-server-guix-shell-wrapper
+  	       '("python-lsp-server")
+  	       '("pylsp")))
+  	      
 #+end_src
 ** eglot documentation logic
 Apparently users of eglot seem to think that displaying hover tooltip

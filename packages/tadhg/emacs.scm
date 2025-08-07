@@ -16,8 +16,7 @@
      (when (cdr results)
        (error "tangle output multiple files"))
      (copy-file (car results) ,outfile))))
-;; TODO get this to somehow verify the init file, probably by
-;; byte-compiling it.  will also need to include a way to get extra
+;; TODO will also need to include a way to get extra
 ;; emacs packages into that process which are provided by the emacs
 ;; service config which means the org file would need to be passed to
 ;; the service directly instead of using this wrapper to pass the
@@ -25,19 +24,36 @@
 (define* (org-tangle-file outfile orgfile #:optional lang-regex (emacs-package emacs))
   (computed-file
    outfile
-      #~(system* #$(file-append emacs-package "/bin/emacs")
+   #~(let ((in (string-append #$output:all "/tangle")))
+       (mkdir #$output:all)
+       (copy-file #$orgfile (string-append in ".org"))
+       (system* #+(file-append emacs-package "/bin/emacs")
 		"-Q" ;; quick, skips a bunch of stuff including loading X display resources
 		"--batch" ;; no interactive display, implies -q which avoids loading user init script
 		"--eval" "(require 'ob-tangle)" ;; load library with org-babel-tangle
 		"--eval"
-		(let ((out #$output)
-		      (in #$orgfile))
-	          (object->string
-		   `(let ((results (org-babel-tangle-file ,in)))
-		      (when (cdr results)
-			(error "tangle output multiple files"))
-		      (copy-file (car results) ,out)))
-		))))
+	        (object->string
+		 ;; this is elisp code
+		 `(let* ((results (org-babel-tangle-file ,(string-append in ".org")))
+			 (elfile (car results))
+			 (byte-compile-error-on-warn t))
+		    (when (cdr results)
+		      (error "tangle output multiple files"))
+		    ;; if it detects that the file shouldn't be
+		    ;; compiled it returns a synbol otherwise returns
+		    ;; t if success or nil on failure if there is a
+		    ;; failure the error message will be in the
+		    ;; Compile-Log buffer
+		    (let ((val (byte-compile-file elfile)))
+		      (unless val
+			  (error "%s"
+				 (with-current-buffer
+				  "*Compile-Log*" (buffer-string))))
+		      (if (equal val 'no-byte-compile)
+			  (copy-file ,(string-append in ".el") ,#$output)
+			  (copy-file ,(string-append in ".elc") ,#$output))
+		      
+		    )))))))
 		
 		 
 
@@ -71,7 +87,7 @@
    (documentation "reloads the init.el file")
    (procedure
     #~(lambda* (details . args)
-	(when args
+	(when (not (null? args))
 	  (display "received unexpected arguments:")
 	  (display args)
 	  (newline))
@@ -111,7 +127,7 @@
 		     (documentation
 		      "sends SIGUSR2 to the emacs daemon to interrupt any process that may be stuck")
 		     (procedure #~(lambda* (details . args)
-				    (when args
+				    (when (not (null? args))
 				      (display "received unexpected arguments:")
 				      (display args)
 				      (newline))
