@@ -3,7 +3,7 @@ This file serves several purposes:
 - the configuration elisp code is compiled to an init.el file that is loaded by emacs
 - it is used as an org agenda file so TASK/TODO headlines can be used with org agenda
 
-* TASK [#C] [9/14] Tech gripes
+* TASK [#C] [12/14] Tech gripes
 :PROPERTIES:
 :CUSTOM_ID: TechGripes
 :ID:       TechGripes
@@ -21,13 +21,13 @@ working on this task means refiling these to proper places, not necessarily work
 - [X] set EMAIL variable in [[./home-config.scm]] to contain my email 
 - [ ] quick way to view buffers filename, ideally tooltip on 'buffername' in modeline
 - [ ] setup org file src insert to offer sub-modes and open narrowed buffer instead of edit special
-- [ ] get org blocked logic to not consider checkbox items
+- [X] get org blocked logic to not consider checkbox items
 - [X] add org capture template for new task to inbox
 - [X] emacs smooth scrolling
 - [X] get playtimer to show dunst alert
 - [X] guix home, better handling of nix profiles so that the profile can be rebuilt when channels are changed
-- [ ] org agenda sort categories
-- [ ] dwm hug emoji binding (or possibly whole emoji selection with dmenu)
+- [X] org agenda sort categories
+- [X] dwm hug emoji binding (or possibly whole emoji selection with dmenu)
 - [X] configure xdg in home-config to use emacsclient instead of emacs when opening files associated with emacs
 
 * guix / non emacs dotfiles
@@ -94,6 +94,13 @@ the variable name.
 
 Key codes and other partial code or symbols will use the "verbatim"
 marker surrounded by equal signs as seen above.
+
+** lexical bindings
+I want to use lexical bindings because they seem like the sane option
+but I then get errors that variables are unsused and idk how to fix that.
+#+begin_src emacs-lisp
+  ;;; ...  -*- lexical-binding: t -*-
+#+end_src
 
 * misc functions :func:
 ** set-alist
@@ -636,7 +643,7 @@ in split window.
 #+begin_src emacs-lisp
     (defvar my/quit-functions (list #'quit-window #'calendar-exit)
       "list of functions that logically represent quit the current window")
-    (defun is-buffer-easily-quittable (buffer arg)
+    (defun is-buffer-easily-quittable (buffer _arg)
       "returns true if the given buffer has q assigned to close the window"
       (with-current-buffer buffer
         (memq (key-binding "q" t) my/quit-functions)))
@@ -717,7 +724,7 @@ repeater and a property =:STYLE: habit= makes it only show up in the
 agenda for today and not in the future. For that to happen though we
 have to load the habit module.
 #+begin_src emacs-lisp
-  (add-to-list 'org-modules 'habit)
+  (add-to-list 'org-modules 'habit t) ;; apparently appending to end is important?
 #+end_src
 ** keywords and todo behaviour
 My main workflow with org agenda is to label lots of possible tasks as
@@ -871,9 +878,9 @@ multiple times.
       ;; Join and preserve properties via concat
       (apply #'concat (nreverse result))))
 
-  (defun my/org-agenda-finalize-entries-around (orig-fn entries type &rest _args)
+  (defun my/org-agenda-finalize-entries-around (orig-fn entries type &rest args)
     "Wrap `org-agenda-finalize-entries', modifying result if TYPE is todo."
-    (let ((result (apply orig-fn entries type _args)))
+    (let ((result (apply orig-fn entries type args)))
       (if (eq type 'todo)
           (my/group-lines-by-prefix-with-separator result)
         result)))
@@ -1055,7 +1062,7 @@ its logic.
   (defun eglot-describe-thing-at-point ()
     "calls lsp hover provider and writes details to help buffer"
     (interactive)
-    (eglot-hover-eldoc-function (lambda (info &rest stuff)
+    (eglot-hover-eldoc-function (lambda (info &rest _stuff)
   				(with-help-window (help-buffer)
   				  (with-current-buffer (help-buffer)
   				    (insert info))))))
@@ -1066,7 +1073,7 @@ its logic.
 #+end_src
 ** eglot server logic
 #+begin_src emacs-lisp
-  (defun my/eglot-server-guix-shell-wrapper (guix-packages command &optional installer)
+  (defun my/eglot-server-guix-shell-wrapper (guix-packages command &optional _installer)
     "wrapper around guix shell invokation for eglot, detects
   manifest.scm in root of project and includes it in the guix shell
   if found.

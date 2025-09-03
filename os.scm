@@ -49,6 +49,7 @@
  (tadhg packagelist)
  ((tadhg channels-and-subs) #:prefix tadhg:)
  ((system-info setup) #:select(wrap-os))
+ (tadhg quark)
  )
 
 ;; stuff for fprintd that I need to submit a patch
@@ -218,6 +219,10 @@
     (service syncthing-service-type ;; http://localhost:8384
              (syncthing-configuration (user username)))
     (udev-rules-service 'brightnessctl brightnessctl)
+    ;; (service quark-service-type
+    ;; 	     (quark-configuration
+    ;; 	      (port 8000)
+    ;; 	      (directory (local-file "/home/tadhg/sharing" #:recursive? #t))))
     ;;(screen-locker-service slock-patched)
     ;;(udev-rules-service 'ledtrigger ledtrigger-udev)
     (modify-services

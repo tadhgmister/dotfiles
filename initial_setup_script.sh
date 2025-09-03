@@ -6,7 +6,7 @@
 # same time and since when installing a new operating system I need
 # the mapper name to be different from the currently booted system and
 # often want to change the hostname as well.
-NEW_HOSTNAME=tadhgfrmwrk
+NEW_HOSTNAME=tadhg_aux
 
 # the amount of space for our swapfile, can probably be increased later but may be a pain.
 SWAP_SPACE=12G
@@ -62,13 +62,15 @@ fi
 
 
 echo "- Writing partition table"
-# partition the drive, gpt partition table, one partition of ~30MiB for the EFI grub
+# partition the drive, gpt partition table, one partition of ~300MiB for the EFI stuff
 # and another partition to be encrypted to take up rest of drive.
 # the esp flag indicates the first partition will hold EFI data
+# grub is less than 20MB and linux kernel is similar, but 300 gives us enough to potentially have 2 or 3 options
+# if setting up dedicated UKI stuff. Also running out of space there sucks real bad.
 parted --script ${DRIVE} \
    mklabel gpt \
-   mkpart efibooter fat16 1MiB 30MiB \
-   mkpart guixroot btrfs 30MiB 100% \
+   mkpart efibooter fat16 1MiB 300MiB \
+   mkpart guixroot btrfs 300MiB 100% \
    set 1 esp on
 
 # let the dev folder get a moment to settle so that the subpartitions are consistently present

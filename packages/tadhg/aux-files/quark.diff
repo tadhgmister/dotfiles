@@ -1,0 +1,65 @@
+diff --git a/config.mk b/config.mk
+index cedb3e7..5631ccc 100644
+--- a/config.mk
++++ b/config.mk
+@@ -13,4 +13,4 @@ CFLAGS   = -std=c99 -pedantic -Wall -Wextra -Os
+ LDFLAGS  = -lpthread -s
+ 
+ # compiler and linker
+-CC = cc
++CC = gcc
+diff --git a/http.c b/http.c
+index 36f8b1c..15d6473 100644
+--- a/http.c
++++ b/http.c
+@@ -776,16 +776,17 @@ http_prepare_response(const struct request *req, struct response *res,
+ 	 * path and the virtual host while ignoring query and fragment
+ 	 * (valid according to RFC 3986)
+ 	 */
+-	if (esnprintf(res->internal_path, sizeof(res->internal_path), "/%s/%s",
+-	              (srv->vhost && res->vhost) ? res->vhost->dir : "",
++	// if there is no vhost add a . at the beginning of the path we have already validated must start with a / to make it resolve to the current folder.
++	if (esnprintf(res->internal_path, sizeof(res->internal_path), "%s%s",
++	              (srv->vhost && res->vhost) ? res->vhost->dir : ".",
+ 		      res->path)) {
+ 		s = S_REQUEST_TOO_LARGE;
+ 		goto err;
+ 	}
+-	if ((tmps = path_normalize(res->internal_path, NULL))) {
+-		s = tmps;
+-		goto err;
+-	}
++	/* if ((tmps = path_normalize(res->internal_path, NULL))) { */
++	/* 	s = tmps; */
++	/* 	goto err; */
++	/* } */
+ 	if (stat(res->internal_path, &st) < 0) {
+ 		s = (errno == EACCES) ? S_FORBIDDEN : S_NOT_FOUND;
+ 		goto err;
+diff --git a/main.c b/main.c
+index 1e88536..868729e 100644
+--- a/main.c
++++ b/main.c
+@@ -291,14 +291,14 @@ main(int argc, char *argv[])
+ 		if (chdir(servedir) < 0) {
+ 			die("chdir '%s':", servedir);
+ 		}
+-		if (chroot(".") < 0) {
+-			if (errno == EPERM) {
+-				die("You need to run as root or have "
+-				    "CAP_SYS_CHROOT set");
+-			} else {
+-				die("chroot:");
+-			}
+-		}
++		/* if (chroot(".") < 0) { */
++		/* 	if (errno == EPERM) { */
++		/* 		die("You need to run as root or have " */
++		/* 		    "CAP_SYS_CHROOT set"); */
++		/* 	} else { */
++		/* 		die("chroot:"); */
++		/* 	} */
++		/* } */
+ 
+ 		/* drop root */
+ 		if (pwd->pw_uid == 0 || grp->gr_gid == 0) {

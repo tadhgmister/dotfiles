@@ -21,8 +21,24 @@ build the derivations should be considered roots as they are
 dependencies of the drv. (I hope, TODO: check this)
 
 
+For the index.html file, write some functions to handle generating an
+element for that file which comes along with a list of files needed in
+the quark root entries. Typically an anchor, although the construction
+of the anchor may be handled generically.
 
-- [ ] figure out how to make a file union of symlinks to other guix store files for root of quark service
+For video handling:
+- check for embedded cover image with [[https://superuser.com/a/1328212/550312][this]], if it exists skip everything else
+- determine suitable resolution for thumbnail by extracting video scale and have some downsampling logic
+- if the video is relatively short (<30sec) make a gif of the whole thing
+- if a bit longer (<10mins) make a gif of the whole thing but only taking every N frames so total number of frames is reasonable
+- if longer than that maybe make a gif of a short clip of it, although how to determine where to start is not trivial.
+- maybe still put a transparent "play" overlay over the thumbnail to make it super clear it is intended to be a playable video
+
+
+
+
+- [ ] figure out how to make a file union of symlinks to other guix
+  store files for root of quark service
 - [ ] write guix service for quark
 
 - [ ] figure out how to save .drv files and how to build them from shell / C code.
@@ -43,3 +59,4 @@ dependencies of the drv. (I hope, TODO: check this)
   (with-store store
      (build-things store (list (derivation-file-name drv)))))
 (display (derivation-output-path (cdar (derivation-outputs drv))))
+

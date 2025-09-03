@@ -9,7 +9,7 @@
 	     ((gnu packages gtk) #:select (pango))
 	     ((gnu packages python) #:select (python))
 	     ((gnu packages pkg-config) #:select (pkg-config))
-	     ((gnu packages xdisorg) #:select(scrot))
+	     ((gnu packages xdisorg) #:select(scrot xdotool))
 	     ((gnu packages wm) #:select(dunst))
 	     ((guix build-system copy) #:select (copy-build-system))
 	     ((guix build-system trivial) #:select (trivial-build-system))
@@ -40,7 +40,6 @@
 	     (tadhg cyrus-sasl-xoauth)
 	     (tadhg emacs)
 )
-
 
 ;;;;;;; START OF PACKAGE DEFINITIONS
 
@@ -145,7 +144,22 @@ emacsclient --no-wait --reuse-frame -a vim $@")
     (single-script-package "browser"
 			   "#!/bin/sh
 emacsclient --no-wait --reuse-frame -a brave $@")
-   ;; and other scripts that I want to use
+    ;; and other scripts that I want to use
+    (single-script-package "insert-emoji"
+    "#!/bin/sh
+
+# Use dmenu to select a line
+CHOSEN=$(cat " (local-file "emojilist.txt") " | " dmenu "/bin/dmenu -i -p \"Emoji:\")
+
+# Exit if nothing chosen
+[[ -z \"$CHOSEN\" ]] && exit
+
+# Extract the last word (emoji character) from the line
+EMOJI=$(echo \"$CHOSEN\" | awk '{print $NF}')
+sleep 0.1 # sleep a tiny amount to let the dmenu window fully close and ensure we are sending details to correct window
+# Type the emoji using xdotool by pressing key U followed by hex code of emoji
+" xdotool "/bin/xdotool key --clearmodifiers U$(printf %x \"'$EMOJI\")
+")
    (single-script-package "screenshot"
     "#!/bin/sh
 mkdir -p ~/Pictures/screenshots/
@@ -297,9 +311,25 @@ fi")))
 ;;;;;;; END OF XORG
 
 ;;;;;;; START OF HOME ENVIRONMENT AND SERVICES
+(define MIME_TYPES_FOR_EMACS '(application/x-shellscript
+			       x-scheme-handler/org-protocol
+			       inode/directory
+			       text/english
+			       text/plain
+			       text/x-c
+			       text/x-c++
+			       text/x-c++hdr
+			       text/x-c++src
+			       text/x-chdr
+			       text/x-csrc
+			       text/x-java
+			       text/x-makefile
+			       text/x-moc
+			       text/x-pascal
+			       text/x-tcl
+			       text/x-tex))
 
-
-(home-environment
+(define my-home (home-environment
   ;; Below is the list of packages that will show up in your
   ;; Home profile, under ~/.guix-home/profile.
  (packages packages-for-home)
@@ -378,11 +408,13 @@ fi")))
     ;; 		     ()))
     (service home-xdg-mime-applications-service-type
 	     (home-xdg-mime-applications-configuration
+	       ;; use emacsclient for everything, remove all the things that emacs.desktop indicate it can open
+	       ;; cat ~/.guix-home/profile/share/applications/mimeinfo.cache | grep emacs.desktop
+	       (removed (map (lambda (x) (cons x 'emacs.desktop))
+			     MIME_TYPES_FOR_EMACS ))
 	      (default
-		'((text/plain . emacsclient.desktop)
-		  (x-scheme-handler/org-protocol . emacsclient.desktop)
-		  (inode/directory . emacsclient.desktop)
-		  ))))
+		(map (lambda (x) (cons x 'emacsclient.desktop))
+			     MIME_TYPES_FOR_EMACS ))))
     
     (simple-service 'channels home-channels-service-type tadhgs:channels)
     (simple-service 'environment-variables home-environment-variables-service-type
@@ -395,9 +427,10 @@ fi")))
 		      ("BROWSER" . "browser")
 		       ;; short circuits a bunch of logic in xdg-open that tries to detect the desktop environment, probably unnecessary
 		      ("XDG_CURRENT_DESKTOP" . "X-Generic")
+		      ;; make GTK render in dark theme PLEASE
+		      ("GTK_THEME" . "Adwaita:dark")
 		      ;("SASL_PATH" . ,(file-append cyrus-sasl-xoauth2 "/lib/sasl2/"))
 		      ;;("GUIX_BUILD_OPTIONS" . "--max-jobs=6")
-		      ;;("GTK_THEME" . "Adwaita-dark")
 		      ;;("XCURSOR_SIZE" . "64") ;; TODO: don't think this has any affect, larger cursor would be really nice.
 		      ("CC" . "gcc")
 		      ("CFLAGS" . "-Wall")
@@ -441,11 +474,11 @@ save-position-on-quit=yes
       ;; TODO: figure out how to get dino to go back to dark theme
       ("gtk-3.0/settings.ini" ,(plain-file "settings.ini"
 "[Settings]
-gtk-application-prefer-dark-theme = true
+gtk-application-prefer-dark-theme=1
 "))	   
       ("gtk-4.0/settings.ini" ,(plain-file "settings.ini"
 "[Settings]
-gtk-application-prefer-dark-theme = true
+gtk-application-prefer-dark-theme=1
 "))
       ("gtk-4.0/gtk.css" ,(plain-file "settings.ini"
 "window.dino-main {
@@ -514,9 +547,11 @@ alias ls='ls -p --color=auto'
 alias grep='grep --color=auto'
 "))
       
-                                        )))))
+                                        ))))))
 
-;;;;;;; END OF HOME ENVIRONMENT AND SERVICES
+;;;;;;; END OF HOME ENVIRONMENT AND SERVICES 
+
+my-home
 
 ;; Local Variables:
 ;; compile-command: "guix home build home-config.scm -L packages"
