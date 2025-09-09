@@ -43,6 +43,14 @@ event (not necessarily the urgency bell) to switch focus to that frame
 instead of setting urgency flag.
 
 see [[~/src/dwm/dwm.c::window was raised for focus][clientmessage in dwm.c]] for fix.
+** TASK change power button behaviour
+currently if the system suspends itself the keyboard and trackpad
+disable themselves, so you can only wake the system back up by
+pressing the power button, which is then processed as an input and
+triggers hibernation. This is extremely frustrating. Instead I'd like
+it so the power button does nothing on the kernel side but detect it
+in dwm and have different modifiers do different things
+(power/hibernate/suspend)
 
 ** TASK look into adding guix manifests/profiles to home config
 for things like language servers to use in emacs it will be highly

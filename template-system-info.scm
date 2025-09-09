@@ -7,15 +7,113 @@
   #:use-module (gnu system file-systems)
   #:use-module (gnu bootloader)
   #:use-module (gnu bootloader grub)
+  #:use-module ((gnu packages linux) #:select(efibootmgr))
   ;#:use-module (gnu system keyboard)
-  #:use-module ((system-info details) #:select (USERNAME HOSTNAME RESUME-OFFSET ROOT-UUID EFI-UUID))
+  #:use-module ((system-info details) #:select (HOSTNAME RESUME-OFFSET ROOT-UUID EFI-UUID))
   #:export (wrap-os)
 ) 
 ;; directly relate to stuff from system-info
 (define mapper-target (string-append HOSTNAME "_drive"))
 (define root-drive (string-append "/dev/mapper/" mapper-target))
+
+;; TODO figure out how the heck to derive these in the format that efibootmgr accepts from the bootloader config
+(define HARDCODED-EFIDEVICE "/dev/nvme0n1")
+(define HARDCODED-EFIPART "3")
+
+(define custom-bootloader
+  (bootloader
+    (inherit grub-efi-removable-bootloader)
+    
+   (installer
+    (with-imported-modules '((ice-9 popen) (ice-9 rdelim))
+    #~(lambda (bootloader target mount-point)
+	(use-modules (ice-9 popen) (ice-9 rdelim))
+        (define (command-output . args)
+	  ;; Run command with stdout captured, stderr merged into our stderr
+	  (let* ((port (apply open-pipe* OPEN_READ args))
+		 (out (read-string port))
+		 (status (close-pipe port)))  ; closing waits for child, returns status
+	    (if (zero? status)
+		out
+	        (error "command failed" (cons status args)))))
+	
+        (define sys-link (getenv "GUIX_NEW_SYSTEM"))
+	(unless (string? sys-link)
+	  (error "can only run this bootloader installer when GUIX_NEW_SYSTEM environment variable is set"))
+	(define (extract-N str)
+	  (let* ((prefix "/var/guix/profiles/system-")
+		 (suffix "-link")
+		 (len (string-length str))
+		 (plen (string-length prefix))
+		 (slen (string-length suffix)))
+	    (and (>= len (+ plen slen))                      ; long enough?
+		 (string-prefix? prefix str)                 ; starts correctly?
+		 (string-suffix? suffix str)                 ; ends correctly?
+		 (substring str plen (- len slen)))))        ; middle part
+
+	(define generation-n (extract-N sys-link))
+	(unless generation-n
+	  (error (string-append "CANNOT IDENTIFY GENERATION NUMBER" sys-link)))
+	(define (slash->backslash str)
+	  (string-map (lambda (c)
+			(if (char=? c #\/) #\\ c))
+		      str))
+	(define (load-as-data filename)
+	  (with-input-from-file filename
+	    (lambda ()
+	      (read))))
+	(define boot-params (load-as-data (string-append sys-link "/parameters")))
+
+	(define (get-param p)
+	  (let ((x (assoc p (cdr boot-params))))
+	    (unless x
+	      (error (string-append "CANNOT GET PARAMETER " (symbol->string p))))
+	    (cadr x)))
+	(define kernel (canonicalize-path (get-param 'kernel)))
+	(define initrd (canonicalize-path (get-param 'initrd)))
+	(define root (get-param 'root-device))
+	(define args-that-could-be-infered-by-early-init-if-guix-was-patched
+	  "gnu.system=/var/guix/profiles/system gnu.load=/var/guix/profiles/system/boot")
+	(define args (string-join (cons* (string-append "initrd=" (slash->backslash initrd))
+					 (string-append "root=" root)
+					 args-that-could-be-infered-by-early-init-if-guix-was-patched
+					 (get-param 'kernel-arguments))))
+	;; this is how grub does it, it seems absolutely absurd to me
+	;; it just uses a string and not the filesystem object that we
+	;; could directly measure the mount point of.
+	(define mount-point/target (string-append mount-point target))
+	(define bootloader-target (if (file-exists? mount-point/target)
+                                      mount-point/target
+                                      target))
+	(mkdir-p (string-append bootloader-target (dirname kernel)))
+	(mkdir-p (string-append bootloader-target (dirname initrd)))
+	(copy-file kernel (string-append bootloader-target kernel ".EFI"))
+	(copy-file initrd (string-append bootloader-target initrd))
+	(define loader (string-append (slash->backslash kernel) ".EFI"))
+	;; output of efibootmgr has no space between the executing image and the arguments
+	(define expected-boot-entry (string-append loader args))
+	(define prev-boot-options (command-output
+				   #+(file-append efibootmgr "/sbin/efibootmgr")
+				   "--unicode"))
+	(unless (string-contains prev-boot-options expected-boot-entry )
+	  (let ((new-output (command-output
+			     #+(file-append efibootmgr "/sbin/efibootmgr")
+			     "--create"
+			     "--disk" #$HARDCODED-EFIDEVICE
+			     "--part" #$HARDCODED-EFIPART
+			     "--label" (string-append "Guix" generation-n)
+			     "--loader" loader
+			     "--unicode"
+			     args)))
+	    (unless (string-contains new-output expected-boot-entry)
+	      (error "efibootmgr create command was run but the expected entry was not present"))))
+	
+        
+	(#$(bootloader-installer grub-efi-removable-bootloader) bootloader target mount-point))))))
+
+
 (define boot-config (bootloader-configuration
-                (bootloader grub-efi-removable-bootloader)
+                (bootloader custom-bootloader)
                 (targets (list "/boot/efi"))
                 ;(keyboard-layout keyboard-layout)
 		;(extra-initrd "/swap/keyfile.cpio")
@@ -26,11 +124,10 @@
    (mapped-device
     (source (uuid ROOT-UUID))
     (type luks-device-mapping)
-	   ;(luks-device-mapping-with-options
 	   ;; this keyfile is relative to the path when the cpio file containing the key was generated
 	   ;; whcih is specifically done at the root directory as I don't want any change of using a folder name that
 	   ;; is used by the initrd and this ends up visible after boot or overriding something else
-	   ;#:key-file "/keyfile.bin"))
+    ;(arguments '(#:key-file "/keyfile.bin"))
     (target mapper-target))))
 (define rootfs (file-system
      (mount-point "/")
@@ -92,7 +189,6 @@
 
 (define* (wrap-os base-os-routine)
   (let ((base-os (base-os-routine #:hostname HOSTNAME
-				  #:username USERNAME
 				  #:filesystems filesystems
 				  #:boot-config boot-config)))
     
