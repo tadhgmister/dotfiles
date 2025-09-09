@@ -31,3 +31,4 @@
 !base64e
 !ste
 !netflix
+brave --app=https://www.messenger.com/

@@ -1,12 +1,13 @@
 diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2025-08-23 09:13:26.687563007 -0400
++++ /home/tadhg/src/dwm/config.def.h	2025-09-06 18:34:29.691588841 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
 +#include <X11/XF86keysym.h>
  /* appearance */
- static const unsigned int borderpx  = 1;        /* border pixel of windows */
+-static const unsigned int borderpx  = 1;        /* border pixel of windows */
++static const unsigned int borderpx  = 2;        /* border pixel of windows */
  static const unsigned int snap      = 32;       /* snap pixel */
 -static const int showbar            = 1;        /* 0 means no bar */
 +// showbar=2 means it starts in the state like you are holding down the mod key, so showing but will go away when you do anything
@@ -54,47 +55,67 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
  };
  
  /* layout(s) */
-@@ -37,9 +49,51 @@ static const int nmaster     = 1;    /*
+@@ -37,99 +49,233 @@ static const int nmaster     = 1;    /*
  static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
  static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
  
-+/* w/h ratio  */
++/** w/h ratio  */
 +static const float MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY = 1.0;
++/** amount of space used by 'fullscreen' apps in tiling function */
++static const float SHRINK_FACTOR_FOR_FULLSCREEN = 0.98;
++/** wrapper for real resize that takes the space in dwm layout and resizes window to account for border
++ effectively this takes the w and h that you'd want WIDTH(c) and HEIGHT(c) to resolve to. */
++void myresize(Client *c, int x, int y, int w, int h){
++  // personally I feel like dwm should be setup so the border is
++  // accounted for in the underlying resize and make c->w variable we
++  // see contain the border so we don't have to think about it in our
++  // tiling functions
++  unsigned int bw = 2*c->bw;
++  // the 0 as last argument is for "interactive", 0 when using a tiling
++  // function and 1 when the user is interactively resizing a floating window
++  resize(c, x, y, w - bw, h - bw, 0);
++}
 +void mytile(Monitor *m){
++  // c is the next client to place
++  Client *c = nexttiled(m->clients);
++  if(c==NULL){ return; }// there are no visible non floating clients, nothing to do.
++  // x and y are the anchor point for the next client to tile
 +  unsigned int x = m->wx;
 +  unsigned int y = m->wy;
++  // w and h are the space we have to place more windows
 +  unsigned int w = m->ww;
 +  unsigned int h = m->wh;
-+  float mfact = m->mfact;
-+  Client *c = nexttiled(m->clients);
-+  if(c==NULL){
-+    return;
-+  }
++  // the shrinking factor
++  float normal_shrink_factor = m->mfact;
 +  while(1){ // broken by nextc==NULL in the middle of the loop
++    float mfact = c->isfullscreen ? SHRINK_FACTOR_FOR_FULLSCREEN : normal_shrink_factor;
 +    Client *nextc = nexttiled(c->next);
 +    if(nextc == NULL || (c->mina != 0 && c->maxa != 0)){
 +      // last one to tile or desired aspect ratio, use up all the available space
-+      resize(c, x,y,w,h,0);
++      myresize(c, x, y, w,h);
 +    } else if(w > h*MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY){
-+      // tile horizontally
-+      resize(c, x,y, w*mfact, h, 0);
-+    } else {
-+      // tile vertically
-+      resize(c, x,y, w, h*mfact, 0);
++      // w/h > target, so use up fraction of width (tile horizontally)
++      myresize(c, x,y, w*mfact, h);
++    } else { // tile vertically
++      myresize(c, x,y, w, h*mfact);
 +    }
++    
 +    if(nextc == NULL){
-+      return;
++      return; // we've positioned the last client so we are done.
 +    }
 +    // because of aspect ratio and border widths just check whether there is more space vertically or horizontally to tile next elements.
++    // Note: this assumes vertical and horizontal borders are identical which may not be true with patches,
++    //   replace c->w with WIDTH(c) and c->h with HEIGHT(c) if this is a concern.
 +    // TODO: casting these to ints fixes the issue if one ends up negative but is it the correct way to handle this?
 +    if((int)(w - c->w) > (int)(h - c->h)){
 +      // more space to the side
-+      w -= c->w;
-+      x += c->w;
++      w -= c->w + 2*c->bw;
++      x += c->w + 2*c->bw;
 +    } else {
 +      // more space below
-+      h -= c->h;
-+      y += c->h;
++      h -= c->h + 2*c->bw;
++      y += c->h + 2*c->bw;
++      // TODO move this function to dwm.c so I can use WIDTH and HEIGHT macros instead of explicitly adding 2*c->bw 
 +    }
 +    c = nextc;
 +  }
@@ -103,11 +124,12 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
  static const Layout layouts[] = {
  	/* symbol     arrange function */
 -	{ "[]=",      tile },    /* first entry is default */
-+	{ "[]=",      mytile },    /* first entry is default */
++	{ "Tad",      mytile },    /* first entry is default */
  	{ "><>",      NULL },    /* no layout function means floating behavior */
  	{ "[M]",      monocle },
- 	{ "TTT",      bstack },
-@@ -47,89 +101,161 @@ static const Layout layouts[] = {
+-	{ "TTT",      bstack },
++	{ "[]=",      tile },
+ 	{ "===",      bstackhoriz },
  };
  
  /* key definitions */
@@ -219,16 +241,6 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
  	{ MODKEY,                       XK_Return, zoom,           {0} },
 -	{ MODKEY,                       XK_Tab,    view,           {0} },
 -	{ MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
--	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
--	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
--	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
--	{ MODKEY,                       XK_u,      setlayout,      {.v = &layouts[3]} },
--	{ MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },
--	{ MODKEY,                       XK_space,  setlayout,      {0} },
--	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
--	{ MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
--	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
--	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
 +	// win+tab will toggle between recently used tags
 +        { MODKEY,                       XK_Tab,    view,           {0} },
 +	// backspace kills the selected window, if no windows are open in any tag this will also close dwm (which is one of my personal edits to the code)
@@ -236,10 +248,18 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
 +	// force quit dwm and all windows.
 +	{ MODKEY|ShiftMask|ControlMask, XK_BackSpace,      quit,           {0} },
 +	// clicking on tile symbol in menu bar switches between the only layouts I care about.
-+	/* { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
+ 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
+-	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
+-	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
 +	/* { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },*/
 +	/* { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },*/
-+	/* { MODKEY,                       XK_u,      setlayout,      {.v = &layouts[3]} },*/
+ 	{ MODKEY,                       XK_u,      setlayout,      {.v = &layouts[3]} },
+-	{ MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },
+-	{ MODKEY,                       XK_space,  setlayout,      {0} },
+-	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
+-	{ MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
+-	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+-	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
 +	/* { MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },*/
 +	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
 +	{ MODKEY|ShiftMask|ControlMask, XK_f,      togglefloating, {0} },
@@ -333,7 +353,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
 +CC = gcc
 diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
 --- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2025-08-12 22:20:28.467270874 -0400
++++ /home/tadhg/src/dwm/dwm.c	2025-09-06 18:31:49.951768781 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -576,16 +596,42 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  		if (!(autostartcomplete || autostarttags))
  			autostarttagsspawner();
  		if (handler[ev.type])
-@@ -1576,6 +1673,8 @@ setfullscreen(Client *c, int fullscreen)
- 		c->isfloating = 1;
- 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+@@ -1571,24 +1668,27 @@ setfullscreen(Client *c, int fullscreen)
+ 			PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
+ 		c->isfullscreen = 1;
+ 		c->oldstate = c->isfloating;
+-		c->oldbw = c->bw;
+-		c->bw = 0;
+-		c->isfloating = 1;
+-		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
++		/* c->oldbw = c->bw; */
++		/* c->bw = 0; */
++		c->isfloating = 0;
++		/* resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh); */
  		XRaiseWindow(dpy, c->win);
 +		if(c->mon->showbar) // when an app gets set as fullscreen display the bar over it if it should be shown now
 +		  XRaiseWindow(dpy, c->mon->barwin);
  	} else if (!fullscreen && c->isfullscreen){
  		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
  			PropModeReplace, (unsigned char*)0, 0);
-@@ -1638,7 +1737,7 @@ setup(void)
+ 		c->isfullscreen = 0;
+ 		c->isfloating = c->oldstate;
+-		c->bw = c->oldbw;
++		/* c->bw = c->oldbw; */
+ 		c->x = c->oldx;
+ 		c->y = c->oldy;
+ 		c->w = c->oldw;
+ 		c->h = c->oldh;
+-		resizeclient(c, c->x, c->y, c->w, c->h);
+-		arrange(c->mon);
+ 	}
++	resizeclient(c, c->x, c->y, c->w, c->h);
++	arrange(c->mon);
++	
+ }
+ 
+ void
+@@ -1638,7 +1738,7 @@ setup(void)
  	drw = drw_create(dpy, screen, root, sw, sh);
  	if (!drw_font_create(drw, font))
  		die("no fonts could be loaded.");
@@ -594,7 +640,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	bh = drw->font->h + 2;
  	updategeom();
  	/* init atoms */
-@@ -1666,6 +1765,7 @@ setup(void)
+@@ -1666,6 +1766,7 @@ setup(void)
  		scheme[i] = drw_scm_create(drw, colors[i], 3);
  	/* init bars */
  	updatebars();
@@ -602,7 +648,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	updatestatus();
  	/* supporting window for NetWMCheck */
  	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
-@@ -1696,6 +1796,13 @@ seturgent(Client *c, int urg)
+@@ -1696,6 +1797,13 @@ seturgent(Client *c, int urg)
  	XWMHints *wmh;
  
  	c->isurgent = urg;
@@ -616,7 +662,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	if (!(wmh = XGetWMHints(dpy, c->win)))
  		return;
  	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
-@@ -1824,6 +1931,13 @@ togglebar(const Arg *arg)
+@@ -1824,6 +1932,13 @@ togglebar(const Arg *arg)
  }
  
  void
@@ -630,7 +676,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  togglefloating(const Arg *arg)
  {
  	if (!selmon->sel)
-@@ -2135,9 +2249,19 @@ updatesizehints(Client *c)
+@@ -2135,9 +2250,19 @@ updatesizehints(Client *c)
  void
  updatestatus(void)
  {
@@ -653,7 +699,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2145,8 +2269,23 @@ updatetitle(Client *c)
+@@ -2145,8 +2270,23 @@ updatetitle(Client *c)
  {
  	if (!gettextprop(c->win, netatom[NetWMName], c->name, sizeof c->name))
  		gettextprop(c->win, XA_WM_NAME, c->name, sizeof c->name);
@@ -678,7 +724,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2165,19 +2304,27 @@ void
+@@ -2165,19 +2305,27 @@ void
  updatewmhints(Client *c)
  {
  	XWMHints *wmh;
@@ -708,7 +754,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2340,6 +2487,11 @@ bstack(Monitor *m) {
+@@ -2340,6 +2488,11 @@ bstack(Monitor *m) {
  			w = (m->ww - mx) / (MIN(n, m->nmaster) - i);
  			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0);
  			mx += WIDTH(c);
@@ -720,6 +766,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  		} else {
  			h = m->wh - mh;
  			resize(c, tx, ty, tw - (2 * c->bw), h - (2 * c->bw), 0);
+Common subdirectories: /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
 diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
 --- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/Makefile	2025-06-23 17:26:38.303124679 -0400
