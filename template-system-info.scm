@@ -27,16 +27,8 @@
    (installer
     (with-imported-modules '((ice-9 popen) (ice-9 rdelim))
     #~(lambda (bootloader target mount-point)
-	(use-modules (ice-9 popen) (ice-9 rdelim))
-        (define (command-output . args)
-	  ;; Run command with stdout captured, stderr merged into our stderr
-	  (let* ((port (apply open-pipe* OPEN_READ args))
-		 (out (read-string port))
-		 (status (close-pipe port)))  ; closing waits for child, returns status
-	    (if (zero? status)
-		out
-	        (error "command failed" (cons status args)))))
-	
+	;; start by running the grub-efi-removable installer so if the rest fails our partially broken state should at least have grub accessible.		       
+	(define efi-removable-value (#$(bootloader-installer grub-efi-removable-bootloader) bootloader target mount-point))
         (define sys-link (getenv "GUIX_NEW_SYSTEM"))
 	(unless (string? sys-link)
 	  (error "can only run this bootloader installer when GUIX_NEW_SYSTEM environment variable is set"))
@@ -54,10 +46,7 @@
 	(define generation-n (extract-N sys-link))
 	(unless generation-n
 	  (error (string-append "CANNOT IDENTIFY GENERATION NUMBER" sys-link)))
-	(define (slash->backslash str)
-	  (string-map (lambda (c)
-			(if (char=? c #\/) #\\ c))
-		      str))
+	
 	(define (load-as-data filename)
 	  (with-input-from-file filename
 	    (lambda ()
@@ -72,44 +61,87 @@
 	(define kernel (canonicalize-path (get-param 'kernel)))
 	(define initrd (canonicalize-path (get-param 'initrd)))
 	(define root (get-param 'root-device))
+	;; TODO submit patch to guix so if gnu.system and gnu.load are
+	;; not specified it determines all system revisions with the
+	;; same boot parameters and either offers them as choices or just loads the latest one.
 	(define args-that-could-be-infered-by-early-init-if-guix-was-patched
 	  "gnu.system=/var/guix/profiles/system gnu.load=/var/guix/profiles/system/boot")
+	;; efi standard uses backslash relative to the esp partition root, initrd and loader need this substitution
+	(define (slash->backslash str)
+	  (string-map (lambda (c)
+			(if (char=? c #\/) #\\ c))
+		      str))
+	(define loader (string-append (slash->backslash kernel) ".EFI"))
 	(define args (string-join (cons* (string-append "initrd=" (slash->backslash initrd))
 					 (string-append "root=" root)
 					 args-that-could-be-infered-by-early-init-if-guix-was-patched
 					 (get-param 'kernel-arguments))))
-	;; this is how grub does it, it seems absolutely absurd to me
-	;; it just uses a string and not the filesystem object that we
-	;; could directly measure the mount point of.
+	;; this is how grub decides where to install the files, it
+	;; seems absolutely absurd to me it just uses a string and not
+	;; the filesystem object that we could directly measure the
+	;; mount point of.
 	(define mount-point/target (string-append mount-point target))
 	(define bootloader-target (if (file-exists? mount-point/target)
                                       mount-point/target
                                       target))
+
+
+	;;; now we actually get to the useful bootloader installing code!
+	;; copy the kernel and initrd into the esp partition with the
+	;; same folder structure for simplicity.  we also append .EFI
+	;; to be sure that UEFI implementations accept it as a viable
+	;; loader although it is possible this is not necessary.
 	(mkdir-p (string-append bootloader-target (dirname kernel)))
 	(mkdir-p (string-append bootloader-target (dirname initrd)))
 	(copy-file kernel (string-append bootloader-target kernel ".EFI"))
 	(copy-file initrd (string-append bootloader-target initrd))
-	(define loader (string-append (slash->backslash kernel) ".EFI"))
-	;; output of efibootmgr has no space between the executing image and the arguments
-	(define expected-boot-entry (string-append loader args))
+
+	;; and now we need to run efibootmgr to put the boot entry.
+	
+	(use-modules (ice-9 popen) (ice-9 rdelim))
+        (define (command-output . args)
+	  ;; Run command with stdout captured, stderr merged into our stderr
+	  (let* ((port (apply open-pipe* OPEN_READ args))
+		 (out (read-string port))
+		 (status (close-pipe port)))  ; closing waits for child, returns status
+	    (if (zero? status)
+		out
+	        (error "command failed" (cons status args)))))
+	;; first read the boot options list so we can detect if our boot entry is already there
 	(define prev-boot-options (command-output
 				   #+(file-append efibootmgr "/sbin/efibootmgr")
 				   "--unicode"))
+	;; output of efibootmgr has no space between the executing image and the arguments
+	(define expected-boot-entry (string-append loader args))
+	;; if there is a boot entry that has all the same arguments then leave it be
 	(unless (string-contains prev-boot-options expected-boot-entry )
+	  ;; if the loader or args has changed then make a new entry
 	  (let ((new-output (command-output
 			     #+(file-append efibootmgr "/sbin/efibootmgr")
 			     "--create"
+			     ;; TODO figure out how to infer disk and
+			     ;; part in the format efibootmgr needs if
+			     ;; we check that `bootloader-target` is
+			     ;; the mount point for say /dev/nvme0n1p1
+			     ;; then disk = /dev/nvme0n1 and part=1,
+			     ;; the `p` vs no `p` in sda1 causes
+			     ;; issues with using a direct string
+			     ;; parsing, and that still assumes we
+			     ;; already have the mount point.
 			     "--disk" #$HARDCODED-EFIDEVICE
 			     "--part" #$HARDCODED-EFIPART
 			     "--label" (string-append "Guix" generation-n)
 			     "--loader" loader
 			     "--unicode"
 			     args)))
+	    ;; check the output now contains the expected string, this
+	    ;; is particularly important since if this fails we may
+	    ;; leave the machine in a broken state
 	    (unless (string-contains new-output expected-boot-entry)
 	      (error "efibootmgr create command was run but the expected entry was not present"))))
 	
-        
-	(#$(bootloader-installer grub-efi-removable-bootloader) bootloader target mount-point))))))
+        ;; I don't think the return value is used but just in case ensure this gexp resolves to the same value that our backup grub bootloader resolves to.
+	efi-removable-value)))))
 
 
 (define boot-config (bootloader-configuration
