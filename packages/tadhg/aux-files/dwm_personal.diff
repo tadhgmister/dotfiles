@@ -1,6 +1,6 @@
 diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
 --- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/config.def.h	2025-09-06 18:34:29.691588841 -0400
++++ /home/tadhg/src/dwm/config.def.h	2025-09-18 18:54:29.849478536 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
 -
@@ -55,7 +55,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
  };
  
  /* layout(s) */
-@@ -37,99 +49,233 @@ static const int nmaster     = 1;    /*
+@@ -37,99 +49,234 @@ static const int nmaster     = 1;    /*
  static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
  static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
  
@@ -279,6 +279,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
 -	TAGKEYS(                        XK_8,                      7)
 -	TAGKEYS(                        XK_9,                      8)
 -	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
+-	{ 0,                            HOLDKEY,   holdbar,        {0} },
 +	// tagkeys, starting from grave for 0, 1 to 9 then 0=>10 and minus=>11.
 +	TAGKEYS(                        XK_grave,                   0)
 +	TAGKEYS(                        XK_1,                       1)
@@ -296,15 +297,16 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
 +	{ MODKEY,                       XK_equal,      view,           {.ui = ~0 } },
 +	{ MODKEY|ShiftMask,             XK_equal,      tag,            {.ui = ~0 } },
 +	// pressing the win key with any other modifiers should show the bar,
-+	// in theory this could be handled as a special case in the code to ignore modifiers if the key is HOLDKEY but this works too.
- 	{ 0,                            HOLDKEY,   holdbar,        {0} },
-+	{ ShiftMask,                    HOLDKEY,   holdbar,        {0} },
-+	{ ControlMask,                  HOLDKEY,   holdbar,        {0} },
-+	{ ShiftMask|ControlMask,        HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask,                     HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ShiftMask,           HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ControlMask,         HOLDKEY,   holdbar,        {0} },
-+	{ Mod1Mask|ShiftMask|ControlMask,HOLDKEY,   holdbar,       {0} },
++        // in theory this could be handled as a special case in the code to ignore modifiers if the key is HOLDKEY but this works too.
++	// TODO figure out how to make use of AnyModifier
++        { 0,                            HOLDKEY,   holdbar,        {0} },
++        { ShiftMask,                    HOLDKEY,   holdbar,        {0} },
++        { ControlMask,                  HOLDKEY,   holdbar,        {0} },
++        { ShiftMask|ControlMask,        HOLDKEY,   holdbar,        {0} },
++        { Mod1Mask,                     HOLDKEY,   holdbar,        {0} },
++        { Mod1Mask|ShiftMask,           HOLDKEY,   holdbar,        {0} },
++        { Mod1Mask|ControlMask,         HOLDKEY,   holdbar,        {0} },
++        { Mod1Mask|ShiftMask|ControlMask,HOLDKEY,   holdbar,       {0} },
 +	// pressing alt key disables dozonal display, keyrelease function handles reverting this
 +	// I am not thrilled about dealing with holdbar and this as normal keybindings instead of both be special handling that could also
 +	// ignore modifiers but this is definitely easiest way
@@ -353,7 +355,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
 +CC = gcc
 diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
 --- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2025-09-06 18:31:49.951768781 -0400
++++ /home/tadhg/src/dwm/dwm.c	2025-09-19 12:19:22.692345951 -0400
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -398,7 +400,15 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  static void holdbar(const Arg *arg);
  static void togglefloating(const Arg *arg);
  static void togglefullscr(const Arg *arg);
-@@ -329,11 +336,17 @@ keyrelease(XEvent *e)
+@@ -290,6 +297,7 @@ static Window root, wmcheckwin;
+ static unsigned int autostarttags = 0;
+ static int autostartcomplete = 0;
+ static int autostartcmdscomplete = 0;
++static Client *tadhgWM = NULL;
+ 
+ /* configuration, allows nested code to access above variables */
+ #include "config.h"
+@@ -329,11 +337,17 @@ keyrelease(XEvent *e)
  			return;
  		}
  	}
@@ -417,7 +427,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	}
  }
  
-@@ -508,9 +521,15 @@ buttonpress(XEvent *e)
+@@ -508,9 +522,15 @@ buttonpress(XEvent *e)
  	}
  	if (ev->window == selmon->barwin) {
  		i = x = 0;
@@ -435,7 +445,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  		if (i < LENGTH(tags)) {
  			click = ClkTagBar;
  			arg.ui = 1 << i;
-@@ -809,17 +828,16 @@ drawbar(Monitor *m)
+@@ -809,17 +829,16 @@ drawbar(Monitor *m)
  	x = 0;
  	for (i = 0; i < LENGTH(tags); i++) {
  		w = TEXTW(tags[i]);
@@ -460,7 +470,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  
  	if ((w = m->ww - tw - x) > bh) {
  		if (m->sel) {
-@@ -833,6 +851,9 @@ drawbar(Monitor *m)
+@@ -833,6 +852,9 @@ drawbar(Monitor *m)
  		}
  	}
  	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
@@ -470,7 +480,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -1089,11 +1110,25 @@ keypress(XEvent *e)
+@@ -1089,11 +1111,25 @@ keypress(XEvent *e)
  			keys[i].func(&(keys[i].arg));
  }
  
@@ -498,7 +508,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	if (!sendevent(selmon->sel, wmatom[WMDelete])) {
  		XGrabServer(dpy);
  		XSetErrorHandler(xerrordummy);
-@@ -1153,8 +1188,9 @@ manage(Window w, XWindowAttributes *wa)
+@@ -1153,8 +1189,9 @@ manage(Window w, XWindowAttributes *wa)
  	grabbuttons(c, 0);
  	if (!c->isfloating)
  		c->isfloating = c->oldstate = trans != None || c->isfixed;
@@ -509,7 +519,33 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	attach(c);
  	attachstack(c);
  	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
-@@ -1445,8 +1481,13 @@ restack(Monitor *m)
+@@ -1165,6 +1202,9 @@ manage(Window w, XWindowAttributes *wa)
+ 		unfocus(selmon->sel, 0);
+ 	c->mon->sel = c;
+ 	arrange(c->mon);
++	if(tadhgWM == NULL && 0==strncmp(c->name, "TadhgWM", 8)){
++	  tadhgWM = c;
++	}
+ 	XMapWindow(dpy, c->win);
+ 	focus(NULL);
+ }
+@@ -1185,8 +1225,15 @@ maprequest(XEvent *e)
+ 	static XWindowAttributes wa;
+ 	XMapRequestEvent *ev = &e->xmaprequest;
+ 
++
+ 	if (!XGetWindowAttributes(dpy, ev->window, &wa) || wa.override_redirect)
+ 		return;
++	
++	if(tadhgWM != NULL){
++	  XReparentWindow(dpy, ev->window, tadhgWM->win, 0, 0);
++	  XMapWindow(dpy, ev->window);
++	  return;
++	}
+ 	if (!wintoclient(ev->window))
+ 		manage(ev->window, &wa);
+ }
+@@ -1445,8 +1492,13 @@ restack(Monitor *m)
  	drawbar(m);
  	if (!m->sel)
  		return;
@@ -524,7 +560,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	if (m->lt[m->sellt]->arrange) {
  		wc.stack_mode = Below;
  		wc.sibling = m->barwin;
-@@ -1459,14 +1500,70 @@ restack(Monitor *m)
+@@ -1459,14 +1511,70 @@ restack(Monitor *m)
  	XSync(dpy, False);
  	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
  }
@@ -596,7 +632,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  		if (!(autostartcomplete || autostarttags))
  			autostarttagsspawner();
  		if (handler[ev.type])
-@@ -1571,24 +1668,27 @@ setfullscreen(Client *c, int fullscreen)
+@@ -1571,24 +1679,27 @@ setfullscreen(Client *c, int fullscreen)
  			PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
  		c->isfullscreen = 1;
  		c->oldstate = c->isfloating;
@@ -631,7 +667,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -1638,7 +1738,7 @@ setup(void)
+@@ -1638,7 +1749,7 @@ setup(void)
  	drw = drw_create(dpy, screen, root, sw, sh);
  	if (!drw_font_create(drw, font))
  		die("no fonts could be loaded.");
@@ -640,7 +676,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	bh = drw->font->h + 2;
  	updategeom();
  	/* init atoms */
-@@ -1666,6 +1766,7 @@ setup(void)
+@@ -1666,6 +1777,7 @@ setup(void)
  		scheme[i] = drw_scm_create(drw, colors[i], 3);
  	/* init bars */
  	updatebars();
@@ -648,7 +684,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	updatestatus();
  	/* supporting window for NetWMCheck */
  	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
-@@ -1696,6 +1797,13 @@ seturgent(Client *c, int urg)
+@@ -1696,6 +1808,13 @@ seturgent(Client *c, int urg)
  	XWMHints *wmh;
  
  	c->isurgent = urg;
@@ -662,7 +698,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	if (!(wmh = XGetWMHints(dpy, c->win)))
  		return;
  	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
-@@ -1824,6 +1932,13 @@ togglebar(const Arg *arg)
+@@ -1824,6 +1943,13 @@ togglebar(const Arg *arg)
  }
  
  void
@@ -676,7 +712,18 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  togglefloating(const Arg *arg)
  {
  	if (!selmon->sel)
-@@ -2135,9 +2250,19 @@ updatesizehints(Client *c)
+@@ -1910,7 +2036,9 @@ unmanage(Client *c, int destroyed)
+ {
+ 	Monitor *m = c->mon;
+ 	XWindowChanges wc;
+-
++	if(tadhgWM == c){
++	  tadhgWM = NULL;
++	}
+ 	detach(c);
+ 	detachstack(c);
+ 	if (!destroyed) {
+@@ -2135,9 +2263,19 @@ updatesizehints(Client *c)
  void
  updatestatus(void)
  {
@@ -699,7 +746,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2145,8 +2270,23 @@ updatetitle(Client *c)
+@@ -2145,8 +2283,23 @@ updatetitle(Client *c)
  {
  	if (!gettextprop(c->win, netatom[NetWMName], c->name, sizeof c->name))
  		gettextprop(c->win, XA_WM_NAME, c->name, sizeof c->name);
@@ -724,7 +771,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2165,19 +2305,27 @@ void
+@@ -2165,19 +2318,27 @@ void
  updatewmhints(Client *c)
  {
  	XWMHints *wmh;
@@ -754,7 +801,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  }
  
  void
-@@ -2340,6 +2488,11 @@ bstack(Monitor *m) {
+@@ -2340,6 +2501,11 @@ bstack(Monitor *m) {
  			w = (m->ww - mx) / (MIN(n, m->nmaster) - i);
  			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0);
  			mx += WIDTH(c);
@@ -959,3 +1006,393 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/status.
 +
 +void updatestatus_regular(char* stext, struct timespec *current_time, struct timespec *next_update);
 +
+diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/TAGS /home/tadhg/src/dwm/TAGS
+--- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/TAGS	1969-12-31 19:00:00.000000000 -0500
++++ /home/tadhg/src/dwm/TAGS	2025-09-10 15:06:01.701560779 -0400
+@@ -0,0 +1,386 @@
++
++drw.c,413
++drw_create(14,260
++drw_resize(31,676
++drw_free(44,943
++xfont_create(56,1190
++xfont_free(87,1943
++drw_font_create(97,2061
++drw_font_free(110,2231
++drw_clr_create(118,2302
++drw_scm_create(132,2770
++drw_setscheme(147,3108
++drw_rect(154,3183
++drw_text(166,3571
++drw_map(232,5282
++drw_font_getwidth(242,5492
++drw_font_getwidth_clamp(250,5670
++drw_font_getexts(259,5896
++drw_cur_create(279,6407
++drw_cur_free(292,6593
++
++dwm.c,7881
++#define BUTTONMASK 51,1602
++#define CLEANMASK(52,1670
++#define INTERSECT(53,1806
++#define ISVISIBLE(55,1987
++#define LENGTH(56,2065
++#define MOUSEMASK 57,2122
++#define WIDTH(58,2185
++#define HEIGHT(59,2240
++#define TAGMASK 60,2295
++#define TEXTW(61,2353
++#define TEXTWM(62,2430
++enum { CurNormal,65,2519
++enum { CurNormal, CurResize,65,2519
++enum { CurNormal, CurResize, CurMove,65,2519
++enum { CurNormal, CurResize, CurMove, CurLast 65,2519
++enum { SchemeNorm,66,2581
++enum { SchemeNorm, SchemeSel,66,2581
++enum { SchemeNorm, SchemeSel, SchemeFade 66,2581
++enum { NetSupported,67,2645
++enum { NetSupported, NetWMName,67,2645
++enum { NetSupported, NetWMName, NetWMState,67,2645
++enum { NetSupported, NetWMName, NetWMState, NetWMCheck,67,2645
++       NetWMFullscreen,68,2701
++       NetWMFullscreen, NetActiveWindow,68,2701
++       NetWMFullscreen, NetActiveWindow, NetWMWindowType,68,2701
++       NetWMWindowTypeDialog,69,2759
++       NetWMWindowTypeDialog, NetClientList,69,2759
++       NetWMWindowTypeDialog, NetClientList, NetLast 69,2759
++enum { WMProtocols,70,2832
++enum { WMProtocols, WMDelete,70,2832
++enum { WMProtocols, WMDelete, WMState,70,2832
++enum { WMProtocols, WMDelete, WMState, WMTakeFocus,70,2832
++enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast 70,2832
++enum { ClkTagBar,71,2914
++enum { ClkTagBar, ClkLtSymbol,71,2914
++enum { ClkTagBar, ClkLtSymbol, ClkStatusText,71,2914
++enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,71,2914
++       ClkClientWin,72,2973
++       ClkClientWin, ClkRootWin,72,2973
++       ClkClientWin, ClkRootWin, ClkLast 72,2973
++struct timespec current_time;74,3031
++struct timespec next_update;75,3061
++int usedoz 76,3090
++	int i;79,3123
++	unsigned int ui;80,3131
++	float f;81,3149
++	const void *v;v82,3159
++} Arg;83,3175
++	unsigned int click;86,3200
++	unsigned int mask;87,3221
++	unsigned int button;88,3241
++	void (*func)func89,3263
++	const Arg arg;90,3294
++} Button;91,3310
++typedef struct Monitor Monitor;93,3321
++typedef struct Client Client;94,3353
++struct Client 95,3383
++	char name[name96,3399
++	float mina,97,3416
++	float mina, maxa;97,3416
++	int x,98,3435
++	int x, y,98,3435
++	int x, y, w,98,3435
++	int x, y, w, h;98,3435
++	int oldx,99,3452
++	int oldx, oldy,99,3452
++	int oldx, oldy, oldw,99,3452
++	int oldx, oldy, oldw, oldh;99,3452
++	int basew,100,3481
++	int basew, baseh,100,3481
++	int basew, baseh, incw,100,3481
++	int basew, baseh, incw, inch,100,3481
++	int basew, baseh, incw, inch, maxw,100,3481
++	int basew, baseh, incw, inch, maxw, maxh,100,3481
++	int basew, baseh, incw, inch, maxw, maxh, minw,100,3481
++	int basew, baseh, incw, inch, maxw, maxh, minw, minh,100,3481
++	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;100,3481
++	int bw,101,3548
++	int bw, oldbw;101,3548
++	unsigned int tags;102,3564
++	int isfixed,103,3584
++	int isfixed, isfloating,103,3584
++	int isfixed, isfloating, isurgent,103,3584
++	int isfixed, isfloating, isurgent, neverfocus,103,3584
++	int isfixed, isfloating, isurgent, neverfocus, oldstate,103,3584
++	int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;103,3584
++	Client *next;next104,3656
++	Client *snext;snext105,3671
++	Monitor *mon;mon106,3687
++	Window win;107,3702
++	unsigned int mod;111,3736
++	KeySym keysym;112,3755
++	void (*func)func113,3771
++	const Arg arg;114,3799
++} Key;115,3815
++	const char *symbol;symbol118,3840
++	void (*arrange)arrange119,3861
++} Layout;120,3890
++typedef struct Pertag Pertag;122,3901
++struct Monitor 123,3931
++	char ltsymbol[ltsymbol124,3948
++	float mfact;125,3968
++	int nmaster;126,3982
++	int num;127,3996
++	int by;128,4006
++	int mx,129,4048
++	int mx, my,129,4048
++	int mx, my, mw,129,4048
++	int mx, my, mw, mh;129,4048
++	int wx,130,4089
++	int wx, wy,130,4089
++	int wx, wy, ww,130,4089
++	int wx, wy, ww, wh;130,4089
++	unsigned int seltags;131,4131
++	unsigned int sellt;132,4154
++	unsigned int tagset[tagset133,4175
++	int showbar;134,4200
++	int topbar;135,4214
++	Client *clients;clients136,4227
++	Client *sel;sel137,4245
++	Client *stack;stack138,4259
++	Monitor *next;next139,4275
++	Window barwin;140,4291
++	const Layout *lt[lt141,4307
++	Pertag *pertag;pertag142,4329
++	const char *instance;instance147,4387
++	const char *title;title148,4410
++	unsigned int tags;149,4430
++	int isfloating;150,4450
++	int monitor;151,4467
++} Rule;152,4481
++	const char **cmd;cmd155,4507
++	unsigned int tags;156,4526
++} Autostarttag;157,4546
++static const char broken[broken263,8533
++static char stext[stext264,8572
++static int screen;265,8596
++static int sw,266,8615
++static int sw, sh;266,8615
++static int bh;267,8690
++static int lrpad;268,8736
++static unsigned int numlockmask 270,8862
++static Atom wmatom[wmatom289,9441
++static Atom wmatom[WMLast], netatom[netatom289,9441
++static int running 290,9487
++static Cur *cursor[cursor291,9511
++static Clr **scheme;scheme292,9540
++static Display *dpy;dpy293,9561
++static Drw *drw;drw294,9582
++static Monitor *mons,mons295,9599
++static Monitor *mons, *selmon;selmon295,9599
++static Window root,296,9630
++static Window root, wmcheckwin;296,9630
++static unsigned int autostarttags 297,9662
++static int autostartcomplete 298,9701
++static int autostartcmdscomplete 299,9735
++struct Pertag 304,9861
++	unsigned int curtag,305,9877
++	unsigned int curtag, prevtag;305,9877
++	int nmasters[nmasters306,9939
++	float mfacts[mfacts307,10011
++	unsigned int sellts[sellts308,10065
++	const Layout *ltidxs[ltidxs309,10128
++struct NumTags 313,10291
++struct NumTags { char limitexceeded[limitexceeded313,10291
++holdbar(317,10396
++keyrelease(327,10592
++updateholdbarpos(354,11223
++applyrules(367,11438
++applysizehints(403,12290
++arrange(471,13938
++arrangemon(485,14154
++attach(493,14317
++attachstack(500,14395
++buttonpress(507,14475
++checkotherwm(555,15843
++cleanup(566,16122
++cleanupmon(594,16751
++clientmessage(610,17005
++configure(629,17558
++configurenotify(648,17908
++configurerequest(676,18538
++createmon(728,19929
++destroynotify(757,20596
++detach(767,20745
++detachstack(776,20870
++dirtomon(790,21118
++drawbar(805,21358
++drawbars(860,23056
++enternotify(869,23141
++expose(888,23522
++focus(898,23662
++focusin(924,24313
++focusmon(933,24457
++focusstack(947,24636
++getatomprop(973,25149
++getrootptr(989,25441
++getstate(999,25594
++gettextprop(1017,25931
++grabbuttons(1040,26475
++grabkeys(1061,27122
++incnmaster(1079,27578
++isuniquegeom(1087,27759
++keypress(1098,28049
++int are_any_clients_running(1113,28369
++killclient(1122,28507
++manage(1144,29147
++mappingnotify(1209,30902
++maprequest(1219,31054
++monocle(1231,31300
++motionnotify(1246,31655
++movemouse(1263,31937
++nexttiled(1323,33571
++pop(1330,33674
++propertynotify(1339,33752
++quit(1376,34588
++recttomon(1382,34638
++resize(1396,34848
++resizeclient(1403,34999
++resizemouse(1418,35365
++restack(1475,37047
++update_time(1520,38761
++run(1560,40342
++scan(1575,40664
++sendmon(1602,41376
++setclientstate(1618,41632
++sendevent(1627,41826
++setfocus(1652,42349
++setfullscreen(1664,42632
++setlayout(1695,43595
++setmfact(1710,44087
++setup(1724,44376
++seturgent(1795,47301
++showhide(1815,47807
++sigchld(1833,48207
++spawn(1841,48361
++tag(1853,48578
++autostarttagsspawner(1863,48727
++applyautostarttags(1880,49024
++tagmon(1890,49138
++tile(1898,49256
++togglebar(1926,49962
++disabledoz(1935,50186
++togglefloating(1942,50255
++togglefullscr(1956,50625
++toggletag(1963,50743
++toggleview(1978,50968
++unfocus(2011,51991
++unmanage(2024,52281
++unmapnotify(2050,52867
++updatebars(2064,53071
++updatebarpos(2086,53682
++updateclientlist(2099,53893
++updategeom(2113,54197
++updatenumlockmask(2191,55989
++updatesizehints(2207,56351
++updatestatus(2251,57523
++updatetitle(2269,58219
++updatewindowtype(2293,59309
++updatewmhints(2305,59585
++view(2332,60183
++wintoclient(2367,61201
++wintomon(2380,61383
++xerror(2400,61849
++xerrordummy(2418,62675
++xerrorstart(2426,62824
++zoom(2433,62945
++main(2445,63163
++bstack(2469,63701
++bstackhoriz(2506,64622
++
++status.c,432
++pscanf(11,169
++#define CHARGE_NOW 30,423
++#define CHARGE_FULL 31,484
++#define CURRENT_DRAW 32,547
++#define BAT_STATUS 33,611
++struct battery_info 35,669
++  double perc;36,691
++  double hours_left;37,750
++#define NAN_IF_NOT_ONE(39,848
++struct battery_info  get_battery_status(43,1059
++static const char *DOZ[DOZ75,2289
++static const char *SUITS[SUITS95,3104
++void updatestatus_dozonal(107,3618
++void updatestatus_regular(150,5776
++
++transient.c,16
++int main(8,127
++
++util.c,28
++die(10,162
++ecalloc(29,405
++
++config.def.h,1603
++static const unsigned int borderpx 4,103
++static const unsigned int snap 5,181
++static const int showbar 7,376
++static const int topbar 8,445
++static const char font[font9,518
++static const char dmenufont[dmenufont10,572
++static const char col_gray1[col_gray111,631
++static const char col_gray2[col_gray212,680
++static const char col_gray3[col_gray313,729
++static const char col_gray4[col_gray414,778
++static const char col_cyan[col_cyan15,827
++static const char *colors[colors16,876
++static const char *tags[tags27,1454
++static const Rule rules[rules36,2289
++static const float mfact 47,2656
++static const int nmaster 48,2739
++static const int resizehints 49,2815
++static const int lockfullscreen 50,2903
++static const float MIN_ASPECT_RATIO_TO_TILE_HORIZONTALLY 53,3009
++static const float SHRINK_FACTOR_FOR_FULLSCREEN 55,3141
++void myresize(58,3394
++void mytile(68,3894
++static const Layout layouts[layouts114,5880
++#define MODKEY 124,6186
++#define TAGKEYS(125,6210
++#define HOLDKEY 130,6559
++#define HYPERKEY 131,6635
++#define SHCMD(134,6728
++static const char *dmenucmd[dmenucmd138,6819
++static const char *termcmd[termcmd139,6968
++static const char *chatclientcmd[chatclientcmd140,7023
++static const char *discord[discord141,7078
++static const char *browsercmd[browsercmd144,7288
++static const char *emailclientcmd[emailclientcmd145,7339
++static const char *emacscmd[emacscmd146,7396
++static const char *insertemoji[insertemoji147,7497
++Autostarttag autostarttaglist[autostarttaglist149,7557
++static const Key keys[keys165,8293
++static const Button buttons[buttons265,16145
++
++drw.h,500
++	Cursor cursor;4,76
++} Cur;5,92
++typedef struct Fnt 7,100
++	Display *dpy;dpy8,121
++	unsigned int h;9,136
++	PangoLayout *layout;layout10,153
++} Fnt;11,175
++enum { ColFg,13,183
++enum { ColFg, ColBg,13,183
++enum { ColFg, ColBg, ColBorder 13,183
++typedef XftColor Clr;14,240
++	unsigned int w,17,280
++	unsigned int w, h;17,280
++	Display *dpy;dpy18,300
++	int screen;19,315
++	Window root;20,328
++	Drawable drawable;21,342
++	GC gc;22,362
++	Clr *scheme;scheme23,370
++	Fnt *font;font24,384
++} Drw;25,396
++
++util.h,60
++#define MAX(4,71
++#define MIN(7,146
++#define BETWEEN(9,209
++
++status.h,0

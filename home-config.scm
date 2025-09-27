@@ -145,20 +145,10 @@ emacsclient --no-wait --reuse-frame -a vim $@")
 			   "#!/bin/sh
 emacsclient --no-wait --reuse-frame -a brave $@")
     ;; and other scripts that I want to use
-    (single-script-package "insert-emoji"
-    "#!/bin/sh
-
-# Use dmenu to select a line
-CHOSEN=$(cat " (local-file "emojilist.txt") " | " dmenu "/bin/dmenu -i -p \"Emoji:\")
-
-# Exit if nothing chosen
-[[ -z \"$CHOSEN\" ]] && exit
-
-# Extract the last word (emoji character) from the line
-EMOJI=$(echo \"$CHOSEN\" | awk '{print $NF}')
-sleep 0.1 # sleep a tiny amount to let the dmenu window fully close and ensure we are sending details to correct window
-# Type the emoji using xdotool by pressing key U followed by hex code of emoji
-" xdotool "/bin/xdotool key --clearmodifiers U$(printf %x \"'$EMOJI\")
+    (single-script-package "get-source"
+			   "#!/bin/sh
+cd ~/src
+tar -vxf $(guix build -q --source $1)
 ")
    (single-script-package "screenshot"
     "#!/bin/sh
@@ -195,6 +185,21 @@ else
     echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &
 fi
 ")
+    (single-script-package "insert-emoji"
+    "#!/bin/sh
+
+# Use dmenu to select a line
+CHOSEN=$(cat " (local-file "emojilist.txt") " | " dmenu "/bin/dmenu -i -p \"Emoji:\")
+
+# Exit if nothing chosen
+[[ -z \"$CHOSEN\" ]] && exit
+
+# Extract the last word (emoji character) from the line
+EMOJI=$(echo \"$CHOSEN\" | awk '{print $NF}')
+sleep 0.1 # sleep a tiny amount to let the dmenu window fully close and ensure we are sending details to correct window
+# Type the emoji using xdotool by pressing key U followed by hex code of emoji
+" xdotool "/bin/xdotool key --clearmodifiers U$(printf %x \"'$EMOJI\")
+")
    (single-script-package "brctl" ;;TODO: don't make this hardcoded path to backlight?
     "#!/bin/sh
 if [ $1 -ge 2 ]; then
@@ -204,10 +209,11 @@ else
 fi
 echo $number > /sys/class/backlight/intel_backlight/brightness
 ")
-;; TODO: figure out how wine is installed and whether there is any configs given to wine to make this work
-   (single-script-package "sims3"
-    "#!/bin/sh\n"
-    "wine ~/.wine/drive_c/Program\\ Files/Electronic\\ Arts/The\\ Sims\\ 3/Game/Bin/TS3W.exe\n")
+   ;; ;; TODO: figure out how wine is installed and whether there is any configs given to wine to make this work
+   ;; TODO: figure out how to fix this so it actally works again
+;;    (single-script-package "sims3"
+;;     "#!/bin/sh\n"
+;;     "wine ~/.wine/drive_c/Program\\ Files/Electronic\\ Arts/The\\ Sims\\ 3/Game/Bin/TS3W.exe\n")
    
 ;; note that this script relies on having pavucontrol and bluez packages installed, both are occasionally needed outside this script
 ;; so having them installed makes the most sense.
@@ -460,6 +466,7 @@ source /run/current-system/profile/etc/profile.d/nix.sh" . #t)
 			       "geiser"
 			       "geiser-guile"
 			       "guix"
+			       "rust-mode"
 			       "typescript-mode"))
 	      (init.el (org-tangle-file "init.el" (local-file "./emacsconfig.org")))))
     (simple-service 'configfiles home-xdg-configuration-files-service-type `(
