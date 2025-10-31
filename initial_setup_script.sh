@@ -108,7 +108,8 @@ echo "- Encrypting drive and opening"
 # note that apparently with luks2 grub install just can't decrypt the drive? so using luks1
 cryptsetup luksFormat --type luks1 -q ${ROOT_PART} /keyfile.bin --key-slot=1
 # adds a password which will be kind of important to actually get into the drive once booted since the keyfile is going to live on the encrypted drive
-cryptsetup luksAddKey ${ROOT_PART} --new-key-slot=0 --key-file=/keyfile.bin
+# new-key-slot option doesn't exist on older models of cryptsetup, probably isn't necessary anyway
+cryptsetup luksAddKey ${ROOT_PART} --key-file=/keyfile.bin #--new-key-slot=0
 # will grab uuid now before opening causing this command to show 2 uuids
 # note that technically we maybe should do the udev settle again since the UUID changes when the drive gets encrypted
 # but because of the delay of user typing in password it is almost certainly fine.
@@ -157,16 +158,16 @@ echo "- partition is ready, writing system-info.scm"
 # read some variables that will go into our config
 RESUME_OFFSET="$(btrfs inspect-internal map-swapfile -r /mnt/swap/swapfile)"
 EFI_UUID="$(lsblk -o UUID ${EFI_PART} -n)"
-## TODO: these files are created by root user, figure out how to switch them back to be owned by user of new system.
-## or at least copy to a place that is globally readable and get the after first boot script to copy them as the new user.
+# TODO ideally we should get these directly to the new users home directory but doing that here would make their home folder owned by root
+NEW_TMP_LOCATION_FOR_DOTFILES=/mnt/tmp/dotfiles
 # copy this folder (assuming this is being run from the dotfiles folder) to the mount
 # in order to setup system-info module there without touching the one in this folder
-mkdir -p /mnt/home/$SUDO_USER/src/dotfiles/
-cp -r ./ /mnt/home/$SUDO_USER/src/dotfiles/
+mkdir -p $NEW_TMP_LOCATION_FOR_DOTFILES
+cp -r ./ $NEW_TMP_LOCATION_FOR_DOTFILES/
 # echo relevent defines to fit into the os definition
 # these would be copied to a file used by the operating system definition.
-mkdir -p /mnt/home/$SUDO_USER/src/dotfiles/packages/system-info
-cat > /mnt/home/$SUDO_USER/src/dotfiles/packages/system-info/details.scm <<EOF
+mkdir -p $NEW_TMP_LOCATION_FOR_DOTFILES/packages/system-info
+cat > $NEW_TMP_LOCATION_FOR_DOTFILES/packages/system-info/details.scm <<EOF
 (define-module (system-info details))
 ;; uuid of luks encrypted root partition
 (define-public ROOT-UUID "${ROOT_UUID}")
@@ -184,7 +185,7 @@ EOF
 
 # and copy the template system info to the setup file, the system-info is in .gitignore so will not be edited by updates to the repo
 # so only this script (with above variables) and the template file need to be in sync (and the interface that os.scm depends on from it)
-cp -p template-system-info.scm /mnt/home/$SUDO_USER/src/dotfiles/packages/system-info/setup.scm
+cp -p template-system-info.scm $NEW_TMP_LOCATION_FOR_DOTFILES/packages/system-info/setup.scm
 
 
 echo "- details for drive saved to packages/system-info/ in current folder which has been copied to /mnt/home/${SUDO_USER}/src/dotfiles"
@@ -192,7 +193,7 @@ echo "  note that these will be owned by root, if you need to change them you ca
 
 echo "- building system"
 # do the system build first, then we will build the home config at the same time as copying over the system config
-guix system build -L /mnt/home/$SUDO_USER/src/dotfiles/packages os.scm --max-jobs=8
+guix system build -L $NEW_TMP_LOCATION_FOR_DOTFILES/packages os.scm --max-jobs=8
 
 echo "- system is built, copying over and building home config"
 ## TODO: doing the home building in parallel with system copying caused problems with fg not consistently waiting until both were done, figure out how to properly do parallel operations and re-enable this optimization
@@ -201,7 +202,7 @@ echo "- system is built, copying over and building home config"
 # as that would force it to finish before the system init can begin which would totally defeat the purpose
 # this order is preferable for the behaviour of fg below, so we can notify the user as soon as the system is copied and allow the home build to take longer if necessary
 ##guix home build -L /mnt/home/$SUDO_USER/src/dotfiles/packages home-config.scm --max-jobs=3 &
-guix system init -L /mnt/home/$SUDO_USER/src/dotfiles/packages os.scm /mnt
+guix system init -L $NEW_TMP_LOCATION_FOR_DOTFILES/packages os.scm /mnt
 echo "- system is initialized, you can interrupt this script and go use your system now if you wish, or wait for home config to be copied"
 # we need to use fg to move the home build back to foreground so if the user interrupts it cancels the build, using wait would not give ideal results
 ##fg || echo "home finished building before system was copied over"

@@ -18,7 +18,7 @@
 
 ;; TODO figure out how the heck to derive these in the format that efibootmgr accepts from the bootloader config
 (define HARDCODED-EFIDEVICE "/dev/nvme0n1")
-(define HARDCODED-EFIPART "3")
+(define HARDCODED-EFIPART "1")
 
 (define custom-bootloader
   (bootloader
@@ -221,6 +221,7 @@
 
 (define* (wrap-os base-os-routine)
   (let ((base-os (base-os-routine #:hostname HOSTNAME
+				  #:username USERNAME
 				  #:filesystems filesystems
 				  #:boot-config boot-config)))
     

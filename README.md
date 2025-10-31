@@ -127,7 +127,7 @@ wpa_supplicant -c wpa_sup.conf -i ${WIFI_INTERFACE} -B
 # if you skipped the wifi stuff get the interface of ethernet to put here.
 dhclient -V ${WIFI_INTERFACE}
 # clone the dotfiles repo and go into the folder
-git clone https://github.com/tadhgmister/dotfiles.git
+guix shell git -- git clone https://github.com/tadhgmister/dotfiles.git
 cd dotfiles
 ```
 
