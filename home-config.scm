@@ -181,9 +181,13 @@ fi
 thing_to_run=`dmenu_path | cat " (local-file "./list_of_bangs.txt") " - | dmenu \"$@\"`
 if [ \"${thing_to_run:0:1}\" = \"!\" ]; then
     brave \"? $thing_to_run\" &
-else
-    echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &
+    exit 0
 fi
+if [ \"${thing_to_run:0:1}\" = \"~\" ]; then
+    thing_to_run=\"xdg-open ${thing_to_run}\"
+fi
+echo \"$thing_to_run\" | ${SHELL:-\"/bin/sh\"} &
+
 ")
     (single-script-package "insert-emoji"
     "#!/bin/sh
@@ -407,8 +411,8 @@ fi")))
           (location-provider 'manual)
           (latitude 45.421532)
           (longitude -75.697189)
-	  (nighttime-temperature 2500)
-	  (nighttime-brightness 0.9)))
+	  (nighttime-temperature 2000)
+	  (nighttime-brightness 1.0)))
     ;; (service  home-batsignal-service-type
     ;; 		    (home-batsignal-configuration
     ;; 		     ()))

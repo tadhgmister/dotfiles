@@ -1,4 +1,4 @@
-;;;; to connect to device while it is plugged in
+;;;; to connect to device while it is plugged in with serial cable
 ;; guix shell minicom -- sudo minicom -w -b 115200 -D /dev/ttyUSB0
 ;;;; to disable watchdog timer while in the uboot prompt
 ;; mw 0xf1020300 0x403
@@ -10,6 +10,10 @@
 ;; guix system build turris.scm -L packages --target=arm-linux-gnueabihf --max-jobs=8 --cores=2
 ;;;; and to deploy use:
 ;; guix deploy turris.scm -L packages
+
+;;;; datasheet for device this is designed for:
+;; https://static.turris.com/docs/omnia/omnia2020-datasheet.pdf
+
 
 ;;;;;;; THIS FILE IS A MESS
 ;; More than half of this file is code that I need to submit as patches to guix to encorperate it into the mainline
@@ -42,8 +46,17 @@
  ((gnu packages web) #:select(quark))
  ((gnu packages bash) #:select(bash))
 
- ((gnu services networking) #:select(dhcpcd-service-type dhcpcd-configuration))
+ ((gnu services networking)
+  #:select(dhcpcd-service-type
+	   dhcpcd-configuration
+	   hostapd-service-type
+	   hostapd-configuration
+	   nftables-service-type
+	   nftables-configuration
+	   dhcpd-service-type
+	   dhcpd-configuration))
  ((gnu services ssh) #:select(openssh-service-type openssh-configuration))
+ ((gnu services sysctl) #:select(sysctl-service-type sysctl-configuration sysctl-configuration-settings))
  ((gnu packages bittorrent) #:select(transmission))
  ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration transmission-password-hash))
  ((gnu services desktop) #:select (sane-service-type))
@@ -110,6 +123,9 @@
                  (install-file "syncthing" (string-append #$output "/bin"))
                  (for-each (cut install-file <> (string-append #$output:utils "/bin/"))
                            '("ursrv" "stupgrades" "strelaypoolsrv" "stcrashreceiver" "stdiscosrv" "strelaysrv")))))))))))
+
+
+
 ;;;; Transmission headless
 
 ;; todo at least extract this to another file or preferably submit as patch to guix
@@ -227,23 +243,33 @@
                               '(
                                 ;; is critically needed, guix gzips its initrd
                                 ("CONFIG_RD_GZIP" . #t)
-                                ;; wifi drivers
+                                ;; wifi driver dependencies
                                 ("CONFIG_CFG80211" . m)
                                 ("CONFIG_MAC80211" . m)
                                 ("CONFIG_WLAN_VENDOR_ATH" . #t)
+				;; for WLE200N2   Qualcomm Atheros AR9287 802.11bgn
                                 ("CONFIG_ATH9K" . m)
+				;; for WLE900VX   Qualcomm Atheros QCA986x/988x 802.11ac
+				;; TODO: this is loaded as a kernel module and lspci lists the chip but it doesn't show up as a network interface?
                                 ("CONFIG_ATH10K" . m)
                                 ("CONFIG_ATH10K_PCI" . m)
+
+				;;; options enabled by guix normally but did not work when I tried to cross compile
+                                ;;("CONFIG_HAVE_GCC_PLUGINS" . #t)
+                                ;;("CONFIG_GCC_PLUGINS" . #t)
+				;;("CONFIG_GCC_PLUGIN_LATENT_ENTROPY" . #t)
 				
-                                ;("CONFIG_HAVE_GCC_PLUGINS" . #t)
-                                ;("CONFIG_GCC_PLUGINS" . #t)
-                                ;("CONFIG_GCC_PLUGIN_LATENT_ENTROPY" . #t)
-                                ;; options that seem to be disabled in the turris but exist in the kernel
-                                ;; TODO: investigate these options
-                                ;("CONFIG_TURRIS_OMNIA_MCU_GPIO" . #t)
-                                ;("CONFIG_TURRIS_OMNIA_MCU_SYSOFF_WAKEUP" . #t)
-                                ;("CONFIG_TURRIS_OMNIA_MCU_WATCHDOG" . #t)
-                                ;("CONFIG_TURRIS_OMNIA_MCU_TRNG" . #t)
+                                ;;; options that are not in the turris
+				;;; os config but probably got
+				;;; installed as seperate modules with
+				;;; their package manager
+				;;; TODO: investigate these options
+                                ;; ("CONFIG_CZNIC_PLATFORMS" . #t)
+                                ;; ("CONFIG_TURRIS_OMNIA_MCU" . m)
+                                ;; ("CONFIG_TURRIS_OMNIA_MCU_GPIO" . #t)
+                                ;; ("CONFIG_TURRIS_OMNIA_MCU_SYSOFF_WAKEUP" . #t)
+                                ;; ("CONFIG_TURRIS_OMNIA_MCU_WATCHDOG" . #t)
+                                ;; ("CONFIG_TURRIS_OMNIA_MCU_TRNG" . #t)
                                 ))))
 
 
@@ -269,7 +295,65 @@
 			     (list "huaweibackup" (gallery-folder "/home/tadhg/Pictures/huawaiBackup/"))
 			     (list "ciaranBrunelleCapeCod" (gallery-folder "/home/tadhg/Pictures/ciaranTrip/")))))
 
+(define my-hostapd-config (hostapd-configuration
+		(interface "wlp3s0")
+		(ssid "Tadhg's Router")
+		(driver "nl80211")
+		(channel 0);;"acs_survey") ;; supposedly 0 and "acs_survey" should do the same thing, I'd rather be more explicit about it but will have to patch guix to allow that symbol
+		(extra-settings "
+hw_mode=g
+country_code=CA
+macaddr_acl=0
+auth_algs=1
+wpa=2
+wpa_psk=ac9ce402606b4f9281ee1801e3f6262803d105e4273803896d076a845f7a0ac8
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP")))
+;; note the second domain name server is what shows up when i run
+;; "nmcli device show wlp166s0" on my laptop (IP4.DNS[2] entry)
+;; think it is decided by the bell modem, ideally I could specify to use whatever the local system sees as the viable domain name servers via dhcpcd (client) to the parent modem
+(define dhcpd.conf (plain-file "dhcpd.conf" "
+subnet 192.168.80.0 netmask 255.255.255.0 {
+    range 192.168.80.10 192.168.80.100;
+    option routers 192.168.80.1;
+    option domain-name-servers 192.168.2.1, 207.164.234.193, 8.8.8.8;
+}
+subnet 192.168.81.0 netmask 255.255.255.0 {
+    range 192.168.81.10 192.168.81.100;
+    option routers 192.168.81.1;
+    option domain-name-servers 192.168.2.1, 207.164.234.193, 8.8.8.8;
+}
+"))
+;; network address translation (NAT) after deciding where to go if the packet is going to eth2 (the WAN port for external internet) 'masquerade' so it looks like the packet came from this device
+;; filter to drop packets unless it is from WAN going to external or is reply that is established/related to a request that already went out.
+(define nftables.conf (plain-file "nftables.conf" "
+table ip nat {
+    chain prerouting {
+        type nat hook prerouting priority 0;
+    }
 
+    chain postrouting {
+        type nat hook postrouting priority 100;
+        oifname \"eth2\" masquerade
+    }
+}
+
+table ip filter {
+    chain forward {
+        type filter hook forward priority 0;
+        policy drop;
+
+        # Allow established/related packets back in
+        ct state established,related accept
+
+        # Allow forwarding from anything to WAN
+        oifname \"eth2\" accept
+        # Except from WAN to WAN
+        iifname \"eth2\" oifname \"eth2\" drop
+    }
+}
+"))
 (define my-system
   (operating-system
     (kernel kernel-to-use)
@@ -284,8 +368,10 @@
                                        "btrfs" ;; baked into kernel
                                        )))
     (kernel-arguments (list
+		       ;; TODO these are actually baked into the kernel according to the turris-kernel.config file, may be able to drop these
                        "earlyprintk"
                        "console=ttyS0,115200"
+		       
                        ;;"pcie_aspm=no"
                        ;;"modprobe.blacklist=pcieaspm";;,usbmouse,usbkbd"
                        ))
@@ -304,13 +390,14 @@
                           (type "btrfs"))
                         %base-file-systems))
     (users (cons*
+	    ;;;; sftp still allows accessing root directory, and using chroot breaks all of guix symlinks
 	    (user-account
 	      (name "guest")
 	      (comment "external access")
 	      (group "sftpusers")
 	      ;(shell (file-append bash "/bin/rbash"))
 	      (password (crypt "sharing" "$6$abc"))
-	      (home-directory QUARK_FILES))
+	      (home-directory "/home/share"))
 	    (user-account
 	     (name "tadhg")
 	     (comment "Tadhg McDonald-Jensen")
@@ -321,6 +408,11 @@
     (groups (cons*
 	     (user-group (name "sftpusers"))
 	     %base-groups))
+
+    ;; (sudoers-file
+    ;;       (plain-file "sudoers"
+    ;;                   (string-append (plain-file-content %sudoers-specification)
+    ;;                                  "tadhg ALL = NOPASSWD: ALL\n")))
     ;; (packages
     ;;  (specifications->packages
     ;;   '("sane-backends")))
@@ -329,10 +421,72 @@
     (name-service-switch %mdns-host-lookup-nss)
     (services
      (cons*
-      ;; Add udev rules for scanners.
-					;(service sane-service-type sane-backends)
+      ;;;;; all the networking related services needed to host a wfii network (except for sysctl to enable ipv4 port forwarding which is at the bottom in modify-services)
+      
+      ;; allow connecting to this device so guix deploy works
+      (service openssh-service-type
+               (openssh-configuration
+                (permit-root-login #t)
+		;;(password-authentication? #f)
+		(public-key-authentication? #t)
+		(extra-content "AllowUsers tadhg root@192.168.*.*")
+                (authorized-keys
+                 `(("root" ,(local-file "deploy_id.pub"))
+                   ("tadhg" ,(local-file "deploy_id.pub"))))
+                (port-number sshport)))
+      
+      ;; use wifi card for hosting a wifi network
+      (service hostapd-service-type
+	       my-hostapd-config)
+      ;; setup filtering to make traffic for connected devices to appear as it comes from us and then forward it back
+      (service nftables-service-type
+	       (nftables-configuration
+		 (ruleset nftables.conf)))
+      ;; issue ip addresses to our connected clients
+      (service dhcpd-service-type
+	       (dhcpd-configuration
+		 (interfaces '("br0" "wlp3s0"))
+		 (config-file dhcpd.conf)))
+      ;; automatically aquire ip address over WAN ethernet port
+      (service dhcpcd-service-type
+	       (dhcpcd-configuration
+		 (interfaces (list "eth2"))))
+      ;; give ourselves an ip address in the address space of the connected devices
+      ;; this address matching with the "routers" field of dhcpd is how it decides to allocate addresses I think?
+      (service static-networking-service-type
+               (list
+		(static-networking
+		  (provision '(self-wifi-address))
+                  (addresses
+                   (list (network-address
+                           (device "wlp3s0")
+                           (value "192.168.80.1/24")))
+		   ))
+		(static-networking
+		  (provision '(lan-bridge))
+		  (addresses
+		   (list (network-address
+			   (device "br0")
+			   (value "192.168.81.1/24"))))
+		  (links
+		   (cons*
+		    (network-link
+		      (name "br0")
+		      (type 'bridge)
+		      (arguments '((up . #t))))
+		    (map (lambda (iname)
+			   (network-link
+			     (name iname)
+			     (arguments '((master . "br0") (up . #t)))))
+			 '("lan0" "lan1" "lan2" "lan3" "lan4")))))))
+
+
+      ;;;;; syncing and sharing services
+      
       (service quark-service-type
 	       (quark-configuration
+		;; TODO actually pack together the edits as a diff and commit to this repo
+		;; Basically it is just edited to drop the chroot as that breaks symlinks to guix store
 	        (quark ((options->transformation
 			 '((with-source . "quark=/home/tadhg/src/quark")))
 			quark))
@@ -342,7 +496,7 @@
       (service syncthing-service-type
 	    (syncthing-configuration
 	     (syncthing syncthing-able-to-cross-compile)
-	     (user "transmission")
+	     (user "tadhg")
 	     (config-file
 	      (syncthing-config-file
 	       (auto-upgrade-interval-hours 0) ;; disable auto upgrade as it can't modify the files in guix store anyway
@@ -389,34 +543,14 @@
 	  (ratio-limit-enabled? #t)
 	  (ratio-limit 10.0)))
 
-      ;; automatically aquire ip address
-      (service dhcpcd-service-type
-	       (dhcpcd-configuration
-		(interfaces (list "eth2"))))
-      ;; (service static-networking-service-type
-      ;;               (list (static-networking
-      ;;                      (addresses
-      ;;                       (list (network-address
-      ;;                              (device "lan4")
-      ;;                              (value "192.168.1.1/24"))))
-      ;;                      (routes
-      ;;                       (list (network-route
-      ;;                              (destination "default")
-      ;;                              (gateway "192.168.2.1"))))
-      ;;                      (name-servers '()))))
 
-      ;; (service startupscript-service-type)
-      (service openssh-service-type
-               (openssh-configuration
-                (permit-root-login #t)
-                (port-number sshport)
-		(extra-content "Match Group sftpusers\n\tForceCommand internal-sftp")
-                (authorized-keys
-                 `(("root" ,(local-file "deploy_id.pub"))
-                   ("tadhg" ,(local-file "deploy_id.pub"))))))
       
       (modify-services
           %base-services
+	(sysctl-service-type config =>
+                       (sysctl-configuration
+                         (settings (append '(("net.ipv4.ip_forward" . "1"))
+                                           (sysctl-configuration-settings config)))))
         (guix-service-type config => (substitutes config)))))))
 
 

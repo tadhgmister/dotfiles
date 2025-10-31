@@ -47,6 +47,7 @@
     "tup" ;; build system
     ;; TODO remove vscodium once I get LSP working in emacs and am comfortable with it
     "vscodium" ;; community driven clone of vscode, available on nonguix because compiling is hard
+    "texlive" ;; TODO remove this and figure out how to get org-export to not require this to be installed specifically to the home config
     ))
 (define communication
   (list
