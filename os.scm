@@ -187,10 +187,9 @@
     ;;          (db-file "~/.config/mpd/database")
     ;;          (state-file "~/.config/mpd/state")
     ;;          (sticker-file "~/.config/mpd/sticker.sql")))
-    (service xorg-server-service-type) ;; needed for display (kind of important)
-    (service localed-service-type
-                    (localed-configuration 
-                      (keyboard-layout keyboard-layout)))
+    ;; (service localed-service-type
+    ;;                 (localed-configuration 
+    ;;                   (keyboard-layout keyboard-layout)))
     (service sane-service-type)
     (service cups-service-type ;; for printing
 	     (cups-configuration

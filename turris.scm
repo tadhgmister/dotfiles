@@ -445,7 +445,7 @@ table ip filter {
       ;; issue ip addresses to our connected clients
       (service dhcpd-service-type
 	       (dhcpd-configuration
-		 (interfaces '("br0" "wlp3s0"))
+		 (interfaces '("lan1" "wlp3s0"))
 		 (config-file dhcpd.conf)))
       ;; automatically aquire ip address over WAN ethernet port
       (service dhcpcd-service-type
@@ -463,22 +463,29 @@ table ip filter {
                            (value "192.168.80.1/24")))
 		   ))
 		(static-networking
-		  (provision '(lan-bridge))
+		  (provision '(lan1))
 		  (addresses
 		   (list (network-address
-			   (device "br0")
-			   (value "192.168.81.1/24"))))
-		  (links
-		   (cons*
-		    (network-link
-		      (name "br0")
-		      (type 'bridge)
-		      (arguments '((up . #t))))
-		    (map (lambda (iname)
-			   (network-link
-			     (name iname)
-			     (arguments '((master . "br0") (up . #t)))))
-			 '("lan0" "lan1" "lan2" "lan3" "lan4")))))))
+			   (device "lan1")
+			   (value "192.168.81.1/24")))))
+		;; (static-networking
+		;;   (provision '(lan-bridge))
+		;;   (addresses
+		;;    (list (network-address
+		;; 	   (device "br0")
+		;; 	   (value "192.168.81.1/24"))))
+		;;   (links
+		;;    (cons*
+		;;     (network-link
+		;;       (name "br0")
+		;;       (type 'bridge)
+		;;       (arguments '((up . #t))))
+		;;     (map (lambda (iname)
+		;; 	   (network-link
+		;; 	     (name iname)
+		;; 	     (arguments '((master . "br0") (up . #t)))))
+		;; 	 '("lan0" "lan1" "lan2" "lan3" "lan4")))))
+		))
 
 
       ;;;;; syncing and sharing services
@@ -671,7 +678,7 @@ an environment type of 'managed-host."
        (operating-system my-system)
        (environment my-edited-managed-host-environment-type)
        (configuration (machine-ssh-configuration
-                       (host-name "192.168.2.27")
+                       (host-name "192.168.80.1")
                        (system "armhf-linux")
                        ;(target "arm-linux-gnueabihf")
                        (user "root")

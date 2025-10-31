@@ -46,8 +46,9 @@
 (define (vid-snippet filename file)
   (computed-file (string-append filename ".htmlsnippet")
    (with-imported-modules '((sxml simple)
-		            (ice-9 popen)
-                            (ice-9 textual-ports))
+			    (ice-9 popen)
+			    (ice-9 textual-ports)
+			    )
      #~(begin
          (use-modules (sxml simple)
 		      (ice-9 popen)
