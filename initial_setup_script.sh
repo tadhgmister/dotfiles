@@ -131,7 +131,10 @@ mount ${EFI_PART} /mnt/boot/efi
 # the home directory that may be desirable to mount to other operating systems
 # and the swap subvolume so the swap file doesn't interfere with any snapshotting stuff
 # since we will lock down the swap subvolume we will also keep the keyfile in there
-btrfs subvolume create /mnt/swap /mnt/gnu /mnt/nix /mnt/home
+btrfs subvolume create /mnt/swap
+btrfs subvolume create /mnt/gnu
+btrfs subvolume create /mnt/nix
+btrfs subvolume create /mnt/home
 echo "- mounted under /mnt and created subvolumes, making swapfile and keyfile.cpio"
 btrfs filesystem mkswapfile --size ${SWAP_SPACE} /mnt/swap/swapfile
 ##swapon /mnt/swap/swapfile
