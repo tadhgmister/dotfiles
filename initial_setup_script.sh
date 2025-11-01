@@ -172,6 +172,12 @@ cp -r ./ $NEW_TMP_LOCATION_FOR_DOTFILES/
 mkdir -p $NEW_TMP_LOCATION_FOR_DOTFILES/packages/system-info
 cat > $NEW_TMP_LOCATION_FOR_DOTFILES/packages/system-info/details.scm <<EOF
 (define-module (system-info details))
+
+;; hostname of machine
+(define-public HOSTNAME "${NEW_HOSTNAME}")
+;; main user of the machine
+(define-public USERNAME "${SUDO_USER}")
+
 ;; uuid of luks encrypted root partition
 (define-public ROOT-UUID "${ROOT_UUID}")
 
@@ -180,10 +186,6 @@ cat > $NEW_TMP_LOCATION_FOR_DOTFILES/packages/system-info/details.scm <<EOF
 
 ;; the physical offset of swapfile as reported by "btrfs inspect-internal map-swapfile -r /swap/swapfile"
 (define-public RESUME-OFFSET "${RESUME_OFFSET}")
-;; hostname of machine
-(define-public HOSTNAME "${NEW_HOSTNAME}")
-;; main user of the machine
-(define-public USERNAME "${SUDO_USER}")
 EOF
 
 # and copy the template system info to the setup file, the system-info is in .gitignore so will not be edited by updates to the repo

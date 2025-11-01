@@ -9,7 +9,7 @@
   #:use-module (gnu bootloader grub)
   #:use-module ((gnu packages linux) #:select(efibootmgr))
   ;#:use-module (gnu system keyboard)
-  #:use-module ((system-info details) #:select (HOSTNAME RESUME-OFFSET ROOT-UUID EFI-UUID))
+  #:use-module ((system-info details) #:select (HOSTNAME USERNAME RESUME-OFFSET ROOT-UUID EFI-UUID))
   #:export (wrap-os)
 ) 
 ;; directly relate to stuff from system-info
