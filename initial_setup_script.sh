@@ -188,7 +188,7 @@ EOF
 cp -p template-system-info.scm $NEW_TMP_LOCATION_FOR_DOTFILES/packages/system-info/setup.scm
 
 
-echo "- details for drive saved to packages/system-info/ in current folder which has been copied to /mnt/home/${SUDO_USER}/src/dotfiles"
+echo "- details for drive saved to packages/system-info/ in current folder which has been copied to ${NEW_TMP_LOCATION_FOR_DOTFILES}/"
 echo "  note that these will be owned by root, if you need to change them you can fix that but otherwise leaving them owned by root should be fine"
 
 echo "- building system"
