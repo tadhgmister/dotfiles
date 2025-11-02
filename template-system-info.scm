@@ -29,6 +29,7 @@
     #~(lambda (bootloader target mount-point)
 	;; start by running the grub-efi-removable installer so if the rest fails our partially broken state should at least have grub accessible.		       
 	(define efi-removable-value (#$(bootloader-installer grub-efi-removable-bootloader) bootloader target mount-point))
+	;; TODO this variable doesn't exist when running guix system init, figure out how to deal.
         (define sys-link (getenv "GUIX_NEW_SYSTEM"))
 	(unless (string? sys-link)
 	  (error "can only run this bootloader installer when GUIX_NEW_SYSTEM environment variable is set"))
@@ -145,7 +146,8 @@
 
 
 (define boot-config (bootloader-configuration
-                (bootloader custom-bootloader)
+		     (bootloader grub-efi-removable-bootloader)
+                ;;(bootloader custom-bootloader)
                 (targets (list "/boot/efi"))
                 ;(keyboard-layout keyboard-layout)
 		;(extra-initrd "/swap/keyfile.cpio")

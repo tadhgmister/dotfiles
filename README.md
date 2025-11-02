@@ -142,4 +142,12 @@ The setup script has these prompts:
 
 while the script is running you can switch to other tty (ctrl+alt+F#), F2 has the guix info pages to view documentation and 3-9 have shells to potentially view code in this repo while it runs.
 
-Once the script is done `poweroff` and unplug the install media, then power on and it should ask for the decryption password. Once it is booted type in the login name you set in the setup script and password entered at the end of the script, once logged in you can run `~/src/dotfiles/after_first_boot.sh` to setup fingerprint and home config. Once that has finished you can `exit` the tty and when you log back in it should put you into dwm.
+Once the script is done `poweroff` and unplug the install media, then power on and it should ask for the decryption password, then load grub bootloader and when that moves on the linux kernel will ask for the decryption password again.  If you mistype your password at the first prompt it will give an error that the uuid is "not found" and put you in a grub rescue shell, if this happens press the power button (it should shut off immidiately from grub rescue shell) and power back on and try again. If you mistype your password at linux kernel prompt it will be much more forgiving.
+
+Once you are at the "welcome to GNU guix" login as root and run `passwd` to set the root password and `passwd USER` where USER is the user you set for the system to set the normal user password, then `exit` and login as your user.
+
+When logged into your normal user run `/tmp/dotfiles/after_first_boot.sh` to complete initial setup. Alternatively just take a look at that script for what it would do and choose which of them you actually want to perform.
+
+NOTE: since I last tested the initial setup script I changed it to use os-tiny.scm and then changed that to use %base-services instead of %desktop-services so it is even more stripped down. In theory with ethernet this should be totally fine but at least the after_first_boot.sh which tries to run nmtui is not totally valid as network manager is part of desktop services.
+
+Also the template-system-info.scm defines the custom bootloader to boot directly to linux but I've found that it doesn't work with `guix system init` only with reconfigure so it is disabled by default so new systems can be setup easier, changing `(bootloader grub-efi-removable-bootloader)` for `(bootloader custom-bootloader)` (switching which line is commented) in [./packages/system-info/setup.scm] after first boot and doing a system reconfigure is recommended.

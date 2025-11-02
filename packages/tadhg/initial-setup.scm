@@ -16,17 +16,28 @@
   #:use-module ((system-info setup) #:select(wrap-os))
   #:export (tmp-os tmp-home)
 )
-(define* (empty-os #:key hostname filesystems boot-config #:allow-other-keys)
+(define* (empty-os #:key hostname filesystems boot-config username #:allow-other-keys)
   (operating-system
    (host-name hostname)
    (file-systems filesystems)
    (bootloader boot-config)
+   
+   ;; The list of user accounts ('root' is implicit).
+   (users (cons*
+	   (user-account
+            (name username)
+            (comment username)
+            (group "users")
+            (home-directory (string-append "/home/" username))
+            (supplementary-groups '("wheel" ;; for sudo access
+				    )))
+           %base-user-accounts))
    (services
     (cons*
      (service nix-service-type)
-      (modify-services
-        %base-services
-	(guix-service-type config => (tadhgs:substitutes config)))))))
+     (modify-services
+      %base-services
+      (guix-service-type config => (tadhgs:substitutes config)))))))
 (define tmp-os (wrap-os empty-os))
 
 (define tmp-home
