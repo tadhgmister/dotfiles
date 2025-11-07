@@ -198,7 +198,7 @@ echo "  note that these will be owned by root, if you need to change them you ca
 
 echo "- building system"
 # do the system build first, then we will build the home config at the same time as copying over the system config
-guix system build -L $NEW_TMP_LOCATION_FOR_DOTFILES/packages os.scm --max-jobs=8
+guix system build -L $NEW_TMP_LOCATION_FOR_DOTFILES/packages os-tiny.scm --max-jobs=8
 
 echo "- system is built, copying over and building home config"
 ## TODO: doing the home building in parallel with system copying caused problems with fg not consistently waiting until both were done, figure out how to properly do parallel operations and re-enable this optimization
@@ -207,7 +207,7 @@ echo "- system is built, copying over and building home config"
 # as that would force it to finish before the system init can begin which would totally defeat the purpose
 # this order is preferable for the behaviour of fg below, so we can notify the user as soon as the system is copied and allow the home build to take longer if necessary
 ##guix home build -L /mnt/home/$SUDO_USER/src/dotfiles/packages home-config.scm --max-jobs=3 &
-guix system init -L $NEW_TMP_LOCATION_FOR_DOTFILES/packages os.scm /mnt
+guix system init -L $NEW_TMP_LOCATION_FOR_DOTFILES/packages os-tiny.scm /mnt
 echo "- system is initialized, you can interrupt this script and go use your system now if you wish, or wait for home config to be copied"
 # we need to use fg to move the home build back to foreground so if the user interrupts it cancels the build, using wait would not give ideal results
 ##fg || echo "home finished building before system was copied over"
@@ -227,6 +227,8 @@ echo "- system is initialized, you can interrupt this script and go use your sys
 ##EOF
 ##echo "- files needed for home config are copied over, you should be able to run 'guix home reconfigure' from booted system quickly"
 
+
+## TODO michael says the passwd command can't deal and the /mnt/etc folder is empty after system init.
 echo "set a password for root user in new system"
 passwd --root /mnt root
 echo "set a password for ${SUDO_USER} in new system"

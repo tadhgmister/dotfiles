@@ -184,7 +184,7 @@
    rootfs
    (file-system
      (mount-point "/boot/efi")
-     (device (uuid EFI-UUID 'fat32))
+     (device (uuid EFI-UUID 'fat16))
      (type "vfat"))
    
    ;; (file-system
