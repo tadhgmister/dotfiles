@@ -471,6 +471,7 @@ source /run/current-system/profile/etc/profile.d/nix.sh" . #t)
 			       "geiser-guile"
 			       "guix"
 			       "rust-mode"
+			       "markdown-mode"
 			       "typescript-mode"))
 	      (init.el (org-tangle-file "init.el" (local-file "./emacsconfig.org")))))
     (simple-service 'configfiles home-xdg-configuration-files-service-type `(
