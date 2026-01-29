@@ -198,11 +198,11 @@
 	       (list cups-filters epson-inkjet-printer-escpr hplip-minimal))))
     (service nix-service-type) ;; used for brave and possibly other packages I can't get on guix.
     ;;(service ipfs-service-type) ;; TODO: ipfs stopped working requiring a repo migration, figure out how to get it to work reliably. 
-    (service libvirt-service-type) ;; TODO: figure out exactly what this is for, almost certainly for virtualization but might for qemu or guix cross compile or both
-    ;;(service docker-service-type) ;; for docker, used once as a TA to show a student how to use it for a lab.
-    (service qemu-binfmt-service-type ;; enables cross compiling for turris or android box
+    (service libvirt-service-type) ;; needed for qemu-binfmt I believe, confirmed qemu-system-x86_64 works with this disabled
+    (service qemu-binfmt-service-type ;; enables `guix build --system=...` for turris or android box
          (qemu-binfmt-configuration
           (platforms (lookup-qemu-platforms "arm" "aarch64"))))
+    ;;(service docker-service-type) ;; for docker, used once as a TA to show a student how to use it for a lab.
    
     (service bluetooth-service-type) ;; allows bluetooth
     (service fprintd-service-type

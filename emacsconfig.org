@@ -162,7 +162,7 @@ buffer as the current one which is a very reasonable default but not
 as useful as I would like.
 
 Some helper functions are here to support [[*my/new-frame]] as the main
-keybinding to open a new frae, see its description for what it does.
+keybinding to open a new frame, see its description for what it does.
 
 **** my/try-switch-to-prev-buffer                                      :func:
 ~switch-to-prev-buffer~ can throw errors in cases like if the minibuffer is selected so write a little wrapper to suppress any errors.

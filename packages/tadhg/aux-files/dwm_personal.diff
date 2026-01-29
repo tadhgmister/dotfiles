@@ -1,5 +1,5 @@
-diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
---- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/config.def.h /home/tadhg/src/dwm/config.def.h
+--- /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/config.def.h	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.def.h	2025-09-18 18:54:29.849478536 -0400
 @@ -1,12 +1,13 @@
  /* See LICENSE file for copyright and license details. */
@@ -344,8 +344,8 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
 +	{ ClkTagBar,            MODKEY|ShiftMask,         Button3,        toggletag,      {0} },
  };
  
-diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
---- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
+diff -up -N /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/config.mk /home/tadhg/src/dwm/config.mk
+--- /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/config.mk	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/config.mk	2025-06-23 17:26:38.303124679 -0400
 @@ -36,4 +36,4 @@ LDFLAGS  = ${LIBS}
  #LDFLAGS = ${LIBS}
@@ -353,9 +353,9 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/config.
  # compiler and linker
 -CC = cc
 +CC = gcc
-diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
---- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
-+++ /home/tadhg/src/dwm/dwm.c	2025-09-19 12:19:22.692345951 -0400
+diff -up -N /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/dwm.c /home/tadhg/src/dwm/dwm.c
+--- /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/dwm.c	1969-12-31 19:00:01.000000000 -0500
++++ /home/tadhg/src/dwm/dwm.c	2026-01-22 13:44:50.750212314 -0500
 @@ -27,6 +27,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -632,16 +632,12 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  		if (!(autostartcomplete || autostarttags))
  			autostarttagsspawner();
  		if (handler[ev.type])
-@@ -1571,24 +1679,27 @@ setfullscreen(Client *c, int fullscreen)
- 			PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
- 		c->isfullscreen = 1;
+@@ -1573,9 +1681,11 @@ setfullscreen(Client *c, int fullscreen)
  		c->oldstate = c->isfloating;
--		c->oldbw = c->bw;
--		c->bw = 0;
+ 		c->oldbw = c->bw;
+ 		c->bw = 0;
 -		c->isfloating = 1;
 -		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
-+		/* c->oldbw = c->bw; */
-+		/* c->bw = 0; */
 +		c->isfloating = 0;
 +		/* resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh); */
  		XRaiseWindow(dpy, c->win);
@@ -650,11 +646,7 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  	} else if (!fullscreen && c->isfullscreen){
  		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
  			PropModeReplace, (unsigned char*)0, 0);
- 		c->isfullscreen = 0;
- 		c->isfloating = c->oldstate;
--		c->bw = c->oldbw;
-+		/* c->bw = c->oldbw; */
- 		c->x = c->oldx;
+@@ -1586,9 +1696,10 @@ setfullscreen(Client *c, int fullscreen)
  		c->y = c->oldy;
  		c->w = c->oldw;
  		c->h = c->oldh;
@@ -813,9 +805,9 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/dwm.c /
  		} else {
  			h = m->wh - mh;
  			resize(c, tx, ty, tw - (2 * c->bw), h - (2 * c->bw), 0);
-Common subdirectories: /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
-diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
---- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
+Common subdirectories: /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/.git and /home/tadhg/src/dwm/.git
+diff -up -N /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/Makefile /home/tadhg/src/dwm/Makefile
+--- /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/Makefile	1969-12-31 19:00:01.000000000 -0500
 +++ /home/tadhg/src/dwm/Makefile	2025-06-23 17:26:38.303124679 -0400
 @@ -3,7 +3,7 @@
  
@@ -826,8 +818,8 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/Makefil
  OBJ = ${SRC:.c=.o}
  
  all: options dwm
-diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
---- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
+diff -up -N /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/status.c /home/tadhg/src/dwm/status.c
+--- /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/status.c	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/status.c	2025-06-23 17:26:38.303124679 -0400
 @@ -0,0 +1,167 @@
 +#include <time.h>
@@ -997,8 +989,8 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/status.
 +  next_update->tv_sec = current_time->tv_sec + 1;
 +  next_update->tv_nsec = 0;
 +}
-diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
---- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
+diff -up -N /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/status.h /home/tadhg/src/dwm/status.h
+--- /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/status.h	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/status.h	2025-06-23 17:26:38.303124679 -0400
 @@ -0,0 +1,5 @@
 +
@@ -1006,8 +998,8 @@ diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/status.
 +
 +void updatestatus_regular(char* stext, struct timespec *current_time, struct timespec *next_update);
 +
-diff -up -N /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/TAGS /home/tadhg/src/dwm/TAGS
---- /gnu/store/3salscyfh8v3a3s5ns5a5fhnr84hzgw8-dwm-6.4-checkout/TAGS	1969-12-31 19:00:00.000000000 -0500
+diff -up -N /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/TAGS /home/tadhg/src/dwm/TAGS
+--- /gnu/store/7clx8dkfqfxpiw78y6hhw7xwrdhskbdq-dwm-6.4-checkout/TAGS	1969-12-31 19:00:00.000000000 -0500
 +++ /home/tadhg/src/dwm/TAGS	2025-09-10 15:06:01.701560779 -0400
 @@ -0,0 +1,386 @@
 +
