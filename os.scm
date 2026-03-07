@@ -198,7 +198,7 @@
 	       (list cups-filters epson-inkjet-printer-escpr hplip-minimal))))
     (service nix-service-type) ;; used for brave and possibly other packages I can't get on guix.
     ;;(service ipfs-service-type) ;; TODO: ipfs stopped working requiring a repo migration, figure out how to get it to work reliably. 
-    (service libvirt-service-type) ;; needed for qemu-binfmt I believe, confirmed qemu-system-x86_64 works with this disabled
+    (service libvirt-service-type) ;; TODO: when this is disabled emulated guix builds worked and qemu-system-x86_64 both worked, unsure what this actually does.
     (service qemu-binfmt-service-type ;; enables `guix build --system=...` for turris or android box
          (qemu-binfmt-configuration
           (platforms (lookup-qemu-platforms "arm" "aarch64"))))
