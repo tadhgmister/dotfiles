@@ -4,6 +4,9 @@
 
 (define-module (tadhg initial-setup)
   #:use-module (srfi srfi-1)
+  
+ ;; #:use-module ((nongnu packages linux) #:select(linux iwlwifi-firmware i915-firmware))
+ ;; #:use-module ((nongnu system linux-initrd) #:select(microcode-initrd))
   #:use-module (guix)
   #:use-module (gnu)
   #:use-module (gnu home)
@@ -12,13 +15,23 @@
   #:use-module ((gnu services) #:select(modify-services))
   #:use-module ((gnu services base) #:select(guix-service-type %base-services))
   #:use-module ((gnu services nix) #:select(nix-service-type))
+  #:use-module (gnu services networking)
   #:use-module ((tadhg channels-and-subs) #:prefix tadhgs: )
   #:use-module ((system-info setup) #:select(wrap-os))
   #:export (tmp-os tmp-home)
-)
+  )
+
+
+
 (define* (empty-os #:key hostname filesystems boot-config username #:allow-other-keys)
   (operating-system
    (host-name hostname)
+
+  ;; COMMENT OUT THESE LINES TO REMOVE DEPENDENCY ON NON GUIX
+  ;;(kernel linux)
+  ;;(initrd microcode-initrd)
+  ;;(firmware (list iwlwifi-firmware i915-firmware))
+   
    (file-systems filesystems)
    (bootloader boot-config)
    
@@ -35,6 +48,8 @@
    (services
     (cons*
      (service nix-service-type)
+     (service network-manager-service-type)
+     (service wpa-supplicant-service-type)    ;needed by NetworkManager
      (modify-services
       %base-services
       (guix-service-type config => (tadhgs:substitutes config)))))))

@@ -465,25 +465,27 @@ won't happen often.
 #+end_src
 *** my/try-recover-file                                                :func:
 #+begin_src emacs-lisp
-  (defun my/try-recover-file (file)
-    "Attempt to recover FILE from its autosave non-interactively.
-    Returns t if recovery succeeds, Returns nil if recover-file
-    signals an error, I.E. the file doesn't exist, the auto-save
-    doesn't exist, or the auto-save is older than the file Note
-    that if the file is currently open and modified any current
-    changes to the file are unrecoverably lost."
-    (interactive "FRecover File:")
-    (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t)))
-      (condition-case nil
-          (recover-file file)
-        (:success
-         (message "recovered file: %s" file)
-         t)
-        ;; how is the auto save file not existing an error but it being out of date a user-error?
-        ;; why are they not both user-errors, I'd really rather not catch all possible errors here.
-        (error nil)
-        (user-error nil))))
+    (defun my/try-recover-file (file)
+      "Attempt to recover FILE from its autosave non-interactively.
+      Returns t if recovery succeeds, Returns nil if recover-file
+      signals an error, I.E. the file doesn't exist, the auto-save
+      doesn't exist, or the auto-save is older than the file Note
+      that if the file is currently open and modified any current
+      changes to the file are unrecoverably lost."
+      (interactive "FRecover File:")
+      (cl-letf (((symbol-function 'read-answer) (lambda (&rest _) "yes"))
+  	      ((symbol-function 'yes-or-no-p) (lambda (&rest _) t)))
+        (condition-case nil
+            (recover-file file)
+          (:success
+           (message "recovered file: %s" file)
+           t)
+          ;; how is the auto save file not existing an error but it being out of date a user-error?
+          ;; why are they not both user-errors, I'd really rather not catch all possible errors here.
+          (error nil)
+          (user-error nil))))
 #+end_src
+
 *** my/recover-from-autosave-list                                      :func:
 #+begin_src emacs-lisp
 (defun my/recover-from-autosave-list (list-file)

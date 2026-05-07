@@ -46,7 +46,7 @@
  ;;((gnu services authentication) #:select (fprintd-service-type))
  ((gnu services file-sharing) #:select (transmission-daemon-service-type transmission-daemon-configuration))
  ((gnu services pm) #:select (tlp-service-type tlp-configuration thermald-service-type))
- (tadhg packagelist)
+ ((tadhg packagelist) #:select(os-packages))
  ((tadhg channels-and-subs) #:prefix tadhg:)
  ((system-info setup) #:select(wrap-os))
  (tadhg quark)

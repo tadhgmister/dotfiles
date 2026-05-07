@@ -6,7 +6,7 @@
 # same time and since when installing a new operating system I need
 # the mapper name to be different from the currently booted system and
 # often want to change the hostname as well.
-NEW_HOSTNAME=tadhg_aux
+NEW_HOSTNAME=nonpocketcomputer
 
 # the amount of space for our swapfile, can probably be increased later but may be a pain.
 SWAP_SPACE=12G
@@ -67,11 +67,11 @@ echo "- Writing partition table"
 # the esp flag indicates the first partition will hold EFI data
 # grub is less than 20MB and linux kernel is similar, but 300 gives us enough to potentially have 2 or 3 options
 # if setting up dedicated UKI stuff. Also running out of space there sucks real bad.
-parted --script ${DRIVE} \
+parted --script ${DRIVE} -- \
    mklabel gpt \
-   mkpart efibooter fat16 1MiB 300MiB \
-   mkpart guixroot btrfs 300MiB 100% \
-   set 1 esp on
+   mkpart efibooter btrfs 1MiB -1GiB \
+   mkpart guixroot fat16 -1GiB 100% \
+   set 2 esp on
 
 # let the dev folder get a moment to settle so that the subpartitions are consistently present
 # by the time we check for them on the next line
@@ -87,8 +87,8 @@ if [[ "${#DEVICE_LIST[@]}" -ne 3 || "${DEVICE_LIST[0]}" != "$DRIVE" ]]; then
     exit 1
 fi
 # otherwise elements 1 and 2 are the 2 partitions we just created
-EFI_PART=${DEVICE_LIST[1]}
-ROOT_PART=${DEVICE_LIST[2]}
+EFI_PART=${DEVICE_LIST[2]}
+ROOT_PART=${DEVICE_LIST[1]}
 echo "- formatting efi partition ${EFI_PART}"
 
 # format EFI partition for fat, -F32 is what the guix manual suggests
@@ -230,9 +230,9 @@ echo "- system is initialized, you can interrupt this script and go use your sys
 
 ## TODO michael says the passwd command can't deal and the /mnt/etc folder is empty after system init.
 echo "set a password for root user in new system"
-passwd --root /mnt root
+# passwd --root /mnt root
 echo "set a password for ${SUDO_USER} in new system"
-passwd --root /mnt ${SUDO_USER}
+#passwd --root /mnt ${SUDO_USER}
 
 sync
 echo "- FINISHED, unmounting drive"

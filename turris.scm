@@ -293,7 +293,8 @@
 			    (list
 			     (list "randomHumour" (gallery-folder "/home/tadhg/Pictures/funny/"))
 			     (list "huaweibackup" (gallery-folder "/home/tadhg/Pictures/huawaiBackup/"))
-			     (list "ciaranBrunelleCapeCod" (gallery-folder "/home/tadhg/Pictures/ciaranTrip/")))))
+			     (list "ciaranBrunelleCapeCod" (gallery-folder "/home/tadhg/Pictures/ciaranTrip/"))
+			     (list "ciaranShowcase" (gallery-folder "/home/tadhg/Pictures/ciaranShowcase/")))))
 
 (define my-hostapd-config (hostapd-configuration
 		(interface "wlp3s0")
@@ -364,6 +365,7 @@ table ip filter {
                                      '("usb-storage" ;; baked into kernel
                                        "hid-apple" ;; we aren't going to use apple products as input device
                                        "virtio_console" ;; we are not in a vm
+				       "virtio_scsi" ;; we are not a vm
                                        "virtio-rng" ;; we are not a vm
                                        "btrfs" ;; baked into kernel
                                        )))
@@ -678,7 +680,7 @@ an environment type of 'managed-host."
        (operating-system my-system)
        (environment my-edited-managed-host-environment-type)
        (configuration (machine-ssh-configuration
-                       (host-name "192.168.80.1")
+                       (host-name "192.168.2.27")
                        (system "armhf-linux")
                        ;(target "arm-linux-gnueabihf")
                        (user "root")
